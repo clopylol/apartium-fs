@@ -1,0 +1,1 @@
+export { GuestTable } from "./GuestTable";

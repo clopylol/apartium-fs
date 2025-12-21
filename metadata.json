@@ -1,0 +1,5 @@
+{
+  "name": "Apartment Mgmt Dashboard",
+  "description": "A dark-themed, responsive real estate management dashboard featuring financial statistics, occupancy rates, and tenant activity feeds.",
+  "requestFramePermissions": []
+}

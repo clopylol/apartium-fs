@@ -1,0 +1,1174 @@
+{
+  "welcome": "Welcome to Apartment Management",
+  "common": {
+    "buttons": {
+      "yes": "Yes",
+      "no": "No",
+      "delete": "Delete",
+      "save": "Save",
+      "cancel": "Cancel",
+      "confirm": "Confirm",
+      "close": "Close",
+      "viewAll": "View All"
+    },
+    "status": {
+      "new": "New",
+      "inProgress": "In Progress",
+      "completed": "Completed",
+      "paid": "Paid",
+      "unpaid": "Unpaid"
+    },
+    "actions": {
+      "quickAction": "Quick Action",
+      "viewDetails": "View Details"
+    },
+    "pagination": {
+      "showing": "Showing",
+      "of": "of",
+      "records": "records",
+      "previous": "Previous page",
+      "next": "Next page"
+    }
+  },
+  "dashboard": {
+    "welcome": {
+      "greeting": "Welcome, {{name}} 👋",
+      "dateLabel": "{{date}}"
+    },
+    "actions": {
+      "receivePayment": "Receive Payment"
+    },
+    "stats": {
+      "totalIncome": "Total Income (This Month)",
+      "occupancyRate": "Occupancy Rate",
+      "openRequests": "Open Requests",
+      "upcomingEvents": "Upcoming Events"
+    },
+    "statsLabels": {
+      "thisMonth": "this month",
+      "lastMonth": "compared to last month",
+      "thisWeek": "this week",
+      "thisMonthReservation": "reservation this month"
+    },
+    "chart": {
+      "title": "Annual Income Analysis",
+      "description": "Monthly dues and rental income",
+      "months": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    },
+    "lists": {
+      "recentPayments": "Recent Payments",
+      "maintenanceRequests": "Maintenance Requests",
+      "bookings": "Facility Reservations",
+      "notifications": "Notifications",
+      "by": "by",
+      "maintenanceTypes": {
+        "kitchen": "Kitchen Issue",
+        "general": "General Maintenance",
+        "heating": "Heating/Cooling"
+      }
+    },
+    "promo": {
+      "newTenantTitle": "New Tenant Entry",
+      "newTenantDescription": "3 new apartments were rented this month."
+    }
+  },
+  "community": {
+    "modals": {
+      "startPoll": {
+        "title": "Start Poll",
+        "message": "Are you sure you want to start the poll titled \"{{title}}\"?"
+      },
+      "deleteRecord": {
+        "title": "Delete Record",
+        "message": "Are you sure you want to delete this record? This action cannot be undone."
+      },
+      "deletePoll": {
+        "title": "Delete Poll",
+        "message": "Are you sure you want to delete this poll and all its results?"
+      },
+      "closePoll": {
+        "title": "End Poll",
+        "message": "Do you want to end the poll? Voting will no longer be available."
+      },
+      "sendReminder": {
+        "title": "Send Reminder",
+        "message": "A poll reminder will be sent to {{count}} selected person(s). Do you confirm?"
+      }
+    },
+    "messages": {
+      "alreadyVoted": "You have already voted.",
+      "noPollsFound": "No active or past polls found.",
+      "author": "Manager",
+      "unit": "Management"
+    },
+    "header": {
+      "title": "Community & Polls",
+      "searchRequests": "Search requests or suggestions...",
+      "searchPolls": "Search polls...",
+      "tabs": {
+        "requests": "Requests",
+        "polls": "Polls"
+      },
+      "createButton": "Create New"
+    },
+    "table": {
+      "columns": {
+        "subject": "Subject",
+        "type": "Type",
+        "sender": "Sender",
+        "date": "Date",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "noRecords": "No records found.",
+      "unit": "Unit"
+    },
+    "types": {
+      "wish": "Request",
+      "suggestion": "Suggestion"
+    },
+    "status": {
+      "active": "Active",
+      "closed": "Closed",
+      "pending": "Pending",
+      "inProgress": "In Progress",
+      "resolved": "Resolved",
+      "rejected": "Rejected"
+    },
+    "pollCard": {
+      "vote": "Vote"
+    },
+    "createModal": {
+      "title": {
+        "poll": "Start New Poll",
+        "request": "Create New Request/Suggestion"
+      },
+      "labels": {
+        "type": "Type",
+        "category": "Category",
+        "title": "Title",
+        "startDate": "Start Date",
+        "endDate": "End Date",
+        "description": "Description"
+      },
+      "types": {
+        "request": "Request/Suggestion",
+        "poll": "Poll"
+      },
+      "categories": {
+        "wish": "Request",
+        "suggestion": "Suggestion"
+      },
+      "placeholders": {
+        "pollTitle": "e.g.: Facade Paint Selection",
+        "requestTitle": "e.g.: Pergola in Garden",
+        "description": "Enter details here..."
+      },
+      "buttons": {
+        "cancel": "Cancel",
+        "start": "Start",
+        "create": "Create"
+      }
+    },
+    "pollDetail": {
+      "closed": "CLOSED",
+      "endPoll": "End Poll",
+      "results": "Poll Results",
+      "yes": "Yes",
+      "no": "No",
+      "voters": "Voters",
+      "noVotes": "No votes yet.",
+      "participation": "Participation Status",
+      "waiting": "People Waiting",
+      "selectAll": "Select All",
+      "selected": "selected",
+      "sendReminder": "Send Reminder",
+      "notificationInfo": "Notifications will be sent to selected people via mobile app."
+    },
+    "requestRow": {
+      "convertToSuggestion": "Convert to Suggestion",
+      "convertToPoll": "Submit to Poll"
+    },
+    "stats": {
+      "requests": {
+        "openRequests": "Open Requests",
+        "waiting": "Waiting",
+        "requestsPending": "requests pending",
+        "newSuggestions": "New Suggestions",
+        "idea": "Idea",
+        "toEvaluate": "to evaluate",
+        "completed": "Completed",
+        "resolved": "Resolved",
+        "thisMonth": "this month"
+      },
+      "polls": {
+        "activePolls": "Active Polls",
+        "ongoing": "Ongoing",
+        "participationExpected": "participation expected",
+        "totalParticipation": "Total Participation",
+        "person": "Person",
+        "totalVotes": "total votes",
+        "completed": "Completed",
+        "ended": "Ended",
+        "concluded": "concluded"
+      }
+    },
+    "pagination": {
+      "showing": "Showing",
+      "of": "of",
+      "records": "records"
+    }
+  },
+  "payments": {
+    "header": {
+      "title": "Financial Management",
+      "generateDues": "Generate Dues",
+      "exportReport": "Report"
+    },
+    "tabs": {
+      "income": "Income (Dues)",
+      "expenses": "Expenses"
+    },
+    "search": {
+      "income": "Search resident or unit...",
+      "expenses": "Search expense item..."
+    },
+    "archive": {
+      "label": "Archive Period"
+    },
+    "stats": {
+      "income": {
+        "collected": "Collected Dues",
+        "collectionRate": "collection rate",
+        "pending": "Pending Payment",
+        "notPaidYet": "not paid yet",
+        "totalExpected": "Total Expected",
+        "budget": "{{year}} budget",
+        "debtor": "Debtor",
+        "person": "Person"
+      },
+      "expenses": {
+        "total": "Total Expenses",
+        "totalInvoice": "total invoice",
+        "paid": "Paid",
+        "paidSuccessfully": "paid successfully",
+        "toPay": "To Pay",
+        "pendingInvoice": "pending invoice",
+        "items": "Items"
+      }
+    },
+    "filters": {
+      "all": "ALL",
+      "paid": "PAID",
+      "unpaid": "UNPAID"
+    },
+    "table": {
+      "columns": {
+        "unit": "Unit",
+        "resident": "Resident",
+        "paymentType": "Payment Type",
+        "amount": "Amount",
+        "status": "Status",
+        "action": "Action"
+      },
+      "noResults": "No records found matching the search criteria.",
+      "status": {
+        "paid": "Paid",
+        "unpaid": "Unpaid"
+      },
+      "sendReminder": "Send Reminder"
+    },
+    "expenses": {
+      "total": "Total:",
+      "noExpenses": "No expenses recorded for this period.",
+      "addButton": "Add New Expense",
+      "status": {
+        "paid": "Paid",
+        "pending": "Pending"
+      }
+    },
+    "modals": {
+      "confirmation": {
+        "title": {
+          "pay": "Payment Confirmation",
+          "cancel": "Payment Cancellation"
+        },
+        "message": {
+          "pay": "Do you confirm the payment for resident {{name}}?",
+          "cancel": "Do you want to cancel the payment for resident {{name}}?"
+        },
+        "residentLabel": "named resident",
+        "buttons": {
+          "cancel": "Cancel",
+          "confirm": "Confirm",
+          "cancelPayment": "Cancel Payment"
+        }
+      },
+      "dues": {
+        "title": "Dues Planning",
+        "modes": {
+          "single": "Single Month",
+          "bulk": "Annual Plan (12 Months)"
+        },
+        "locked": {
+          "title": "Period Locked",
+          "message": "Dues cannot be edited for past periods ({{month}} {{year}}). Please select a current or future period."
+        },
+        "info": "Bulk dues debt will be created for all units for the {{month}} {{year}} period.",
+        "labels": {
+          "amount": "Dues Amount (₺)",
+          "defaultAmount": "Default Amount"
+        },
+        "buttons": {
+          "applyToAll": "Apply to All",
+          "cancel": "Cancel",
+          "create": "Create",
+          "savePlan": "Save Plan"
+        }
+      },
+      "addExpense": {
+        "title": "Add New Expense",
+        "labels": {
+          "category": "Expense Category",
+          "title": "Expense Title / Sub Group",
+          "select": "Select",
+          "other": "Other...",
+          "description": "Description",
+          "amount": "Amount (₺)",
+          "status": "Status",
+          "attachment": "Invoice / Receipt Image"
+        },
+        "placeholders": {
+          "description": "e.g.: Extra Repair"
+        },
+        "upload": {
+          "title": "Upload Image",
+          "formats": "JPG, PNG, PDF",
+          "change": "Change"
+        },
+        "status": {
+          "paid": "Paid",
+          "pending": "To Pay"
+        },
+        "buttons": {
+          "cancel": "Cancel",
+          "save": "Save"
+        }
+      },
+      "expenseDelete": {
+        "title": "Delete Expense Confirmation",
+        "message": "Are you sure you want to delete this expense record?",
+        "buttons": {
+          "delete": "Delete"
+        }
+      }
+    },
+    "actions": {
+      "bulkAction": {
+        "selected": "Person Selected",
+        "sendReminders": "Send Reminders",
+        "cancel": "Cancel"
+      }
+    },
+    "messages": {
+      "reminderSent": "Reminder message sent! (ID: {{id}})",
+      "bulkReminderQueued": "Reminder messages queued for {{count}} people.",
+      "duesUpdated": "Dues records updated for {{month}} {{year}} with amount {{amount}}₺.",
+      "duesPlanSaved": "Dues planning for the next 12 months has been saved successfully.",
+      "reportDownloading": "Downloading report...",
+      "deleteExpenseConfirm": "Are you sure you want to delete this expense record?"
+    },
+    "pagination": {
+      "total": "Total",
+      "of": "of",
+      "showing": "records showing"
+    },
+    "types": {
+      "dues": "dues"
+    },
+    "categories": {
+      "utilities": "Bills",
+      "maintenance": "Maintenance & Repair",
+      "personnel": "Personnel & Security",
+      "general": "General Expenses"
+    },
+    "emptyState": {
+      "title": "No Payment Records Yet",
+      "description": "No payment records found for this period. You can start by generating dues.",
+      "generateButton": "Generate Dues"
+    },
+    "errorState": {
+      "title": "Failed to Load Data",
+      "retryButton": "Retry",
+      "loadError": "An error occurred while loading data",
+      "expenseLoadError": "An error occurred while loading expense data",
+      "unknownError": "An unknown error occurred"
+    },
+    "expenses": {
+      "total": "Total:",
+      "noExpenses": "No expenses recorded for this period.",
+      "addButton": "Add New Expense",
+      "status": {
+        "paid": "Paid",
+        "pending": "Pending"
+      },
+      "emptyState": {
+        "title": "No Expense Records Yet",
+        "description": "No expense records found for this period. You can start by adding a new expense.",
+        "addButton": "Add First Expense"
+      }
+    }
+  },
+  "residents": {
+    "header": {
+      "title": "Residents & Parking",
+      "tabs": {
+        "residents": "Residents",
+        "parking": "Parking",
+        "guests": "Guests"
+      },
+      "searchPlaceholders": {
+        "residents": "Search unit, person or plate...",
+        "guests": "Search plate, guest or owner..."
+      }
+    },
+    "table": {
+      "columns": {
+        "unit": "Unit",
+        "status": "Status",
+        "residents": "Residents",
+        "contact": "Contact",
+        "vehicles": "Vehicles / Park",
+        "actions": "Actions"
+      },
+      "noRecords": "No records found."
+    },
+    "status": {
+      "occupied": "Occupied",
+      "empty": "Empty",
+      "owner": "Owner",
+      "tenant": "Tenant"
+    },
+    "actions": {
+      "addResident": "Add Resident",
+      "addUnit": "Add Unit",
+      "edit": "Edit",
+      "delete": "Delete",
+      "manageVehicles": "Manage Vehicles",
+      "manageVehiclesTooltip": "Manage Vehicles",
+      "noResidents": "No Residents",
+      "noResidentsFound": "No residents found",
+      "details": "Details",
+      "addBuilding": "Add New Building",
+      "saveChanges": "Save Changes"
+    },
+    "stats": {
+      "occupied": "Occupied",
+      "empty": "Empty"
+    },
+    "messages": {
+      "addUnitDescription": "Add new unit to this block",
+      "parkingSpot": "Park:",
+      "anonymousGuest": "Anonymous Guest",
+      "floor": "Floor",
+      "unitNumber": "No:",
+      "unitLabel": "Unit",
+      "unitSelect": "Select Unit",
+      "blockLabel": "Building",
+      "blockSelect": "Select Building",
+      "residentType": "Resident Type",
+      "fullName": "Full Name",
+      "fullNamePlaceholder": "Enter Full Name",
+      "phone": "Phone",
+      "email": "Email (Optional)",
+      "vehicleNoteTitle": "Add Vehicle",
+      "vehicleNoteDescription": "After saving the resident, you can add multiple vehicles using the \"Manage Vehicles\" button in the list.",
+      "owner": "Owner",
+      "tenant": "Tenant"
+    },
+    "modals": {
+      "addResident": {
+        "title": "Add New Resident",
+        "cancel": "Cancel",
+        "submit": "Add Resident"
+      },
+      "editResident": {
+        "title": "Edit Resident Information",
+        "cancel": "Cancel",
+        "save": "Save Changes"
+      },
+      "addBuilding": {
+        "title": "Add New Building",
+        "label": "BUILDING NAME",
+        "placeholder": "e.g.: Building D",
+        "cancel": "Cancel",
+        "save": "Save"
+      },
+      "editBuilding": {
+        "title": "Edit Building",
+        "label": "BUILDING NAME",
+        "placeholder": "Building Name",
+        "cancel": "Cancel",
+        "save": "Save"
+      },
+      "deleteResident": {
+        "title": "Delete Resident Confirmation",
+        "message": "Are you sure you want to delete resident {{name}}? This action cannot be undone."
+      },
+      "deleteBuilding": {
+        "title": "Delete Building Confirmation",
+        "message": "Are you sure you want to delete building {{name}}?",
+        "warning": "This action cannot be undone and all data related to this building will be deleted."
+      },
+      "checkIn": {
+        "title": "Check In",
+        "message": "Do you confirm this guest's entry to the site?",
+        "confirmText": "Check In"
+      },
+      "checkOut": {
+        "title": "Check Out",
+        "message": "Do you confirm this guest's exit from the site?",
+        "confirmText": "Check Out"
+      },
+      "vehicleManagement": {
+        "title": "Vehicle Management",
+        "residentLabel": "Resident:",
+        "registeredVehicles": "Registered Vehicles",
+        "noVehicles": "No registered vehicles found for this resident.",
+        "addNewVehicle": "Add New Vehicle",
+        "labels": {
+          "plate": "License Plate",
+          "model": "Model",
+          "parkingSpot": "Parking Spot"
+        },
+        "placeholders": {
+          "plate": "34 ABC 123",
+          "model": "e.g.: BMW 320i",
+          "parkingSpot": "Select Parking Spot (Optional)"
+        },
+        "actions": {
+          "deleteVehicle": "Delete Vehicle",
+          "saveVehicle": "Save Vehicle",
+          "taken": "Taken"
+        },
+        "deleteConfirm": {
+          "title": "Delete Vehicle Confirmation",
+          "message": "Are you sure you want to delete vehicle with license plate {{plate}}? This action cannot be undone."
+        }
+      }
+    },
+    "table": {
+      "columnsUppercase": {
+        "unit": "UNIT",
+        "status": "STATUS",
+        "residents": "RESIDENTS",
+        "contact": "CONTACT",
+        "vehicles": "VEHICLES / PARK",
+        "actions": "ACTIONS"
+      },
+      "statusUppercase": {
+        "occupied": "OCCUPIED",
+        "empty": "EMPTY"
+      },
+      "typeUppercase": {
+        "owner": "OWNER",
+        "tenant": "TENANT"
+      }
+    },
+    "parking": {
+      "floorManagement": {
+        "title": "Floor Management",
+        "addFloor": "Add",
+        "floorNumberPlaceholder": "Floor No (e.g.: -3)",
+        "currentFloors": "Current Floors",
+        "deleteFloor": "Delete Floor",
+        "deleteConfirm": {
+          "title": "Delete Floor Confirmation",
+          "message": "Are you sure you want to delete this floor?"
+        },
+        "floorLabels": {
+          "ground": "Ground Floor",
+          "basement": "{{floor}}. Basement"
+        }
+      },
+      "spotModal": {
+        "add": {
+          "title": "Add Parking Spot"
+        },
+        "edit": {
+          "title": "Edit Parking Spot"
+        },
+        "delete": {
+          "title": "Delete Parking Spot",
+          "message": "Are you sure you want to delete parking spot {{name}}?"
+        },
+        "labels": {
+          "floor": "Floor",
+          "spotName": "Parking Spot Name / No"
+        },
+        "placeholders": {
+          "spotName": "e.g.: A-05"
+        },
+        "floorOptions": {
+          "ground": "Ground Floor (0)",
+          "basement1": "1st Basement (-1)",
+          "basement2": "2nd Basement (-2)",
+          "floor1": "1st Floor"
+        },
+        "buttons": {
+          "cancel": "Cancel",
+          "save": "Save",
+          "delete": "Yes, Delete"
+        }
+      },
+      "map": {
+        "title": "Parking Layout",
+        "subtitle": "{{floor}} layout and occupancy status.",
+        "empty": "Empty",
+        "occupied": "Occupied",
+        "manageFloors": "Manage Floors",
+        "unit": "Unit",
+        "assign": "Assign",
+        "noSpots": "No parking spots defined on this floor.",
+        "addSpot": "Add Parking Spot",
+        "floorLabels": {
+          "ground": "Ground Floor",
+          "basement": "{{floor}}. Basement"
+        }
+      },
+      "vehicleSearch": {
+        "title": "Vehicle Search",
+        "subtitle": "{{count}} records (Resident + Guest)",
+        "expand": "Expand",
+        "guestStatus": {
+          "pending": "Expected Guest",
+          "active": "Guest (Inside)"
+        },
+        "noModel": "Vehicle Model Not Specified",
+        "parkingSpot": "Parking Spot:",
+        "mobileNotification": "Mobile Notification",
+        "noResults": "No vehicles found."
+      },
+      "assignVehicle": {
+        "title": "Assign Vehicle",
+        "subtitle": "Select a vehicle from the list to assign to the parking spot",
+        "spotInfo": {
+          "title": "Parking Spot",
+          "floor": "Floor",
+          "status": "Status"
+        },
+        "selectedVehicle": {
+          "title": "Selected Vehicle"
+        },
+        "searchPlaceholder": "Search vehicle... (plate, name, unit)",
+        "vehicleCount": "Showing {{count}} / {{total}} vehicles",
+        "assignButton": "Assign Vehicle",
+        "filters": {
+          "all": "All Vehicles",
+          "resident": "Resident Vehicles",
+          "guest": "Guest Vehicles"
+        }
+      },
+      "stats": {
+        "totalSpots": "Total Parking Spots",
+        "occupiedAndAvailable": "Occupied / Available",
+        "occupied": "Occupied",
+        "available": "Available",
+        "occupancyRate": "Occupancy Rate",
+        "guestVehicles": "Guest Vehicles",
+        "allFloors": "All Floors",
+        "currentStatus": "Current Status",
+        "utilization": "Utilization Rate",
+        "activeGuests": "Active Guests"
+      }
+    },
+    "guests": {
+      "filters": {
+        "all": "All",
+        "pending": "Pending",
+        "active": "Active",
+        "completed": "Completed",
+        "addGuest": "Add Guest"
+      },
+      "stats": {
+        "activeGuests": "Active Guests",
+        "active": "Active",
+        "vehicleParked": "vehicle parked",
+        "expectedVehicle": "Expected Vehicle",
+        "request": "Request",
+        "willEnter": "will enter",
+        "todayEntries": "Today Entries/Exits",
+        "completed": "Completed",
+        "visit": "visit"
+      },
+      "table": {
+        "columns": {
+          "plateVehicle": "Plate / Vehicle",
+          "host": "Host",
+          "visitDate": "Visit Date",
+          "statusSource": "Status / Source",
+          "actions": "Actions"
+        },
+        "guest": "Guest",
+        "daysDuration": "Days Duration",
+        "status": {
+          "pending": "Pending",
+          "active": "Inside",
+          "completed": "Checked Out"
+        },
+        "entry": "Entry:",
+        "exit": "Exit:",
+        "source": {
+          "mobileNotification": "Mobile Notification",
+          "manualRecord": "Manual Record"
+        },
+        "noRecords": "No records found."
+      },
+      "modals": {
+        "addGuest": {
+          "title": "New Guest Vehicle Registration",
+          "labels": {
+            "block": "Building",
+            "blockSelect": "Select Building",
+            "unit": "Unit",
+            "unitSelect": "Select Unit",
+            "guestName": "Guest Full Name",
+            "guestNamePlaceholder": "Full Name",
+            "plate": "License Plate",
+            "platePlaceholder": "34 ABC 123",
+            "model": "Model (Optional)",
+            "modelPlaceholder": "e.g.: VW Golf",
+            "color": "Color (Optional)",
+            "colorPlaceholder": "e.g.: Black",
+            "duration": "Visit Duration (Days)",
+            "days": "Days",
+            "note": "Note",
+            "notePlaceholder": "Your note if any..."
+          },
+          "buttons": {
+            "cancel": "Cancel",
+            "saveAndCheckIn": "Save & Check In"
+          }
+        },
+        "detail": {
+          "title": "Guest Details",
+          "status": {
+            "pending": "Pending",
+            "active": "Inside",
+            "completed": "Checked Out"
+          },
+          "source": {
+            "mobileNotification": "Mobile Notification",
+            "manualRecord": "Manual Record"
+          },
+          "labels": {
+            "host": "Host",
+            "visit": "Visit",
+            "daysDuration": "Days Duration",
+            "entry": "Entry:",
+            "exit": "Exit:",
+            "note": "Note"
+          },
+          "placeholders": {
+            "noModel": "Model Not Specified",
+            "anonymousGuest": "Anonymous Guest"
+          },
+          "buttons": {
+            "close": "Close",
+            "checkIn": "Check In",
+            "checkOut": "Check Out"
+          }
+        },
+        "confirmation": {
+          "defaultConfirm": "Confirm",
+          "defaultCancel": "Cancel"
+        }
+      }
+    }
+  },
+  "janitor": {
+    "header": {
+      "title": "Janitor Services",
+      "tabs": {
+        "staff": "Staff",
+        "requests": "Requests"
+      },
+      "search": {
+        "staff": "Search staff...",
+        "requests": "Search unit or name..."
+      }
+    },
+    "stats": {
+      "totalStaff": "Total Staff",
+      "onDuty": "On Duty Status",
+      "activeRequests": "Pending Requests",
+      "trends": {
+        "active": "Active",
+        "working": "Working",
+        "request": "Request",
+        "staffCount": "staff count",
+        "onDutyNow": "on duty now",
+        "residentCall": "resident call"
+      }
+    },
+    "staff": {
+      "title": "Staff List",
+      "addButton": "Add Staff",
+      "status": {
+        "onDuty": "On Duty",
+        "offDuty": "Off Duty",
+        "passive": "Passive"
+      },
+      "labels": {
+        "assignedBlocks": "Assigned Blocks",
+        "tasksCompleted": "Completed Tasks",
+        "contact": "Contact"
+      },
+      "table": {
+        "columns": {
+          "staff": "Staff",
+          "contact": "Contact",
+          "assignedBlocks": "Assigned Blocks",
+          "status": "Status",
+          "tasks": "Tasks",
+          "actions": "Actions"
+        }
+      },
+      "modals": {
+        "add": {
+          "title": "Add New Staff"
+        },
+        "edit": {
+          "title": "Edit Staff"
+        },
+        "labels": {
+          "fullName": "Full Name",
+          "phone": "Phone",
+          "assignedBlocks": "Assigned Blocks",
+          "status": "Status",
+          "phonePlaceholder": "05XX XXX XX XX",
+          "multipleBlocks": "* You can select multiple blocks."
+        },
+        "confirmations": {
+          "add": {
+            "title": "Add New Staff",
+            "message": "Do you want to save {{name}} as a new staff member?"
+          },
+          "edit": {
+            "title": "Update Staff",
+            "message": "Do you want to update the information of staff member {{name}}?"
+          },
+          "delete": {
+            "title": "Delete Staff",
+            "message": "Are you sure you want to delete staff member {{name}}? This action cannot be undone."
+          }
+        }
+      }
+    },
+    "requests": {
+      "filters": {
+        "all": "All",
+        "trash": "Trash",
+        "market": "Market",
+        "bread": "Bread",
+        "cleaning": "Cleaning"
+      },
+      "sorting": {
+        "label": "Sort:",
+        "pendingFirst": "Pending First",
+        "completedFirst": "Completed First"
+      },
+      "types": {
+        "trash": "Trash Collection",
+        "market": "Market",
+        "bread": "Bread Service",
+        "cleaning": "Cleaning",
+        "other": "Other"
+      },
+      "status": {
+        "pending": "Pending",
+        "completed": "Completed"
+      },
+      "table": {
+        "columns": {
+          "type": "Type",
+          "resident": "Resident Info",
+          "blockUnit": "Block / Unit",
+          "subject": "Request Subject",
+          "timeStatus": "Time / Status",
+          "actions": "Action"
+        },
+        "noResults": "No requests found matching the filters."
+      },
+      "labels": {
+        "completedBy": "Completed By",
+        "completedAt": "Completion Time",
+        "requestTime": "Request Time",
+        "note": "Note"
+      },
+      "modals": {
+        "detail": {
+          "title": "Request Details"
+        },
+        "actions": {
+          "complete": "Complete",
+          "markComplete": "Mark as Completed"
+        },
+        "completeConfirm": {
+          "title": "Complete Request Confirmation",
+          "message": "Are you sure you want to mark the \"{{type}}\" request from resident {{name}} as completed?"
+        }
+      }
+    },
+    "pagination": {
+      "showing": "Total",
+      "of": "of",
+      "records": "records showing"
+    }
+  },
+  "maintenance": {
+    "header": {
+      "title": "Maintenance & Support",
+      "createButton": "Create Request",
+      "searchPlaceholder": "Search..."
+    },
+    "viewMode": {
+      "list": "List",
+      "grid": "Card"
+    },
+    "emptyState": {
+      "title": "No Maintenance Requests Yet",
+      "description": "There are no maintenance or repair requests registered in the system at the moment. You can use the button below to create a new request.",
+      "createButton": "Create First Request"
+    },
+    "noResults": {
+      "title": "No Results Found",
+      "description": "No records found matching the search criteria. Clear the filters and try again."
+    }
+  },
+  "cargo": {
+    "header": {
+      "title": "Cargo & Couriers",
+      "tabs": {
+        "cargo": "Cargo",
+        "courier": "Couriers"
+      },
+      "searchPlaceholders": {
+        "cargo": "Tracking no, name or unit...",
+        "courier": "Company, unit or courier..."
+      },
+      "buttons": {
+        "accept": "Accept Cargo",
+        "acceptShort": "Accept"
+      }
+    },
+    "stats": {
+      "cargo": {
+        "pendingDelivery": {
+          "title": "Pending Delivery",
+          "trend": "Active",
+          "trendText": "awaiting distribution"
+        },
+        "expectedNotification": {
+          "title": "Expected Notification",
+          "trend": "Mobile",
+          "trendText": "resident notification"
+        },
+        "delivered": {
+          "title": "Delivered",
+          "trend": "Success",
+          "trendText": "total this month"
+        }
+      },
+      "courier": {
+        "inside": {
+          "title": "Couriers Inside",
+          "trend": "Active",
+          "trendText": "currently on site"
+        },
+        "pendingOrder": {
+          "title": "Pending Order",
+          "trend": "Request",
+          "trendText": "resident notification"
+        },
+        "todayEntry": {
+          "title": "Today Entry",
+          "trend": "Total",
+          "trendText": "courier movement"
+        }
+      }
+    },
+    "tabs": {
+      "inventory": "Inventory",
+      "expected": "Notifications"
+    },
+    "table": {
+      "columns": {
+        "cargoInfo": "Cargo Info",
+        "recipientUnit": "Recipient / Unit",
+        "arrivalTime": "Arrival Time",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "package": "Package",
+      "actions": {
+        "return": "Return",
+        "deliver": "Deliver"
+      },
+      "noRecords": "No records found."
+    },
+    "filters": {
+      "all": "All",
+      "pending": "Pending",
+      "delivered": "Delivered"
+    },
+    "modals": {
+      "confirmations": {
+        "deliver": {
+          "title": "Cargo Delivery",
+          "message": "Are you sure you want to deliver the package to the recipient?"
+        },
+        "return": {
+          "title": "Cargo Return",
+          "message": "Are you sure you want to mark the package as returned?"
+        },
+        "courierIn": {
+          "title": "Courier Entry",
+          "message": "Do you confirm the courier's entry to the site?"
+        },
+        "courierOut": {
+          "title": "Courier Exit",
+          "message": "Do you confirm the courier's exit from the site?"
+        }
+      }
+    }
+  },
+  "bookings": {
+    "header": {
+      "title": "Facilities & Bookings",
+      "searchPlaceholder": "Search booking...",
+      "facilityManagement": "Facility Management",
+      "createBooking": "Make Booking"
+    },
+    "facilities": {
+      "title": "Social Facilities",
+      "showAll": "Show All",
+      "status": {
+        "open": "Open",
+        "closed": "Closed",
+        "maintenance": "Maintenance"
+      },
+      "requiresBooking": "Booking Required",
+      "freeEntry": "Free Entry",
+      "active": "Active",
+      "schedule": "Schedule",
+      "free": "Free",
+      "perHour": "₺/hr"
+    },
+    "bookings": {
+      "allBookings": "All Bookings",
+      "facilitySchedule": "{{name}} Schedule",
+      "columns": {
+        "facility": "Facility",
+        "resident": "Resident",
+        "dateTime": "Date & Time",
+        "notes": "Notes",
+        "status": "Status",
+        "actions": "Approval Actions"
+      },
+      "status": {
+        "confirmed": "Confirmed",
+        "pending": "Pending",
+        "cancelled": "Cancelled"
+      },
+      "noRecords": "No records found.",
+      "viewModes": {
+        "list": "List",
+        "calendar": "Calendar"
+      },
+      "rejectionReason": "Reason: {{reason}}"
+    },
+    "modals": {
+      "booking": {
+        "title": "New Booking",
+        "labels": {
+          "facility": "Facility Selection",
+          "residentName": "Resident Name",
+          "unit": "Unit",
+          "date": "Date",
+          "startTime": "Start",
+          "endTime": "End",
+          "note": "Note (Optional)"
+        },
+        "placeholders": {
+          "facility": "Select Facility",
+          "residentName": "Full Name",
+          "unit": "e.g.: A-5",
+          "note": "Special requests..."
+        },
+        "buttons": {
+          "cancel": "Cancel",
+          "create": "Create"
+        },
+        "validation": "Please fill in all required fields."
+      },
+      "confirmation": {
+        "title": "Booking Summary",
+        "labels": {
+          "facility": "Facility",
+          "resident": "Booking Owner",
+          "time": "Time"
+        },
+        "info": "Your booking request will be created and submitted for manager approval.",
+        "buttons": {
+          "edit": "Edit",
+          "confirm": "Confirm"
+        }
+      },
+      "facility": {
+        "title": {
+          "add": "Add New Facility",
+          "edit": "Edit Facility"
+        },
+        "labels": {
+          "name": "Facility Name",
+          "image": "Image URL",
+          "status": "Status",
+          "capacity": "Capacity",
+          "hours": "Working Hours",
+          "pricePerHour": "Price (₺/Hr)",
+          "requiresBooking": "Booking is required for this facility"
+        },
+        "placeholders": {
+          "name": "e.g.: Swimming Pool",
+          "image": "https://...",
+          "hours": "08:00 - 22:00",
+          "capacity": "20",
+          "pricePerHour": "0"
+        },
+        "statusOptions": {
+          "open": "Open",
+          "closed": "Closed",
+          "maintenance": "Maintenance"
+        },
+        "buttons": {
+          "cancel": "Cancel",
+          "save": "Save"
+        }
+      },
+      "rejection": {
+        "title": "Rejection Reason",
+        "message": "Please specify the reason for rejecting the booking.",
+        "placeholder": "e.g.: Due to maintenance work...",
+        "buttons": {
+          "cancel": "Cancel",
+          "reject": "Reject"
+        }
+      },
+      "deleteFacility": {
+        "message": "Are you sure you want to delete this facility?"
+      }
+    }
+  }
+}
+

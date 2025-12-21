@@ -1,0 +1,2 @@
+export { AddResidentModal } from "./AddResidentModal";
+

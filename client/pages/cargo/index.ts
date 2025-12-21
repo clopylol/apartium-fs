@@ -1,0 +1,2 @@
+export { CargoPage } from "./CargoPage";
+

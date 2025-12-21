@@ -1,0 +1,26 @@
+{
+  "name": "apartium-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "client",
+    "server",
+    "shared"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:client\" \"npm run dev:server\"",
+    "dev:client": "npm --workspace=client run dev",
+    "dev:server": "npm --workspace=server run dev",
+    "build": "npm run build:shared && npm run build:client && npm run build:server",
+    "build:client": "npm --workspace=client run build",
+    "build:server": "npm --workspace=server run build",
+    "build:shared": "npm --workspace=shared run build",
+    "db:generate": "npm --workspace=server run db:generate",
+    "db:migrate": "npm --workspace=server run db:migrate",
+    "db:push": "npm --workspace=server run db:push",
+    "db:studio": "npm --workspace=server run db:studio"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}

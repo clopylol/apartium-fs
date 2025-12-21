@@ -1,0 +1,1173 @@
+{
+  "welcome": "Apartman Yönetimine Hoşgeldiniz",
+  "common": {
+    "buttons": {
+      "yes": "Evet",
+      "no": "Hayır",
+      "delete": "Sil",
+      "save": "Kaydet",
+      "cancel": "İptal",
+      "confirm": "Onayla",
+      "close": "Kapat",
+      "viewAll": "Tümünü Gör"
+    },
+    "status": {
+      "new": "Yeni",
+      "inProgress": "İşleniyor",
+      "completed": "Bitti",
+      "paid": "Ödendi",
+      "unpaid": "Ödenmedi"
+    },
+    "actions": {
+      "quickAction": "Hızlı İşlem",
+      "viewDetails": "Detayları Gör"
+    },
+    "pagination": {
+      "showing": "Toplam",
+      "of": "kayıttan",
+      "records": "arası gösteriliyor",
+      "previous": "Önceki sayfa",
+      "next": "Sonraki sayfa"
+    }
+  },
+  "dashboard": {
+    "welcome": {
+      "greeting": "Hoşgeldin, {{name}} 👋",
+      "dateLabel": "{{date}}"
+    },
+    "actions": {
+      "receivePayment": "Ödeme Al"
+    },
+    "stats": {
+      "totalIncome": "Toplam Gelir (Bu Ay)",
+      "occupancyRate": "Doluluk Oranı",
+      "openRequests": "Açık Talepler",
+      "upcomingEvents": "Yaklaşan Etkinlikler"
+    },
+    "statsLabels": {
+      "thisMonth": "bu ay",
+      "lastMonth": "geçen aya göre",
+      "thisWeek": "bu hafta",
+      "thisMonthReservation": "bu ay rezervasyon"
+    },
+    "chart": {
+      "title": "Yıllık Gelir Analizi",
+      "description": "Aylık aidat ve kira gelirleri",
+      "months": ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"]
+    },
+    "lists": {
+      "recentPayments": "Son Ödemeler",
+      "maintenanceRequests": "Bakım Talepleri",
+      "bookings": "Tesis Rezervasyonları",
+      "notifications": "Bildirimler",
+      "by": "tarafından",
+      "maintenanceTypes": {
+        "kitchen": "Mutfak Sorunu",
+        "general": "Genel Bakım",
+        "heating": "Isıtma/Soğutma"
+      }
+    },
+    "promo": {
+      "newTenantTitle": "Yeni Kiracı Girişi",
+      "newTenantDescription": "Bu ay 3 yeni daire kiraya verildi."
+    }
+  },
+  "community": {
+    "modals": {
+      "startPoll": {
+        "title": "Oylama Başlat",
+        "message": "\"{{title}}\" başlıklı oylamayı başlatmak istediğinize emin misiniz?"
+      },
+      "deleteRecord": {
+        "title": "Kaydı Sil",
+        "message": "Bu kaydı silmek istediğinize emin misiniz? Bu işlem geri alınamaz."
+      },
+      "deletePoll": {
+        "title": "Oylamayı Sil",
+        "message": "Bu oylamayı ve tüm sonuçlarını silmek istediğinize emin misiniz?"
+      },
+      "closePoll": {
+        "title": "Oylamayı Bitir",
+        "message": "Oylamayı sonlandırmak istiyor musunuz? Artık oy kullanılamayacak."
+      },
+      "sendReminder": {
+        "title": "Hatırlatma Gönder",
+        "message": "Seçilen {{count}} kişiye oylama hatırlatması gönderilecek. Onaylıyor musunuz?"
+      }
+    },
+    "messages": {
+      "alreadyVoted": "Zaten oy kullandınız.",
+      "noPollsFound": "Aktif veya geçmiş oylama bulunamadı.",
+      "author": "Yönetici",
+      "unit": "Yönetim"
+    },
+    "header": {
+      "title": "Topluluk & Oylama",
+      "searchRequests": "Talep veya öneri ara...",
+      "searchPolls": "Oylama ara...",
+      "tabs": {
+        "requests": "Talepler",
+        "polls": "Oylamalar"
+      },
+      "createButton": "Yeni Oluştur"
+    },
+    "table": {
+      "columns": {
+        "subject": "Konu",
+        "type": "Tipi",
+        "sender": "Gönderen",
+        "date": "Tarih",
+        "status": "Durum",
+        "actions": "İşlemler"
+      },
+      "noRecords": "Kayıt bulunamadı.",
+      "unit": "Daire"
+    },
+    "types": {
+      "wish": "İstek",
+      "suggestion": "Öneri"
+    },
+    "status": {
+      "active": "Aktif",
+      "closed": "Kapandı",
+      "pending": "Bekliyor",
+      "inProgress": "İşleniyor",
+      "resolved": "Çözüldü",
+      "rejected": "Reddedildi"
+    },
+    "pollCard": {
+      "vote": "Oy"
+    },
+    "createModal": {
+      "title": {
+        "poll": "Yeni Oylama Başlat",
+        "request": "Yeni İstek/Öneri Oluştur"
+      },
+      "labels": {
+        "type": "Tip",
+        "category": "Kategori",
+        "title": "Başlık",
+        "startDate": "Başlangıç Tarihi",
+        "endDate": "Bitiş Tarihi",
+        "description": "Açıklama"
+      },
+      "types": {
+        "request": "İstek/Öneri",
+        "poll": "Oylama"
+      },
+      "categories": {
+        "wish": "İstek",
+        "suggestion": "Öneri"
+      },
+      "placeholders": {
+        "pollTitle": "Örn: Cephe Boyası Seçimi",
+        "requestTitle": "Örn: Bahçeye Çardak",
+        "description": "Detayları buraya yazınız..."
+      },
+      "buttons": {
+        "cancel": "İptal",
+        "start": "Başlat",
+        "create": "Oluştur"
+      }
+    },
+    "pollDetail": {
+      "closed": "KAPANDI",
+      "endPoll": "Oylamayı Bitir",
+      "results": "Oylama Sonuçları",
+      "yes": "Evet",
+      "no": "Hayır",
+      "voters": "Oy Kullananlar",
+      "noVotes": "Henüz oy kullanılmadı.",
+      "participation": "Katılım Durumu",
+      "waiting": "Kişi Bekliyor",
+      "selectAll": "Tümünü Seç",
+      "selected": "seçildi",
+      "sendReminder": "Hatırlatma Gönder",
+      "notificationInfo": "Seçilen kişilere mobil uygulama üzerinden bildirim gönderilecektir."
+    },
+    "requestRow": {
+      "convertToSuggestion": "Öneriye Dönüştür",
+      "convertToPoll": "Oylamaya Sun"
+    },
+    "stats": {
+      "requests": {
+        "openRequests": "Açık İstekler",
+        "waiting": "Bekleyen",
+        "requestsPending": "talep var",
+        "newSuggestions": "Yeni Öneriler",
+        "idea": "Fikir",
+        "toEvaluate": "değerlendirilecek",
+        "completed": "Tamamlanan",
+        "resolved": "Çözüldü",
+        "thisMonth": "bu ay"
+      },
+      "polls": {
+        "activePolls": "Aktif Oylama",
+        "ongoing": "Süren",
+        "participationExpected": "katılım bekleniyor",
+        "totalParticipation": "Toplam Katılım",
+        "person": "Kişi",
+        "totalVotes": "toplam oy",
+        "completed": "Tamamlanan",
+        "ended": "Biten",
+        "concluded": "sonuçlandı"
+      }
+    },
+    "pagination": {
+      "showing": "Toplam",
+      "of": "kayıttan",
+      "records": "arası gösteriliyor"
+    }
+  },
+  "payments": {
+    "header": {
+      "title": "Mali Yönetim",
+      "generateDues": "Aidat Oluştur",
+      "exportReport": "Rapor"
+    },
+    "tabs": {
+      "income": "Gelirler (Aidat)",
+      "expenses": "Giderler"
+    },
+    "search": {
+      "income": "Sakin veya daire ara...",
+      "expenses": "Gider kalemi ara..."
+    },
+    "archive": {
+      "label": "Arşiv Dönemi"
+    },
+    "stats": {
+      "income": {
+        "collected": "Toplanan Aidat",
+        "collectionRate": "tahsilat oranı",
+        "pending": "Bekleyen Ödeme",
+        "notPaidYet": "henüz ödemedi",
+        "totalExpected": "Toplam Beklenti",
+        "budget": "{{year}} bütçesi"
+      },
+      "expenses": {
+        "total": "Toplam Gider",
+        "totalInvoice": "toplam fatura",
+        "paid": "Ödenen",
+        "paidSuccessfully": "başarıyla ödendi",
+        "toPay": "Ödenecek",
+        "pendingInvoice": "bekleyen fatura",
+        "items": "Kalem"
+      }
+    },
+    "filters": {
+      "all": "TÜMÜ",
+      "paid": "ÖDEYENLER",
+      "unpaid": "ÖDEMEYENLER"
+    },
+    "table": {
+      "columns": {
+        "unit": "Daire",
+        "resident": "Sakin",
+        "paymentType": "Ödeme Türü",
+        "amount": "Tutar",
+        "status": "Durum",
+        "action": "İşlem"
+      },
+      "noResults": "Arama kriterlerine uygun kayıt bulunamadı.",
+      "status": {
+        "paid": "Ödendi",
+        "unpaid": "Ödenmedi"
+      },
+      "sendReminder": "Hatırlatma Gönder"
+    },
+    "expenses": {
+      "total": "Top:",
+      "noExpenses": "Bu dönem için kayıtlı gider bulunmuyor.",
+      "addButton": "Yeni Gider Ekle",
+      "status": {
+        "paid": "Ödendi",
+        "pending": "Bekliyor"
+      },
+      "emptyState": {
+        "title": "Henüz Gider Kaydı Yok",
+        "description": "Bu dönem için henüz gider kaydı bulunmuyor. Yeni gider ekleyerek başlayabilirsiniz.",
+        "addButton": "İlk Gideri Ekle"
+      }
+    },
+    "modals": {
+      "confirmation": {
+        "title": {
+          "pay": "Ödeme Onayı",
+          "cancel": "Ödeme İptali"
+        },
+        "message": {
+          "pay": "{{name}} isimli sakinin tutarındaki ödemesini onaylıyor musunuz?",
+          "cancel": "{{name}} isimli sakinin tutarındaki ödemesini iptal etmek istiyor musunuz?"
+        },
+        "buttons": {
+          "cancel": "Vazgeç",
+          "confirm": "Onayla",
+          "cancelPayment": "İptal Et"
+        }
+      },
+      "dues": {
+        "title": "Aidat Planlaması",
+        "modes": {
+          "single": "Tek Ay",
+          "bulk": "Yıllık Plan (12 Ay)"
+        },
+        "locked": {
+          "title": "Dönem Kilitli",
+          "message": "Geçmiş dönemler ({{month}} {{year}}) için aidat düzenlemesi yapılamaz. Lütfen mevcut veya gelecek bir dönem seçiniz."
+        },
+        "info": "{{month}} {{year}} dönemi için tüm dairelere toplu aidat borcu oluşturulacaktır.",
+        "labels": {
+          "amount": "Aidat Tutarı (₺)",
+          "defaultAmount": "Varsayılan Tutar"
+        },
+        "buttons": {
+          "applyToAll": "Tümüne Uygula",
+          "cancel": "İptal",
+          "create": "Oluştur",
+          "savePlan": "Planı Kaydet"
+        }
+      },
+      "addExpense": {
+        "title": "Yeni Gider Ekle",
+        "labels": {
+          "category": "Gider Kategorisi",
+          "title": "Gider Başlığı / Alt Grup",
+          "select": "Seçiniz",
+          "other": "Diğer...",
+          "description": "Açıklama",
+          "amount": "Tutar (₺)",
+          "status": "Durum",
+          "attachment": "Fatura / Fiş Görseli"
+        },
+        "placeholders": {
+          "description": "Örn: Ekstra Tamirat"
+        },
+        "upload": {
+          "title": "Görsel Yükle",
+          "formats": "JPG, PNG, PDF",
+          "change": "Değiştir"
+        },
+        "status": {
+          "paid": "Ödendi",
+          "pending": "Ödenecek"
+        },
+        "buttons": {
+          "cancel": "İptal",
+          "save": "Kaydet"
+        }
+      },
+      "expenseDelete": {
+        "title": "Gider Silme Onayı",
+        "message": "Bu gider kaydını silmek istediğinize emin misiniz?",
+        "buttons": {
+          "delete": "Sil"
+        }
+      }
+    },
+    "actions": {
+      "bulkAction": {
+        "selected": "Kişi Seçildi",
+        "sendReminders": "Hatırlatma Gönder",
+        "cancel": "İptal"
+      }
+    },
+    "messages": {
+      "reminderSent": "Hatırlatma mesajı gönderildi! (ID: {{id}})",
+      "bulkReminderQueued": "{{count}} kişi için hatırlatma mesajı kuyruğa eklendi.",
+      "duesUpdated": "{{month}} {{year}} için {{amount}}₺ tutarında aidat kayıtları güncellendi.",
+      "duesPlanSaved": "Gelecek 12 ay için aidat planlaması başarıyla kaydedildi.",
+      "reportDownloading": "Rapor indiriliyor...",
+      "deleteExpenseConfirm": "Bu gider kaydını silmek istediğinize emin misiniz?"
+    },
+    "pagination": {
+      "total": "Toplam",
+      "of": "kayıttan",
+      "showing": "arası gösteriliyor"
+    },
+    "types": {
+      "dues": "aidat"
+    },
+    "categories": {
+      "utilities": "Faturalar",
+      "maintenance": "Bakım & Onarım",
+      "personnel": "Personel & Güvenlik",
+      "general": "Genel Giderler"
+    },
+    "emptyState": {
+      "title": "Henüz Ödeme Kaydı Yok",
+      "description": "Bu dönem için henüz ödeme kaydı bulunmuyor. Aidat oluşturarak başlayabilirsiniz.",
+      "generateButton": "Aidat Oluştur"
+    },
+    "errorState": {
+      "title": "Veri Yüklenemedi",
+      "retryButton": "Tekrar Dene"
+    },
+    "expenses": {
+      "total": "Top:",
+      "noExpenses": "Bu dönem için kayıtlı gider bulunmuyor.",
+      "addButton": "Yeni Gider Ekle",
+      "status": {
+        "paid": "Ödendi",
+        "pending": "Bekliyor"
+      },
+      "emptyState": {
+        "title": "Henüz Gider Kaydı Yok",
+        "description": "Bu dönem için henüz gider kaydı bulunmuyor. Yeni gider ekleyerek başlayabilirsiniz.",
+        "addButton": "İlk Gideri Ekle"
+      }
+    }
+  },
+  "residents": {
+    "header": {
+      "title": "Kiracılar & Otopark",
+      "tabs": {
+        "residents": "Sakinler",
+        "parking": "Otopark",
+        "guests": "Misafir"
+      },
+      "searchPlaceholders": {
+        "residents": "Daire, kişi veya plaka...",
+        "guests": "Plaka, misafir veya ev sahibi..."
+      }
+    },
+    "table": {
+      "columns": {
+        "unit": "Daire",
+        "status": "Durum",
+        "residents": "Sakinler",
+        "contact": "İletişim",
+        "vehicles": "Araç / Park",
+        "actions": "İşlemler"
+      },
+      "noRecords": "Kayıt bulunamadı."
+    },
+    "status": {
+      "occupied": "Dolu",
+      "empty": "Boş",
+      "owner": "Ev Sahibi",
+      "tenant": "Kiracı"
+    },
+    "actions": {
+      "addResident": "Sakin Ekle",
+      "addUnit": "Daire Ekle",
+      "edit": "Düzenle",
+      "delete": "Sil",
+      "manageVehicles": "Araç Yönetimi",
+      "manageVehiclesTooltip": "Araçları Yönet",
+      "noResidents": "Sakin Yok",
+      "noResidentsFound": "Sakin bulunmuyor",
+      "details": "Detaylar",
+      "addBuilding": "Yeni Blok Ekle",
+      "saveChanges": "Değişiklikleri Kaydet"
+    },
+    "stats": {
+      "occupied": "Dolu",
+      "empty": "Boş"
+    },
+    "messages": {
+      "addUnitDescription": "Bu bloğa yeni daire ekle",
+      "parkingSpot": "Park:",
+      "anonymousGuest": "İsimsiz Misafir",
+      "floor": "Kat",
+      "unitNumber": "No:",
+      "unitLabel": "Daire",
+      "unitSelect": "Daire Seçin",
+      "blockLabel": "Blok",
+      "blockSelect": "Blok Seçin",
+      "residentType": "Sakin Tipi",
+      "fullName": "Ad Soyad",
+      "fullNamePlaceholder": "Ad Soyad Giriniz",
+      "phone": "Telefon",
+      "email": "E-Posta (Opsiyonel)",
+      "vehicleNoteTitle": "Araç Ekleme",
+      "vehicleNoteDescription": "Sakini kaydettikten sonra listedeki \"Araç Yönetimi\" butonu ile birden fazla araç tanımlayabilirsiniz.",
+      "owner": "Ev Sahibi",
+      "tenant": "Kiracı"
+    },
+    "modals": {
+      "addResident": {
+        "title": "Yeni Sakin Ekle",
+        "cancel": "İptal",
+        "submit": "Sakin Ekle"
+      },
+      "editResident": {
+        "title": "Sakin Bilgilerini Düzenle",
+        "cancel": "İptal",
+        "save": "Değişiklikleri Kaydet"
+      },
+      "addBuilding": {
+        "title": "Yeni Blok Ekle",
+        "label": "BLOK ADI",
+        "placeholder": "Örn: D Blok",
+        "cancel": "İptal",
+        "save": "Kaydet"
+      },
+      "editBuilding": {
+        "title": "Bloğu Düzenle",
+        "label": "BLOK ADI",
+        "placeholder": "Blok Adı",
+        "cancel": "İptal",
+        "save": "Kaydet"
+      },
+      "deleteResident": {
+        "title": "Sakin Silme Onayı",
+        "message": "{{name}} isimli sakini silmek istediğinize emin misiniz? Bu işlem geri alınamaz."
+      },
+      "deleteBuilding": {
+        "title": "Blok Silme Onayı",
+        "message": "{{name}} adlı bloğu silmek istediğinize emin misiniz?",
+        "warning": "Bu işlem geri alınamaz ve bloğa ait tüm veriler silinir."
+      },
+      "checkIn": {
+        "title": "Giriş Yapılıyor",
+        "message": "Bu misafirin siteye girişini onaylıyor musunuz?",
+        "confirmText": "Giriş Yap"
+      },
+      "checkOut": {
+        "title": "Çıkış Yapılıyor",
+        "message": "Bu misafirin siteden çıkışını onaylıyor musunuz?",
+        "confirmText": "Çıkış Yap"
+      },
+      "vehicleManagement": {
+        "title": "Araç Yönetimi",
+        "residentLabel": "Sakin:",
+        "registeredVehicles": "Kayıtlı Araçlar",
+        "noVehicles": "Bu sakine ait kayıtlı araç bulunmuyor.",
+        "addNewVehicle": "Yeni Araç Ekle",
+        "labels": {
+          "plate": "Plaka",
+          "model": "Model",
+          "parkingSpot": "Park Yeri"
+        },
+        "placeholders": {
+          "plate": "34 ABC 123",
+          "model": "Örn: BMW 320i",
+          "parkingSpot": "Park Yeri Seçin (Opsiyonel)"
+        },
+        "actions": {
+          "deleteVehicle": "Aracı Sil",
+          "saveVehicle": "Aracı Kaydet",
+          "taken": "Dolu"
+        },
+        "deleteConfirm": {
+          "title": "Araç Silme Onayı",
+          "message": "{{plate}} plakalı aracı silmek istediğinize emin misiniz? Bu işlem geri alınamaz."
+        }
+      }
+    },
+    "table": {
+      "columnsUppercase": {
+        "unit": "DAİRE",
+        "status": "DURUM",
+        "residents": "SAKİNLER",
+        "contact": "İLETİŞİM",
+        "vehicles": "ARAÇ / PARK",
+        "actions": "İŞLEMLER"
+      },
+      "statusUppercase": {
+        "occupied": "DOLU",
+        "empty": "BOŞ"
+      },
+      "typeUppercase": {
+        "owner": "EV SAHİBİ",
+        "tenant": "KİRACI"
+      }
+    },
+    "parking": {
+      "floorManagement": {
+        "title": "Kat Yönetimi",
+        "addFloor": "Ekle",
+        "floorNumberPlaceholder": "Kat No (Örn: -3)",
+        "currentFloors": "Mevcut Katlar",
+        "deleteFloor": "Katı Sil",
+        "deleteConfirm": {
+          "title": "Kat Silme Onayı",
+          "message": "Bu katı silmek istediğinizden emin misiniz?"
+        },
+        "floorLabels": {
+          "ground": "Zemin Kat",
+          "basement": "{{floor}}. Bodrum"
+        }
+      },
+      "spotModal": {
+        "add": {
+          "title": "Park Yeri Ekle"
+        },
+        "edit": {
+          "title": "Park Yeri Düzenle"
+        },
+        "delete": {
+          "title": "Park Yeri Sil",
+          "message": "{{name}} numaralı park yerini silmek istediğinize emin misiniz?"
+        },
+        "labels": {
+          "floor": "Bulunduğu Kat",
+          "spotName": "Park Yeri Adı / No"
+        },
+        "placeholders": {
+          "spotName": "Örn: A-05"
+        },
+        "floorOptions": {
+          "ground": "Zemin Kat (0)",
+          "basement1": "1. Bodrum (-1)",
+          "basement2": "2. Bodrum (-2)",
+          "floor1": "1. Kat"
+        },
+        "buttons": {
+          "cancel": "İptal",
+          "save": "Kaydet",
+          "delete": "Evet, Sil"
+        }
+      },
+      "map": {
+        "title": "Otopark Düzeni",
+        "subtitle": "{{floor}} yerleşimi ve doluluk durumu.",
+        "empty": "Boş",
+        "occupied": "Dolu",
+        "manageFloors": "Katları Düzenle",
+        "unit": "Daire",
+        "assign": "Atama",
+        "noSpots": "Bu katta tanımlı park yeri yok.",
+        "addSpot": "Park Yeri Ekle",
+        "floorLabels": {
+          "ground": "Zemin Kat",
+          "basement": "{{floor}}. Bodrum"
+        }
+      },
+      "vehicleSearch": {
+        "title": "Araç Arama",
+        "subtitle": "{{count}} kayıt (Sakin + Misafir)",
+        "expand": "Genişlet",
+        "guestStatus": {
+          "pending": "Beklenen Misafir",
+          "active": "Misafir (İçeride)"
+        },
+        "noModel": "Araç Modeli Belirtilmemiş",
+        "parkingSpot": "Park Yeri:",
+        "mobileNotification": "Mobil Bildirim",
+        "noResults": "Araç bulunamadı."
+      },
+      "assignVehicle": {
+        "title": "Araç Atama",
+        "subtitle": "Park alanına araç atamak için listeden seçin",
+        "spotInfo": {
+          "title": "Park Alanı",
+          "floor": "Kat",
+          "status": "Durum"
+        },
+        "selectedVehicle": {
+          "title": "Seçilen Araç"
+        },
+        "searchPlaceholder": "Araç ara... (plaka, isim, daire)",
+        "vehicleCount": "{{count}} / {{total}} araç gösteriliyor",
+        "assignButton": "Araç Ata",
+        "filters": {
+          "all": "Tüm Araçlar",
+          "resident": "Sakin Araçları",
+          "guest": "Misafir Araçları"
+        }
+      },
+      "stats": {
+        "totalSpots": "Toplam Park Alanı",
+        "occupiedAndAvailable": "Dolu / Boş Alanlar",
+        "occupied": "Dolu",
+        "available": "Boş",
+        "occupancyRate": "Doluluk Oranı",
+        "guestVehicles": "Misafir Araçları",
+        "allFloors": "Tüm Katlar",
+        "currentStatus": "Mevcut Durum",
+        "utilization": "Kullanım Oranı",
+        "activeGuests": "Aktif Misafirler"
+      }
+    },
+    "guests": {
+      "filters": {
+        "all": "Tümü",
+        "pending": "Bekleyenler",
+        "active": "İçeridekiler",
+        "completed": "Çıkış Yapanlar",
+        "addGuest": "Misafir Kaydı"
+      },
+      "stats": {
+        "activeGuests": "İçerideki Misafir",
+        "active": "Aktif",
+        "vehicleParked": "araç park halinde",
+        "expectedVehicle": "Beklenen Araç",
+        "request": "Talep",
+        "willEnter": "giriş yapacak",
+        "todayEntries": "Bugün Giriş/Çıkış",
+        "completed": "Tamamlanan",
+        "visit": "ziyaret"
+      },
+      "table": {
+        "columns": {
+          "plateVehicle": "Plaka / Araç",
+          "host": "Ev Sahibi",
+          "visitDate": "Ziyaret Tarihi",
+          "statusSource": "Durum / Kaynak",
+          "actions": "İşlemler"
+        },
+        "guest": "Misafir",
+        "daysDuration": "Gün Süreli",
+        "status": {
+          "pending": "Bekliyor",
+          "active": "İçeride",
+          "completed": "Çıkış Yaptı"
+        },
+        "entry": "Giriş:",
+        "exit": "Çıkış:",
+        "source": {
+          "mobileNotification": "Mobil Bildirim",
+          "manualRecord": "Manuel Kayıt"
+        },
+        "noRecords": "Kayıt bulunamadı."
+      },
+      "modals": {
+        "addGuest": {
+          "title": "Yeni Misafir Araç Kaydı",
+          "labels": {
+            "block": "Blok",
+            "blockSelect": "Blok Seçin",
+            "unit": "Daire",
+            "unitSelect": "Daire Seçin",
+            "guestName": "Misafir Adı Soyadı",
+            "guestNamePlaceholder": "Ad Soyad",
+            "plate": "Araç Plakası",
+            "platePlaceholder": "34 ABC 123",
+            "model": "Model (Opsiyonel)",
+            "modelPlaceholder": "Örn: VW Golf",
+            "color": "Renk (Opsiyonel)",
+            "colorPlaceholder": "Örn: Siyah",
+            "duration": "Ziyaret Süresi (Gün)",
+            "days": "Gün",
+            "note": "Not",
+            "notePlaceholder": "Varsa notunuz..."
+          },
+          "buttons": {
+            "cancel": "İptal",
+            "saveAndCheckIn": "Kaydet & Giriş Yap"
+          }
+        },
+        "detail": {
+          "title": "Misafir Detayları",
+          "status": {
+            "pending": "Bekliyor",
+            "active": "İçeride",
+            "completed": "Çıkış Yaptı"
+          },
+          "source": {
+            "mobileNotification": "Mobil Bildirim",
+            "manualRecord": "Manuel Kayıt"
+          },
+          "labels": {
+            "host": "Ev Sahibi",
+            "visit": "Ziyaret",
+            "daysDuration": "Gün Süreli",
+            "entry": "Giriş:",
+            "exit": "Çıkış:",
+            "note": "Not"
+          },
+          "placeholders": {
+            "noModel": "Model Belirtilmemiş",
+            "anonymousGuest": "İsimsiz Misafir"
+          },
+          "buttons": {
+            "close": "Kapat",
+            "checkIn": "Giriş Yap",
+            "checkOut": "Çıkış Yap"
+          }
+        },
+        "confirmation": {
+          "defaultConfirm": "Onayla",
+          "defaultCancel": "Vazgeç"
+        }
+      }
+    }
+  },
+  "janitor": {
+    "header": {
+      "title": "Kapıcı Hizmetleri",
+      "tabs": {
+        "staff": "Personel",
+        "requests": "Talepler"
+      },
+      "search": {
+        "staff": "Personel ara...",
+        "requests": "Daire veya isim ara..."
+      }
+    },
+    "stats": {
+      "totalStaff": "Toplam Personel",
+      "onDuty": "Mesai Durumu",
+      "activeRequests": "Bekleyen Talep",
+      "trends": {
+        "active": "Aktif",
+        "working": "Çalışıyor",
+        "request": "İstek",
+        "staffCount": "görevli sayısı",
+        "onDutyNow": "şu an görevde",
+        "residentCall": "sakin çağrısı"
+      }
+    },
+    "staff": {
+      "title": "Görevli Listesi",
+      "addButton": "Personel Ekle",
+      "status": {
+        "onDuty": "Mesaide",
+        "offDuty": "İzinli",
+        "passive": "Pasif"
+      },
+      "labels": {
+        "assignedBlocks": "Sorumlu Olduğu Bloklar",
+        "tasksCompleted": "Tamamlanan Görevler",
+        "contact": "İletişim"
+      },
+      "table": {
+        "columns": {
+          "staff": "Personel",
+          "contact": "İletişim",
+          "assignedBlocks": "Sorumlu Bloklar",
+          "status": "Durum",
+          "tasks": "Görevler",
+          "actions": "İşlemler"
+        }
+      },
+      "modals": {
+        "add": {
+          "title": "Yeni Personel Ekle"
+        },
+        "edit": {
+          "title": "Personel Düzenle"
+        },
+        "labels": {
+          "fullName": "Ad Soyad",
+          "phone": "Telefon",
+          "assignedBlocks": "Sorumlu Olduğu Bloklar",
+          "status": "Durum",
+          "phonePlaceholder": "05XX XXX XX XX",
+          "multipleBlocks": "* Birden fazla blok seçebilirsiniz."
+        },
+        "confirmations": {
+          "add": {
+            "title": "Yeni Personel Ekle",
+            "message": "{{name}} isimli yeni personeli sisteme kaydetmek istiyor musunuz?"
+          },
+          "edit": {
+            "title": "Personel Güncelle",
+            "message": "{{name}} isimli personelin bilgilerini güncellemek istiyor musunuz?"
+          },
+          "delete": {
+            "title": "Personeli Sil",
+            "message": "{{name}} isimli personeli silmek istediğinize emin misiniz? Bu işlem geri alınamaz."
+          }
+        }
+      }
+    },
+    "requests": {
+      "filters": {
+        "all": "Tümü",
+        "trash": "Çöp",
+        "market": "Market",
+        "bread": "Ekmek",
+        "cleaning": "Temizlik"
+      },
+      "sorting": {
+        "label": "Sırala:",
+        "pendingFirst": "Önce Bekleyenler",
+        "completedFirst": "Önce Tamamlananlar"
+      },
+      "types": {
+        "trash": "Çöp Alma",
+        "market": "Market",
+        "bread": "Ekmek Servisi",
+        "cleaning": "Temizlik",
+        "other": "Diğer"
+      },
+      "status": {
+        "pending": "Bekliyor",
+        "completed": "Tamamlandı"
+      },
+      "table": {
+        "columns": {
+          "type": "Tip",
+          "resident": "Sakin Bilgisi",
+          "blockUnit": "Blok / Daire",
+          "subject": "Talep Konusu",
+          "timeStatus": "Zaman / Durum",
+          "actions": "İşlem"
+        },
+        "noResults": "Filtrelere uygun talep bulunmuyor."
+      },
+      "labels": {
+        "completedBy": "Tamamlayan",
+        "completedAt": "Tamamlanma Zamanı",
+        "requestTime": "Talep Zamanı",
+        "note": "Not"
+      },
+      "modals": {
+        "detail": {
+          "title": "Talep Detayları"
+        },
+        "actions": {
+          "complete": "Tamamla",
+          "markComplete": "Tamamlandı Olarak İşaretle"
+        },
+        "completeConfirm": {
+          "title": "Talep Tamamlama Onayı",
+          "message": "{{name}} isimli sakine ait \"{{type}}\" talebini tamamlandı olarak işaretlemek istediğinize emin misiniz?"
+        }
+      }
+    },
+    "pagination": {
+      "showing": "Toplam",
+      "of": "kayıttan",
+      "records": "arası gösteriliyor"
+    }
+  },
+  "maintenance": {
+    "header": {
+      "title": "Bakım & Destek",
+      "createButton": "Talep Oluştur",
+      "searchPlaceholder": "Ara..."
+    },
+    "viewMode": {
+      "list": "Liste",
+      "grid": "Kart"
+    },
+    "emptyState": {
+      "title": "Henüz Bakım Talebi Yok",
+      "description": "Şu an sistemde kayıtlı bir arıza veya bakım talebi bulunmuyor. Yeni bir talep oluşturmak için aşağıdaki butonu kullanabilirsiniz.",
+      "createButton": "İlk Talebi Oluştur"
+    },
+    "noResults": {
+      "title": "Sonuç Bulunamadı",
+      "description": "Arama kriterlerine uygun kayıt bulunamadı. Filtreleri temizleyip tekrar deneyin."
+    }
+  },
+  "cargo": {
+    "header": {
+      "title": "Kargolar & Kuryeler",
+      "tabs": {
+        "cargo": "Kargolar",
+        "courier": "Kuryeler"
+      },
+      "searchPlaceholders": {
+        "cargo": "Takip no, isim veya daire...",
+        "courier": "Firma, daire veya kurye..."
+      },
+      "buttons": {
+        "accept": "Kargo Kabul",
+        "acceptShort": "Kabul"
+      }
+    },
+    "stats": {
+      "cargo": {
+        "pendingDelivery": {
+          "title": "Teslim Bekleyen",
+          "trend": "Aktif",
+          "trendText": "dağıtım bekliyor"
+        },
+        "expectedNotification": {
+          "title": "Gelecek Bildirimi",
+          "trend": "Mobil",
+          "trendText": "sakin bildirimi"
+        },
+        "delivered": {
+          "title": "Teslim Edilen",
+          "trend": "Başarılı",
+          "trendText": "bu ay toplam"
+        }
+      },
+      "courier": {
+        "inside": {
+          "title": "İçerideki Kurye",
+          "trend": "Aktif",
+          "trendText": "şu an sitede"
+        },
+        "pendingOrder": {
+          "title": "Beklenen Sipariş",
+          "trend": "Talep",
+          "trendText": "sakin bildirimi"
+        },
+        "todayEntry": {
+          "title": "Bugün Giriş",
+          "trend": "Toplam",
+          "trendText": "kurye hareketi"
+        }
+      }
+    },
+    "tabs": {
+      "inventory": "Envanter",
+      "expected": "Bildirimler"
+    },
+    "table": {
+      "columns": {
+        "cargoInfo": "Kargo Bilgisi",
+        "recipientUnit": "Alıcı / Daire",
+        "arrivalTime": "Geliş Zamanı",
+        "status": "Durum",
+        "actions": "İşlemler"
+      },
+      "package": "Paket",
+      "actions": {
+        "return": "İade Et",
+        "deliver": "Teslim Et"
+      },
+      "noRecords": "Kayıt bulunamadı."
+    },
+    "filters": {
+      "all": "Tümü",
+      "pending": "Bekleyen",
+      "delivered": "Teslim"
+    },
+    "modals": {
+      "confirmations": {
+        "deliver": {
+          "title": "Kargo Teslimatı",
+          "message": "Paketi alıcıya teslim etmek istediğinize emin misiniz?"
+        },
+        "return": {
+          "title": "Kargo İadesi",
+          "message": "Paketi iade olarak işaretlemek istediğinize emin misiniz?"
+        },
+        "courierIn": {
+          "title": "Kurye Girişi",
+          "message": "Kuryenin siteye girişini onaylıyor musunuz?"
+        },
+        "courierOut": {
+          "title": "Kurye Çıkışı",
+          "message": "Kuryenin siteden çıkışını onaylıyor musunuz?"
+        }
+      }
+    }
+  },
+  "bookings": {
+    "header": {
+      "title": "Tesisler & Rezervasyonlar",
+      "searchPlaceholder": "Rezervasyon ara...",
+      "facilityManagement": "Tesis Yönetimi",
+      "createBooking": "Rezervasyon Yap"
+    },
+    "facilities": {
+      "title": "Sosyal Tesisler",
+      "showAll": "Tümünü Göster",
+      "status": {
+        "open": "Açık",
+        "closed": "Kapalı",
+        "maintenance": "Bakımda"
+      },
+      "requiresBooking": "Rezervasyon Gerekli",
+      "freeEntry": "Serbest Giriş",
+      "active": "Aktif",
+      "schedule": "Program",
+      "free": "Ücretsiz",
+      "perHour": "₺/sa"
+    },
+    "bookings": {
+      "allBookings": "Tüm Rezervasyonlar",
+      "facilitySchedule": "{{name}} Programı",
+      "columns": {
+        "facility": "Tesis",
+        "resident": "Sakin",
+        "dateTime": "Tarih & Saat",
+        "notes": "Notlar",
+        "status": "Durum",
+        "actions": "Onay İşlemleri"
+      },
+      "status": {
+        "confirmed": "Onaylandı",
+        "pending": "Bekliyor",
+        "cancelled": "İptal"
+      },
+      "noRecords": "Kayıt bulunamadı.",
+      "viewModes": {
+        "list": "Liste",
+        "calendar": "Takvim"
+      },
+      "rejectionReason": "Sebep: {{reason}}"
+    },
+    "modals": {
+      "booking": {
+        "title": "Yeni Rezervasyon",
+        "labels": {
+          "facility": "Tesis Seçimi",
+          "residentName": "Sakin Adı",
+          "unit": "Daire",
+          "date": "Tarih",
+          "startTime": "Başlangıç",
+          "endTime": "Bitiş",
+          "note": "Not (Opsiyonel)"
+        },
+        "placeholders": {
+          "facility": "Tesis Seçiniz",
+          "residentName": "Ad Soyad",
+          "unit": "Örn: A-5",
+          "note": "Özel istekler..."
+        },
+        "buttons": {
+          "cancel": "İptal",
+          "create": "Oluştur"
+        },
+        "validation": "Lütfen tüm zorunlu alanları doldurunuz."
+      },
+      "confirmation": {
+        "title": "Rezervasyon Özeti",
+        "labels": {
+          "facility": "Tesis",
+          "resident": "Rezervasyon Sahibi",
+          "time": "Zaman"
+        },
+        "info": "Rezervasyon talebiniz yönetici onayına sunulmak üzere oluşturulacaktır.",
+        "buttons": {
+          "edit": "Düzenle",
+          "confirm": "Onayla"
+        }
+      },
+      "facility": {
+        "title": {
+          "add": "Yeni Tesis Ekle",
+          "edit": "Tesis Düzenle"
+        },
+        "labels": {
+          "name": "Tesis Adı",
+          "image": "Görsel URL",
+          "status": "Durum",
+          "capacity": "Kapasite",
+          "hours": "Çalışma Saatleri",
+          "pricePerHour": "Ücret (₺/Sa)",
+          "requiresBooking": "Bu tesis için rezervasyon zorunludur"
+        },
+        "placeholders": {
+          "name": "Örn: Yüzme Havuzu",
+          "image": "https://...",
+          "hours": "08:00 - 22:00",
+          "capacity": "20",
+          "pricePerHour": "0"
+        },
+        "statusOptions": {
+          "open": "Açık",
+          "closed": "Kapalı",
+          "maintenance": "Bakımda"
+        },
+        "buttons": {
+          "cancel": "İptal",
+          "save": "Kaydet"
+        }
+      },
+      "rejection": {
+        "title": "Reddetme Nedeni",
+        "message": "Lütfen rezervasyonu reddetme sebebinizi belirtiniz.",
+        "placeholder": "Örn: Bakım çalışması nedeniyle...",
+        "buttons": {
+          "cancel": "Vazgeç",
+          "reject": "Reddet"
+        }
+      },
+      "deleteFacility": {
+        "message": "Bu tesisi silmek istediğinize emin misiniz?"
+      }
+    }
+  }
+}
+

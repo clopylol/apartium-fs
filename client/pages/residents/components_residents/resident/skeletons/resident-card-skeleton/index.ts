@@ -1,0 +1,1 @@
+export { ResidentCardSkeleton } from "./ResidentCardSkeleton";

@@ -1,0 +1,1 @@
+export { PaymentsHeader } from './PaymentsHeader';

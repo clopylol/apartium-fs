@@ -1,0 +1,1 @@
+export { ParkingMapSkeleton } from "./ParkingMapSkeleton";

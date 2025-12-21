@@ -1,0 +1,2 @@
+export { PollCard } from "./PollCard";
+

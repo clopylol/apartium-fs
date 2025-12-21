@@ -1,0 +1,391 @@
+---
+alwaysApply: true
+---
+---
+alwaysApply: true
+---
+
+# DS Industry UI - React TypeScript Project Rules
+
+## 🎨 RENK VE TEMA SİSTEMİ KURALLARI (KRİTİK!)
+
+### ⚠️ SABİT RENK KULLANIMI YASAK!
+**ASLA** hex kod (#FFFFFF), rgb, hsl gibi sabit renk değerleri kullanma!
+
+❌ **YASAK:**
+```tsx
+<div className="bg-[#1DE4D4]">...</div>
+<div style={{ color: '#000A0D' }}>...</div>
+<svg fill="#EF4749">...</svg>
+```
+
+✅ **ZORUNLU:**
+```tsx
+<div className="bg-ds-secondary-dark">...</div>
+<div className="text-ds-secondary-light">...</div>
+<svg fill="currentColor">...</svg>
+```
+
+### SADECE TAILWIND.CONFIG.JS RENKLERİ KULLANILMALI
+Tüm renkler `tailwind.config.js` içinde tanımlıdır. Semantic renk isimleri kullan:
+- `ds-background`, `ds-card`, `ds-primary`, `ds-secondary`, `ds-muted`, `ds-accent`
+- `ds-destructive`, `ds-warning`, `ds-success`
+- `ds-border`, `ds-input`, `ds-ring`
+- `ds-sidebar-*` renkleri
+- Palet renkleri: `ds-in-deepteal`, `ds-in-teal`, `ds-in-slate`, `ds-in-indigo`
+
+### LIGHT/DARK MODE ZORUNLU
+Her component **mutlaka** light ve dark mode destekli olmalı!
+
+✅ **DOĞRU:**
+```tsx
+<div className="bg-ds-background-light dark:bg-ds-background-dark 
+                text-ds-secondary-light dark:text-ds-secondary-dark">
+```
+
+❌ **YANLIŞ:**
+```tsx
+<div className="bg-white text-black">  {/* Dark mode yok! */}
+```
+
+### SVG ICON'LAR currentColor KULLANMALI
+```tsx
+// ✅ DOĞRU
+<svg fill="currentColor" stroke="currentColor">
+  <path fill="currentColor" />
+</svg>
+
+// ❌ YANLIŞ
+<svg fill="#1DE4D4">  {/* Sabit renk yasak! */}
+```
+
+### RENK ADLANDIRMA KURALI
+`tailwind.config.js` dosyasındaki yapı:
+- `foreground` olanlar → **light mode** rengi
+- `foreground` olmayanlar → **dark mode** rengi
+
+Örnek:
+```js
+'ds-muted': {
+  light: '#B2C1CE',  // muted-foreground (light mode)
+  dark: '#F1F5F9',   // muted (dark mode)
+}
+```
+
+---
+
+## TypeScript Kuralları
+- Her zaman strict mode kullan
+- `any` tipinden kaçın, gerekirse `unknown` kullan
+- Interface'leri component prop'ları için kullan
+- Type'ları utility type'lar için kullan
+- Tüm fonksiyonların dönüş tipleri açıkça belirtilmeli
+- Optional chaining (`?.`) ve nullish coalescing (`??`) operatörlerini tercih et
+- `verbatimModuleSyntax` etkin - type import'ları `import type` ile yapılmalı
+
+## React Kuralları
+- Functional component'ler kullan (class component yok)
+- Custom hook'lar `use` prefix'i ile başlamalı
+- Props interface'i component'ten önce tanımlanmalı
+- Component isimleri PascalCase olmalı
+- Hook'lar component'in en üstünde çağrılmalı
+- Gereksiz re-render'ları önlemek için `useMemo`, `useCallback` kullan
+- Key prop'larını array index yerine unique ID ile kullan
+
+## Component Yapısı
+```typescript
+// 1. Import'lar
+import { useState, useEffect } from 'react';
+import type { FC } from 'react';
+
+// 2. Type/Interface tanımlamaları
+interface ComponentProps {
+  prop1: string;
+  prop2?: number;
+}
+
+// 3. Component tanımı
+export const Component: FC<ComponentProps> = ({ prop1, prop2 }) => {
+  // 4. Hook'lar
+  const [state, setState] = useState<string>('');
+  
+  // 5. Fonksiyonlar
+  const handleClick = () => {
+    // ...
+  };
+  
+  // 6. Effects
+  useEffect(() => {
+    // ...
+  }, []);
+  
+  // 7. Render
+  return <div>{/* ... */}</div>;
+};
+```
+
+## ⚠️ ÖNEMLİ: Component ve Context Organizasyonu
+
+**KURAL: Her component ve context kendi klasöründe olmalıdır!**
+
+❌ **YANLIŞ:**
+```
+src/
+  components/
+    ThemeToggle.tsx      ❌ Direkt dosya açma!
+  contexts/
+    ThemeContext.tsx     ❌ Direkt dosya açma!
+  pages/
+    Dashboard.tsx        ❌ Direkt dosya açma!
+```
+
+✅ **DOĞRU:**
+```
+src/
+  components/
+    theme-toggle/
+      ThemeToggle.tsx
+      index.ts           ✅ Export yönetimi için index.ts
+  contexts/
+    theme/
+      ThemeContext.tsx
+      index.ts           ✅ Export yönetimi için index.ts
+  icons/
+    GlobeIcon.tsx
+    BellIcon.tsx
+    index.ts
+  pages/
+    dashboard/
+      DashboardPage.tsx
+      index.ts           ✅ Her sayfa kendi klasöründe
+    design-system/
+      DesignSystemPage.tsx
+      index.ts
+```
+
+## Pages Klasörü Kuralları
+
+**ZORUNLU:** Her sayfa kendi klasöründe `*Page.tsx` formatında olmalıdır!
+
+```
+pages/
+├── dashboard/
+│   ├── DashboardPage.tsx
+│   └── index.ts
+├── design-system/
+│   ├── DesignSystemPage.tsx
+│   └── index.ts
+├── assets/
+│   ├── AssetsPage.tsx
+│   └── index.ts
+└── index.ts (tüm sayfaları export eder)
+```
+
+**Sayfa İsimlendirme:**
+- Dosya: `*Page.tsx` (örn: `DashboardPage.tsx`, `DesignSystemPage.tsx`)
+- Klasör: `kebab-case` (örn: `dashboard`, `design-system`, `user-settings`)
+- Her klasörde `index.ts` zorunlu
+
+**index.ts Örneği:**
+```typescript
+// pages/dashboard/index.ts
+export { DashboardPage } from "./DashboardPage";
+```
+
+## Routing Sistemi
+
+### React Router Kullanımı
+Proje React Router kullanır. Tüm route'lar `src/routes/routes.ts` dosyasında tanımlıdır.
+
+**Route Tanımlama:**
+```typescript
+// routes/routes.ts
+import type { ComponentType } from "react";
+import { DashboardLayout, BlankLayout } from "@/components/layout";
+
+export interface RouteConfig {
+  path: string;
+  component: ComponentType;
+  layout: LayoutType;  // DashboardLayout veya BlankLayout
+  title: string;
+}
+
+export const routes: RouteConfig[] = [
+  {
+    path: "/dashboard",
+    component: DashboardPage,
+    layout: DashboardLayout,  // Layout seçimi
+    title: "Dashboard",
+  },
+  {
+    path: "/login",
+    component: LoginPage,
+    layout: BlankLayout,  // Navbar olmayan layout
+    title: "Login",
+  },
+];
+```
+
+**Router Yapısı:**
+```typescript
+// routes/Router.tsx
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { routes } from "./routes";
+
+export function Router() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        {routes.map((route) => {
+          const Layout = route.layout;
+          const Page = route.component;
+          
+          return (
+            <Route
+              key={route.path}
+              path={route.path}
+              element={
+                <Layout>
+                  <Page />
+                </Layout>
+              }
+            />
+          );
+        })}
+      </Routes>
+    </BrowserRouter>
+  );
+}
+```
+
+**ÖNEMLİ:** Sayfalar artık layout içermeZ! Layout Router'da belirlenir.
+
+❌ **YANLIŞ:**
+```tsx
+// pages/dashboard/DashboardPage.tsx
+export function DashboardPage() {
+  return (
+    <DashboardLayout>  {/* Layout sayfa içinde olmamalı! */}
+      <div>İçerik</div>
+    </DashboardLayout>
+  );
+}
+```
+
+✅ **DOĞRU:**
+```tsx
+// pages/dashboard/DashboardPage.tsx
+export function DashboardPage() {
+  return (
+    <div>İçerik</div>  {/* Layout Router'da */}
+  );
+}
+
+// routes/routes.ts
+{
+  path: "/dashboard",
+  component: DashboardPage,
+  layout: DashboardLayout,  // Layout burada belirlenir
+  title: "Dashboard",
+}
+```
+
+**Navigasyon Kullanımı:**
+```typescript
+import { useNavigate, useLocation } from "react-router-dom";
+
+// Component içinde
+const navigate = useNavigate();
+const location = useLocation();
+
+// Navigate
+navigate("/dashboard");
+
+// Current path
+const isActive = location.pathname === "/dashboard";
+```
+
+## Path Alias Kullanımı
+
+Tüm import'larda `@/` path alias'ı kullanılmalıdır:
+
+```typescript
+// ✅ Doğru
+import { ThemeToggle } from '@/components/theme-toggle';
+import { useTheme } from '@/contexts/theme';
+import { GlobeIcon } from '@/components/icons';
+
+// ❌ Yanlış
+import { ThemeToggle } from '../../components/theme-toggle';
+import { ThemeToggle } from '@/components/theme-toggle/ThemeToggle';
+```
+
+## Import Sıralaması
+1. React ve external kütüphaneler
+2. Context'ler
+3. Component'ler
+4. Icons
+5. Hooks
+6. Utils/Services
+7. Types
+8. Constants
+9. Assets/Images
+
+```typescript
+// 1. External & React
+import { useState } from 'react';
+import type { FC } from 'react';
+
+// 2. Contexts
+import { useTheme } from '@/contexts/theme';
+
+// 3. Components
+import { Button } from '@/components/button';
+
+// 4. Icons
+import { GlobeIcon, BellIcon } from '@/components/icons';
+
+// 5. Hooks
+import { useDebounce } from '@/hooks/useDebounce';
+
+// 6. Utils
+import { formatDate } from '@/utils/formatDate';
+
+// 7. Types
+import type { User } from '@/types/User.types';
+
+// 8. Constants
+import { API_BASE_URL } from '@/constants/API_ENDPOINTS';
+
+// 9. Assets
+import logo from '@/assets/images/logo.png';
+```
+
+## Kod Stili
+- 2 boşluk indentation kullan
+- Çift tırnak (`"`) kullan
+- Noktalı virgül kullan
+- Trailing comma kullan
+- Arrow function tercih et
+- Template literal kullan
+- Destructuring kullan
+
+## 🚨 KRİTİK HATIRLATMALAR
+
+### YAPILMAMASI GEREKENLER:
+1. ❌ Sabit renk kodları (#hex, rgb, hsl)
+2. ❌ Dark mode desteği olmayan component
+3. ❌ SVG'lerde sabit renk (currentColor kullan)
+4. ❌ Component'leri direkt klasör altına koyma
+5. ❌ index.ts olmadan klasör oluşturma
+6. ❌ Relative path kullanma
+7. ❌ `any` tipi kullanma
+
+### YAPILMASI GEREKENLER:
+1. ✅ `tailwind.config.js` renklerini kullan
+2. ✅ Light/dark mode destekli component yaz
+3. ✅ SVG icon'lar `currentColor` kullanmalı
+4. ✅ Her component/context kendi klasöründe
+5. ✅ Her klasörde `index.ts` olmalı
+6. ✅ `@/` path alias kullan
+7. ✅ Type safety sağla

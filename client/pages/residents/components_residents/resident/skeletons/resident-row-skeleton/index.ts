@@ -1,0 +1,1 @@
+export { ResidentRowSkeleton } from "./ResidentRowSkeleton";
