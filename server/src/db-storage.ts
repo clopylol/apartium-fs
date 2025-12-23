@@ -1,4 +1,4 @@
-import { eq, and, desc, gte, lte, count } from 'drizzle-orm';
+import { eq, and, desc, gte, lte, count, isNull, sql } from 'drizzle-orm';
 import { db } from './db/index.js';
 import type { IStorage } from './storage.js';
 import * as schema from 'apartium-shared';
@@ -38,16 +38,40 @@ export class DatabaseStorage implements IStorage {
         const [user] = await db
             .select()
             .from(schema.users)
-            .where(eq(schema.users.email, email))
+            .where(
+                and(
+                    eq(schema.users.email, email),
+                    isNull(schema.users.deletedAt)
+                )
+            )
             .limit(1);
         return user || null;
+    }
+
+    async getResidentByEmail(email: string): Promise<Resident | null> {
+        const [resident] = await db
+            .select()
+            .from(schema.residents)
+            .where(
+                and(
+                    eq(schema.residents.email, email),
+                    isNull(schema.residents.deletedAt)
+                )
+            )
+            .limit(1);
+        return resident || null;
     }
 
     async getUserById(id: string): Promise<User | null> {
         const [user] = await db
             .select()
             .from(schema.users)
-            .where(eq(schema.users.id, id))
+            .where(
+                and(
+                    eq(schema.users.id, id),
+                    isNull(schema.users.deletedAt)
+                )
+            )
             .limit(1);
         return user || null;
     }
@@ -75,14 +99,22 @@ export class DatabaseStorage implements IStorage {
 
     // ==================== BUILDINGS ====================
     async getAllBuildings(): Promise<Building[]> {
-        return await db.select().from(schema.buildings);
+        return await db
+            .select()
+            .from(schema.buildings)
+            .where(isNull(schema.buildings.deletedAt));
     }
 
     async getBuildingById(id: string): Promise<Building | null> {
         const [building] = await db
             .select()
             .from(schema.buildings)
-            .where(eq(schema.buildings.id, id))
+            .where(
+                and(
+                    eq(schema.buildings.id, id),
+                    isNull(schema.buildings.deletedAt)
+                )
+            )
             .limit(1);
         return building || null;
     }
@@ -106,7 +138,8 @@ export class DatabaseStorage implements IStorage {
 
     async deleteBuilding(id: string): Promise<void> {
         await db
-            .delete(schema.buildings)
+            .update(schema.buildings)
+            .set({ deletedAt: new Date() })
             .where(eq(schema.buildings.id, id));
     }
 
@@ -115,14 +148,24 @@ export class DatabaseStorage implements IStorage {
         return await db
             .select()
             .from(schema.units)
-            .where(eq(schema.units.buildingId, buildingId));
+            .where(
+                and(
+                    eq(schema.units.buildingId, buildingId),
+                    isNull(schema.units.deletedAt)
+                )
+            );
     }
 
     async getUnitById(id: string): Promise<Unit | null> {
         const [unit] = await db
             .select()
             .from(schema.units)
-            .where(eq(schema.units.id, id))
+            .where(
+                and(
+                    eq(schema.units.id, id),
+                    isNull(schema.units.deletedAt)
+                )
+            )
             .limit(1);
         return unit || null;
     }
@@ -146,7 +189,8 @@ export class DatabaseStorage implements IStorage {
 
     async deleteUnit(id: string): Promise<void> {
         await db
-            .delete(schema.units)
+            .update(schema.units)
+            .set({ deletedAt: new Date() })
             .where(eq(schema.units.id, id));
     }
 
@@ -155,14 +199,24 @@ export class DatabaseStorage implements IStorage {
         return await db
             .select()
             .from(schema.residents)
-            .where(eq(schema.residents.unitId, unitId));
+            .where(
+                and(
+                    eq(schema.residents.unitId, unitId),
+                    isNull(schema.residents.deletedAt)
+                )
+            );
     }
 
     async getResidentById(id: string): Promise<Resident | null> {
         const [resident] = await db
             .select()
             .from(schema.residents)
-            .where(eq(schema.residents.id, id))
+            .where(
+                and(
+                    eq(schema.residents.id, id),
+                    isNull(schema.residents.deletedAt)
+                )
+            )
             .limit(1);
         return resident || null;
     }
@@ -186,7 +240,8 @@ export class DatabaseStorage implements IStorage {
 
     async deleteResident(id: string): Promise<void> {
         await db
-            .delete(schema.residents)
+            .update(schema.residents)
+            .set({ deletedAt: new Date() })
             .where(eq(schema.residents.id, id));
     }
 
@@ -195,7 +250,12 @@ export class DatabaseStorage implements IStorage {
         return await db
             .select()
             .from(schema.vehicles)
-            .where(eq(schema.vehicles.residentId, residentId));
+            .where(
+                and(
+                    eq(schema.vehicles.residentId, residentId),
+                    isNull(schema.vehicles.deletedAt)
+                )
+            );
     }
 
     async createVehicle(vehicle: InsertVehicle): Promise<Vehicle> {
@@ -217,7 +277,8 @@ export class DatabaseStorage implements IStorage {
 
     async deleteVehicle(id: string): Promise<void> {
         await db
-            .delete(schema.vehicles)
+            .update(schema.vehicles)
+            .set({ deletedAt: new Date() })
             .where(eq(schema.vehicles.id, id));
     }
 
@@ -225,7 +286,12 @@ export class DatabaseStorage implements IStorage {
         return await db
             .select()
             .from(schema.parkingSpots)
-            .where(eq(schema.parkingSpots.buildingId, buildingId));
+            .where(
+                and(
+                    eq(schema.parkingSpots.buildingId, buildingId),
+                    isNull(schema.parkingSpots.deletedAt)
+                )
+            );
     }
 
     async createParkingSpot(spot: InsertParkingSpot): Promise<ParkingSpot> {
@@ -247,7 +313,8 @@ export class DatabaseStorage implements IStorage {
 
     async deleteParkingSpot(id: string): Promise<void> {
         await db
-            .delete(schema.parkingSpots)
+            .update(schema.parkingSpots)
+            .set({ deletedAt: new Date() })
             .where(eq(schema.parkingSpots.id, id));
     }
 
@@ -255,7 +322,12 @@ export class DatabaseStorage implements IStorage {
         return await db
             .select()
             .from(schema.guestVisits)
-            .where(eq(schema.guestVisits.unitId, unitId));
+            .where(
+                and(
+                    eq(schema.guestVisits.unitId, unitId),
+                    isNull(schema.guestVisits.deletedAt)
+                )
+            );
     }
 
     async createGuestVisit(visit: InsertGuestVisit): Promise<GuestVisit> {
@@ -276,7 +348,10 @@ export class DatabaseStorage implements IStorage {
     }
 
     async deleteGuestVisit(id: string): Promise<void> {
-        await db.delete(schema.guestVisits).where(eq(schema.guestVisits.id, id));
+        await db
+            .update(schema.guestVisits)
+            .set({ deletedAt: new Date() })
+            .where(eq(schema.guestVisits.id, id));
     }
 
     // ==================== PAYMENT RECORDS ====================
@@ -287,7 +362,8 @@ export class DatabaseStorage implements IStorage {
             .where(
                 and(
                     eq(schema.paymentRecords.periodMonth, month),
-                    eq(schema.paymentRecords.periodYear, year)
+                    eq(schema.paymentRecords.periodYear, year),
+                    isNull(schema.paymentRecords.deletedAt)
                 )
             );
     }
@@ -296,14 +372,24 @@ export class DatabaseStorage implements IStorage {
         return await db
             .select()
             .from(schema.paymentRecords)
-            .where(eq(schema.paymentRecords.residentId, residentId));
+            .where(
+                and(
+                    eq(schema.paymentRecords.residentId, residentId),
+                    isNull(schema.paymentRecords.deletedAt)
+                )
+            );
     }
 
     async getPaymentRecordById(id: string): Promise<PaymentRecord | null> {
         const [payment] = await db
             .select()
             .from(schema.paymentRecords)
-            .where(eq(schema.paymentRecords.id, id))
+            .where(
+                and(
+                    eq(schema.paymentRecords.id, id),
+                    isNull(schema.paymentRecords.deletedAt)
+                )
+            )
             .limit(1);
         return payment || null;
     }
@@ -334,7 +420,10 @@ export class DatabaseStorage implements IStorage {
     }
 
     async deletePaymentRecord(id: string): Promise<void> {
-        await db.delete(schema.paymentRecords).where(eq(schema.paymentRecords.id, id));
+        await db
+            .update(schema.paymentRecords)
+            .set({ deletedAt: new Date() })
+            .where(eq(schema.paymentRecords.id, id));
     }
 
     // ==================== EXPENSE RECORDS ====================
@@ -345,7 +434,8 @@ export class DatabaseStorage implements IStorage {
             .where(
                 and(
                     eq(schema.expenseRecords.periodMonth, month),
-                    eq(schema.expenseRecords.periodYear, year)
+                    eq(schema.expenseRecords.periodYear, year),
+                    isNull(schema.expenseRecords.deletedAt)
                 )
             );
     }
@@ -354,7 +444,12 @@ export class DatabaseStorage implements IStorage {
         const [expense] = await db
             .select()
             .from(schema.expenseRecords)
-            .where(eq(schema.expenseRecords.id, id))
+            .where(
+                and(
+                    eq(schema.expenseRecords.id, id),
+                    isNull(schema.expenseRecords.deletedAt)
+                )
+            )
             .limit(1);
         return expense || null;
     }
@@ -378,20 +473,26 @@ export class DatabaseStorage implements IStorage {
 
     async deleteExpenseRecord(id: string): Promise<void> {
         await db
-            .delete(schema.expenseRecords)
+            .update(schema.expenseRecords)
+            .set({ deletedAt: new Date() })
             .where(eq(schema.expenseRecords.id, id));
     }
 
     // ==================== FACILITIES & BOOKINGS ====================
     async getAllFacilities(): Promise<Facility[]> {
-        return await db.select().from(schema.facilities);
+        return await db.select().from(schema.facilities).where(isNull(schema.facilities.deletedAt));
     }
 
     async getFacilityById(id: string): Promise<Facility | null> {
         const [facility] = await db
             .select()
             .from(schema.facilities)
-            .where(eq(schema.facilities.id, id))
+            .where(
+                and(
+                    eq(schema.facilities.id, id),
+                    isNull(schema.facilities.deletedAt)
+                )
+            )
             .limit(1);
         return facility || null;
     }
@@ -415,7 +516,8 @@ export class DatabaseStorage implements IStorage {
 
     async deleteFacility(id: string): Promise<void> {
         await db
-            .delete(schema.facilities)
+            .update(schema.facilities)
+            .set({ deletedAt: new Date() })
             .where(eq(schema.facilities.id, id));
     }
 
@@ -423,14 +525,24 @@ export class DatabaseStorage implements IStorage {
         return await db
             .select()
             .from(schema.bookings)
-            .where(eq(schema.bookings.facilityId, facilityId));
+            .where(
+                and(
+                    eq(schema.bookings.facilityId, facilityId),
+                    isNull(schema.bookings.deletedAt)
+                )
+            );
     }
 
     async getBookingsByResidentId(residentId: string): Promise<Booking[]> {
         return await db
             .select()
             .from(schema.bookings)
-            .where(eq(schema.bookings.residentId, residentId));
+            .where(
+                and(
+                    eq(schema.bookings.residentId, residentId),
+                    isNull(schema.bookings.deletedAt)
+                )
+            );
     }
 
     async createBooking(booking: InsertBooking): Promise<Booking> {
@@ -443,7 +555,8 @@ export class DatabaseStorage implements IStorage {
 
     async deleteBooking(id: string): Promise<void> {
         await db
-            .delete(schema.bookings)
+            .update(schema.bookings)
+            .set({ deletedAt: new Date() })
             .where(eq(schema.bookings.id, id));
     }
 
@@ -469,7 +582,12 @@ export class DatabaseStorage implements IStorage {
         return await db
             .select()
             .from(schema.cargoItems)
-            .where(eq(schema.cargoItems.unitId, unitId));
+            .where(
+                and(
+                    eq(schema.cargoItems.unitId, unitId),
+                    isNull(schema.cargoItems.deletedAt)
+                )
+            );
     }
 
     async createCargoItem(cargo: InsertCargoItem): Promise<CargoItem> {
@@ -495,7 +613,8 @@ export class DatabaseStorage implements IStorage {
 
     async deleteCargoItem(id: string): Promise<void> {
         await db
-            .delete(schema.cargoItems)
+            .update(schema.cargoItems)
+            .set({ deletedAt: new Date() })
             .where(eq(schema.cargoItems.id, id));
     }
 
@@ -503,7 +622,12 @@ export class DatabaseStorage implements IStorage {
         return await db
             .select()
             .from(schema.expectedCargo)
-            .where(eq(schema.expectedCargo.residentId, residentId));
+            .where(
+                and(
+                    eq(schema.expectedCargo.residentId, residentId),
+                    isNull(schema.expectedCargo.deletedAt)
+                )
+            );
     }
 
     async createExpectedCargo(cargo: InsertExpectedCargo): Promise<ExpectedCargo> {
@@ -515,14 +639,22 @@ export class DatabaseStorage implements IStorage {
     }
 
     async deleteExpectedCargo(id: string): Promise<void> {
-        await db.delete(schema.expectedCargo).where(eq(schema.expectedCargo.id, id));
+        await db
+            .update(schema.expectedCargo)
+            .set({ deletedAt: new Date() })
+            .where(eq(schema.expectedCargo.id, id));
     }
 
     async getCourierVisitsByUnitId(unitId: string): Promise<CourierVisit[]> {
         return await db
             .select()
             .from(schema.courierVisits)
-            .where(eq(schema.courierVisits.unitId, unitId));
+            .where(
+                and(
+                    eq(schema.courierVisits.unitId, unitId),
+                    isNull(schema.courierVisits.deletedAt)
+                )
+            );
     }
 
     async createCourierVisit(visit: InsertCourierVisit): Promise<CourierVisit> {
@@ -534,7 +666,10 @@ export class DatabaseStorage implements IStorage {
     }
 
     async deleteCourierVisit(id: string): Promise<void> {
-        await db.delete(schema.courierVisits).where(eq(schema.courierVisits.id, id));
+        await db
+            .update(schema.courierVisits)
+            .set({ deletedAt: new Date() })
+            .where(eq(schema.courierVisits.id, id));
     }
 
     // ==================== MAINTENANCE ====================
@@ -542,7 +677,12 @@ export class DatabaseStorage implements IStorage {
         return await db
             .select()
             .from(schema.maintenanceRequests)
-            .where(eq(schema.maintenanceRequests.unitId, unitId));
+            .where(
+                and(
+                    eq(schema.maintenanceRequests.unitId, unitId),
+                    isNull(schema.maintenanceRequests.deletedAt)
+                )
+            );
     }
 
     async createMaintenanceRequest(req: InsertMaintenanceRequest): Promise<MaintenanceRequest> {
@@ -572,7 +712,8 @@ export class DatabaseStorage implements IStorage {
 
     async deleteMaintenanceRequest(id: string): Promise<void> {
         await db
-            .delete(schema.maintenanceRequests)
+            .update(schema.maintenanceRequests)
+            .set({ deletedAt: new Date() })
             .where(eq(schema.maintenanceRequests.id, id));
     }
 
@@ -581,7 +722,78 @@ export class DatabaseStorage implements IStorage {
         return await db
             .select()
             .from(schema.announcements)
+            .where(isNull(schema.announcements.deletedAt))
             .orderBy(desc(schema.announcements.publishDate));
+    }
+
+    async getAnnouncementsPaginated(page: number, limit: number): Promise<{
+        announcements: (Announcement & { authorName: string; authorEmail: string })[];
+        total: number;
+    }> {
+        const offset = (page - 1) * limit;
+
+        // Get paginated announcements with author info
+        const announcements = await db
+            .select({
+                id: schema.announcements.id,
+                authorId: schema.announcements.authorId,
+                title: schema.announcements.title,
+                content: schema.announcements.content,
+                priority: schema.announcements.priority,
+                visibility: schema.announcements.visibility,
+                status: schema.announcements.status,
+                publishDate: schema.announcements.publishDate,
+                createdAt: schema.announcements.createdAt,
+                updatedAt: schema.announcements.updatedAt,
+                deletedAt: schema.announcements.deletedAt,
+                authorName: schema.users.name,
+                authorEmail: schema.users.email,
+            })
+            .from(schema.announcements)
+            .leftJoin(schema.users, eq(schema.announcements.authorId, schema.users.id))
+            .where(isNull(schema.announcements.deletedAt))
+            .orderBy(desc(schema.announcements.publishDate))
+            .limit(limit)
+            .offset(offset);
+
+        // Get total count
+        const [{ count: totalCount }] = await db
+            .select({ count: sql<number>`COUNT(*)::int` })
+            .from(schema.announcements)
+            .where(isNull(schema.announcements.deletedAt));
+
+        return {
+            announcements: announcements as (Announcement & { authorName: string; authorEmail: string })[],
+            total: totalCount,
+        };
+    }
+
+    async getAnnouncementById(id: string): Promise<(Announcement & { authorName: string; authorEmail: string }) | null> {
+        const [announcement] = await db
+            .select({
+                id: schema.announcements.id,
+                authorId: schema.announcements.authorId,
+                title: schema.announcements.title,
+                content: schema.announcements.content,
+                priority: schema.announcements.priority,
+                visibility: schema.announcements.visibility,
+                status: schema.announcements.status,
+                publishDate: schema.announcements.publishDate,
+                createdAt: schema.announcements.createdAt,
+                updatedAt: schema.announcements.updatedAt,
+                deletedAt: schema.announcements.deletedAt,
+                authorName: schema.users.name,
+                authorEmail: schema.users.email,
+            })
+            .from(schema.announcements)
+            .leftJoin(schema.users, eq(schema.announcements.authorId, schema.users.id))
+            .where(and(
+                eq(schema.announcements.id, id),
+                isNull(schema.announcements.deletedAt)
+            ))
+            .limit(1);
+
+        return announcement ? (announcement as Announcement & { authorName: string; authorEmail: string }) : null;
     }
 
     async createAnnouncement(announcement: InsertAnnouncement): Promise<Announcement> {
@@ -603,20 +815,26 @@ export class DatabaseStorage implements IStorage {
 
     async deleteAnnouncement(id: string): Promise<void> {
         await db
-            .delete(schema.announcements)
+            .update(schema.announcements)
+            .set({ deletedAt: new Date() })
             .where(eq(schema.announcements.id, id));
     }
 
     // ==================== JANITOR ====================
     async getAllJanitors(): Promise<Janitor[]> {
-        return await db.select().from(schema.janitors);
+        return await db.select().from(schema.janitors).where(isNull(schema.janitors.deletedAt));
     }
 
     async getJanitorRequestsByUnitId(unitId: string): Promise<JanitorRequest[]> {
         return await db
             .select()
             .from(schema.janitorRequests)
-            .where(eq(schema.janitorRequests.unitId, unitId));
+            .where(
+                and(
+                    eq(schema.janitorRequests.unitId, unitId),
+                    isNull(schema.janitorRequests.deletedAt)
+                )
+            );
     }
 
     async getJanitorsByBuildingId(buildingId: string): Promise<Janitor[]> {
@@ -629,7 +847,12 @@ export class DatabaseStorage implements IStorage {
                 schema.janitorBlockAssignments,
                 eq(schema.janitors.id, schema.janitorBlockAssignments.janitorId)
             )
-            .where(eq(schema.janitorBlockAssignments.buildingId, buildingId));
+            .where(
+                and(
+                    eq(schema.janitorBlockAssignments.buildingId, buildingId),
+                    isNull(schema.janitors.deletedAt)
+                )
+            );
 
         return results.map(r => r.janitor);
     }
@@ -675,7 +898,8 @@ export class DatabaseStorage implements IStorage {
 
     async deleteJanitorRequest(id: string): Promise<void> {
         await db
-            .delete(schema.janitorRequests)
+            .update(schema.janitorRequests)
+            .set({ deletedAt: new Date() })
             .where(eq(schema.janitorRequests.id, id));
     }
 
@@ -706,6 +930,7 @@ export class DatabaseStorage implements IStorage {
         return await db
             .select()
             .from(schema.communityRequests)
+            .where(isNull(schema.communityRequests.deletedAt))
             .orderBy(desc(schema.communityRequests.createdAt));
     }
 
@@ -731,7 +956,8 @@ export class DatabaseStorage implements IStorage {
 
     async deleteCommunityRequest(id: string): Promise<void> {
         await db
-            .delete(schema.communityRequests)
+            .update(schema.communityRequests)
+            .set({ deletedAt: new Date() })
             .where(eq(schema.communityRequests.id, id));
     }
 
@@ -739,6 +965,7 @@ export class DatabaseStorage implements IStorage {
         return await db
             .select()
             .from(schema.polls)
+            .where(isNull(schema.polls.deletedAt))
             .orderBy(desc(schema.polls.createdAt));
     }
 
@@ -764,7 +991,8 @@ export class DatabaseStorage implements IStorage {
 
     async deletePoll(id: string): Promise<void> {
         await db
-            .delete(schema.polls)
+            .update(schema.polls)
+            .set({ deletedAt: new Date() })
             .where(eq(schema.polls.id, id));
     }
 
@@ -791,7 +1019,8 @@ export class DatabaseStorage implements IStorage {
             .where(
                 and(
                     gte(schema.transactions.transactionDate, startDate),
-                    lte(schema.transactions.transactionDate, endDate)
+                    lte(schema.transactions.transactionDate, endDate),
+                    isNull(schema.transactions.deletedAt)
                 )
             )
             .orderBy(desc(schema.transactions.transactionDate));
@@ -816,7 +1045,8 @@ export class DatabaseStorage implements IStorage {
 
     async deleteTransaction(id: string): Promise<void> {
         await db
-            .delete(schema.transactions)
+            .update(schema.transactions)
+            .set({ deletedAt: new Date() })
             .where(eq(schema.transactions.id, id));
     }
 
@@ -836,19 +1066,19 @@ export class DatabaseStorage implements IStorage {
 
     // ==================== STATS ====================
     async getDashboardStats(): Promise<any> {
-        const [residentsCount] = await db.select({ value: count() }).from(schema.residents);
-        const [unitsCount] = await db.select({ value: count() }).from(schema.units);
-        const [occupiedUnitsCount] = await db.select({ value: count() }).from(schema.units).where(eq(schema.units.status, 'occupied'));
-        const [pendingMaintenanceCount] = await db.select({ value: count() }).from(schema.maintenanceRequests).where(eq(schema.maintenanceRequests.status, 'New'));
-        const [pendingJanitorCount] = await db.select({ value: count() }).from(schema.janitorRequests).where(eq(schema.janitorRequests.status, 'pending'));
-        const [pendingCargoCount] = await db.select({ value: count() }).from(schema.cargoItems).where(eq(schema.cargoItems.status, 'received'));
+        const [residentsCount] = await db.select({ value: count() }).from(schema.residents).where(isNull(schema.residents.deletedAt));
+        const [unitsCount] = await db.select({ value: count() }).from(schema.units).where(isNull(schema.units.deletedAt));
+        const [occupiedUnitsCount] = await db.select({ value: count() }).from(schema.units).where(and(eq(schema.units.status, 'occupied'), isNull(schema.units.deletedAt)));
+        const [pendingMaintenanceCount] = await db.select({ value: count() }).from(schema.maintenanceRequests).where(and(eq(schema.maintenanceRequests.status, 'New'), isNull(schema.maintenanceRequests.deletedAt)));
+        const [pendingJanitorCount] = await db.select({ value: count() }).from(schema.janitorRequests).where(and(eq(schema.janitorRequests.status, 'pending'), isNull(schema.janitorRequests.deletedAt)));
+        const [pendingCargoCount] = await db.select({ value: count() }).from(schema.cargoItems).where(and(eq(schema.cargoItems.status, 'received'), isNull(schema.cargoItems.deletedAt)));
 
         const now = new Date();
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
         const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-        const [dailyBookingsCount] = await db.select({ value: count() }).from(schema.bookings).where(eq(schema.bookings.bookingDate, startOfToday.toISOString().split('T')[0]));
-        const [unpaidDuesCount] = await db.select({ value: count() }).from(schema.paymentRecords).where(and(eq(schema.paymentRecords.status, 'unpaid'), gte(schema.paymentRecords.createdAt, startOfMonth)));
+        const [dailyBookingsCount] = await db.select({ value: count() }).from(schema.bookings).where(and(eq(schema.bookings.bookingDate, startOfToday.toISOString().split('T')[0]), isNull(schema.bookings.deletedAt)));
+        const [unpaidDuesCount] = await db.select({ value: count() }).from(schema.paymentRecords).where(and(eq(schema.paymentRecords.status, 'unpaid'), gte(schema.paymentRecords.createdAt, startOfMonth), isNull(schema.paymentRecords.deletedAt)));
 
         return {
             totalResidents: residentsCount.value,
@@ -861,5 +1091,54 @@ export class DatabaseStorage implements IStorage {
             dailyBookings: dailyBookingsCount.value,
             unpaidDues: unpaidDuesCount.value
         };
+    }
+
+    // ==================== DASHBOARD ====================
+    async getRecentPayments(limit = 5): Promise<PaymentRecord[]> {
+        return await db.select()
+            .from(schema.paymentRecords)
+            .where(isNull(schema.paymentRecords.deletedAt))
+            .orderBy(desc(schema.paymentRecords.createdAt))
+            .limit(limit);
+    }
+
+    async getRecentMaintenanceRequests(limit = 4): Promise<MaintenanceRequest[]> {
+        return await db.select()
+            .from(schema.maintenanceRequests)
+            .where(isNull(schema.maintenanceRequests.deletedAt))
+            .orderBy(desc(schema.maintenanceRequests.createdAt))
+            .limit(limit);
+    }
+
+    async getTodayBookings(): Promise<Booking[]> {
+        const today = new Date().toISOString().split('T')[0];
+        return await db.select()
+            .from(schema.bookings)
+            .where(and(
+                eq(schema.bookings.bookingDate, today),
+                isNull(schema.bookings.deletedAt)
+            ))
+            .orderBy(schema.bookings.startTime);
+    }
+
+    async getMonthlyIncome(year: number): Promise<{ month: number; value: number }[]> {
+        const result = await db.select({
+            month: sql<number>`EXTRACT(MONTH FROM ${schema.paymentRecords.createdAt})`,
+            value: sql<number>`SUM(CAST(${schema.paymentRecords.amount} AS NUMERIC))`
+        })
+        .from(schema.paymentRecords)
+        .where(and(
+            eq(schema.paymentRecords.status, 'paid'),
+            sql`EXTRACT(YEAR FROM ${schema.paymentRecords.createdAt}) = ${year}`,
+            isNull(schema.paymentRecords.deletedAt)
+        ))
+        .groupBy(sql`EXTRACT(MONTH FROM ${schema.paymentRecords.createdAt})`)
+        .orderBy(sql`EXTRACT(MONTH FROM ${schema.paymentRecords.createdAt})`);
+        
+        // Convert string values to numbers
+        return result.map(row => ({
+            month: Number(row.month),
+            value: Number(row.value)
+        }));
     }
 }

@@ -32,6 +32,7 @@ import type {
 export interface IStorage {
     // Users
     getUserByEmail(email: string): Promise<User | null>;
+    getResidentByEmail(email: string): Promise<Resident | null>;
     getUserById(id: string): Promise<User | null>;
     createUser(user: InsertUser): Promise<User>;
     updateUser(id: string, user: Partial<InsertUser>): Promise<User>;
@@ -119,6 +120,11 @@ export interface IStorage {
 
     // Announcements
     getAnnouncements(): Promise<Announcement[]>;
+    getAnnouncementsPaginated(page: number, limit: number): Promise<{
+        announcements: (Announcement & { authorName: string; authorEmail: string })[];
+        total: number;
+    }>;
+    getAnnouncementById(id: string): Promise<(Announcement & { authorName: string; authorEmail: string }) | null>;
     createAnnouncement(announcement: InsertAnnouncement): Promise<Announcement>;
     updateAnnouncement(id: string, announcement: Partial<InsertAnnouncement>): Promise<Announcement>;
     deleteAnnouncement(id: string): Promise<void>;
@@ -157,4 +163,10 @@ export interface IStorage {
 
     // Stats
     getDashboardStats(): Promise<any>;
+    
+    // Dashboard
+    getRecentPayments(limit?: number): Promise<PaymentRecord[]>;
+    getRecentMaintenanceRequests(limit?: number): Promise<MaintenanceRequest[]>;
+    getTodayBookings(): Promise<Booking[]>;
+    getMonthlyIncome(year: number): Promise<{ month: number; value: number }[]>;
 }

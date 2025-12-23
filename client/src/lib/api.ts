@@ -75,4 +75,32 @@ export const api = {
     buildings: {
         getAll: () => apiClient('/buildings'),
     },
+
+    // Dashboard
+    dashboard: {
+        getStats: () => apiClient('/stats'),
+        getRecentData: () => apiClient('/dashboard/recent-data'),
+        getMonthlyIncome: (year: number) => 
+            apiClient(`/dashboard/monthly-income?year=${year}`),
+    },
+
+    // Announcements
+    announcements: {
+        getAll: (page: number, limit: number) => 
+            apiClient(`/announcements?page=${page}&limit=${limit}`),
+        getById: (id: string) => 
+            apiClient(`/announcements/${id}`),
+        create: (data: any) => 
+            apiClient('/announcements', { 
+                method: 'POST', 
+                body: JSON.stringify(data) 
+            }),
+        update: (id: string, data: any) => 
+            apiClient(`/announcements/${id}`, { 
+                method: 'PATCH', 
+                body: JSON.stringify(data) 
+            }),
+        delete: (id: string) => 
+            apiClient(`/announcements/${id}`, { method: 'DELETE' }),
+    },
 };

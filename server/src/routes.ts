@@ -29,12 +29,39 @@ export function createRoutes(storage: IStorage): Router {
     const router = express.Router();
 
     // ==================== DASHBOARD STATS ====================
-    router.get('/stats', requireAuth, async (req, res) => {
+    // TODO: Add auth back after implementing login page
+    router.get('/stats', async (req, res) => {
         try {
             const stats = await storage.getDashboardStats();
             res.json(stats);
         } catch (error) {
             res.status(500).json({ error: 'İstatistikler yüklenirken hata oluştu' });
+        }
+    });
+
+    // GET /api/dashboard/recent-data
+    router.get('/dashboard/recent-data', async (req, res) => {
+        try {
+            const [payments, maintenance, bookings] = await Promise.all([
+                storage.getRecentPayments(5),
+                storage.getRecentMaintenanceRequests(4),
+                storage.getTodayBookings()
+            ]);
+            
+            res.json({ payments, maintenance, bookings });
+        } catch (error) {
+            res.status(500).json({ error: 'Dashboard verileri yüklenirken hata oluştu' });
+        }
+    });
+
+    // GET /api/dashboard/monthly-income?year=2025
+    router.get('/dashboard/monthly-income', async (req, res) => {
+        try {
+            const year = parseInt(req.query.year as string) || new Date().getFullYear();
+            const data = await storage.getMonthlyIncome(year);
+            res.json({ data });
+        } catch (error) {
+            res.status(500).json({ error: 'Aylık gelir verileri yüklenirken hata oluştu' });
         }
     });
 
@@ -680,36 +707,77 @@ export function createRoutes(storage: IStorage): Router {
 
     // ==================== ANNOUNCEMENTS ====================
 
-    router.get('/announcements', requireAuth, async (req, res) => {
+    // GET /api/announcements?page=1&limit=10
+    router.get('/announcements', async (req, res) => {
         try {
-            const announcements = await storage.getAnnouncements();
-            res.json({ announcements });
+            const page = parseInt(req.query.page as string) || 1;
+            const limit = parseInt(req.query.limit as string) || 10;
+            
+            const result = await storage.getAnnouncementsPaginated(page, limit);
+            res.json(result);
         } catch (error) {
             res.status(500).json({ error: 'Duyurular yüklenirken hata oluştu' });
         }
     });
 
-    router.post('/announcements', requireAuth, async (req, res) => {
+    // GET /api/announcements/:id
+    router.get('/announcements/:id', async (req, res) => {
         try {
-            const validatedData = insertAnnouncementSchema.parse(req.body);
-            const announcement = await storage.createAnnouncement(validatedData);
-            res.status(201).json({ announcement });
-        } catch (error: any) {
-            if (error.name === 'ZodError') return res.status(400).json({ error: 'Geçersiz veri', details: error.errors });
-            res.status(500).json({ error: 'Duyuru oluşturulamadı' });
+            const announcement = await storage.getAnnouncementById(req.params.id);
+            if (!announcement) {
+                return res.status(404).json({ error: 'Duyuru bulunamadı' });
+            }
+            res.json({ announcement });
+        } catch (error) {
+            res.status(500).json({ error: 'Duyuru yüklenirken hata oluştu' });
         }
     });
 
-    router.patch('/announcements/:id', requireAuth, async (req, res) => {
+    // POST /api/announcements
+    router.post('/announcements', async (req, res) => {
         try {
-            const announcement = await storage.updateAnnouncement(req.params.id, req.body);
+            // Mock authorId - TODO: Replace with actual user from session
+            const MOCK_AUTHOR_ID = 'c52b03e1-83c2-42ca-b21d-583a227450ec';
+            
+            // Convert publishDate string to Date if provided
+            const publishDate = req.body.publishDate ? new Date(req.body.publishDate) : null;
+            
+            const validatedData = insertAnnouncementSchema.parse({
+                ...req.body,
+                authorId: MOCK_AUTHOR_ID,
+                publishDate,
+            });
+            const announcement = await storage.createAnnouncement(validatedData);
+            res.status(201).json({ announcement });
+        } catch (error: any) {
+            console.error('Announcement creation error:', error);
+            if (error.name === 'ZodError') {
+                console.error('Zod validation errors:', JSON.stringify(error.errors, null, 2));
+                return res.status(400).json({ error: 'Geçersiz veri', details: error.errors });
+            }
+            res.status(500).json({ error: 'Duyuru oluşturulamadı', details: error.message });
+        }
+    });
+
+    // PATCH /api/announcements/:id
+    router.patch('/announcements/:id', async (req, res) => {
+        try {
+            // Convert publishDate string to Date if provided
+            const updateData = { ...req.body };
+            if (updateData.publishDate) {
+                updateData.publishDate = new Date(updateData.publishDate);
+            }
+            
+            const announcement = await storage.updateAnnouncement(req.params.id, updateData);
             res.json({ announcement });
         } catch (error) {
+            console.error('Announcement update error:', error);
             res.status(500).json({ error: 'Duyuru güncellenemedi' });
         }
     });
 
-    router.delete('/announcements/:id', requireAuth, async (req, res) => {
+    // DELETE /api/announcements/:id
+    router.delete('/announcements/:id', async (req, res) => {
         try {
             await storage.deleteAnnouncement(req.params.id);
             res.json({ message: 'Duyuru silindi' });
