@@ -1,18 +1,24 @@
 import { useState, useEffect, useMemo } from 'react';
-import type { PaymentRecord } from '@/types/payments';
+import type { PaymentRecordLegacy } from '@/types/payments';
+import { useDebounce } from '@/hooks/useDebounce';
+
+const MIN_SEARCH_LENGTH = 3;
+const DEBOUNCE_DELAY = 500; // 500ms
 
 export interface UsePaymentFiltersReturn {
     searchTerm: string;
     setSearchTerm: (term: string) => void;
+    debouncedSearchTerm: string;
+    effectiveSearchTerm: string | undefined; // undefined if < 3 chars
     statusFilter: 'all' | 'paid' | 'unpaid';
     setStatusFilter: (filter: 'all' | 'paid' | 'unpaid') => void;
     sortOrder: 'asc' | 'desc' | null;
     toggleSort: () => void;
     currentPage: number;
     setCurrentPage: (page: number) => void;
-    filteredPayments: PaymentRecord[];
-    paginatedPayments: PaymentRecord[];
-    selectablePayments: PaymentRecord[];
+    filteredPayments: PaymentRecordLegacy[];
+    paginatedPayments: PaymentRecordLegacy[];
+    selectablePayments: PaymentRecordLegacy[];
     incomeStats: {
         total: number;
         collected: number;
@@ -22,7 +28,7 @@ export interface UsePaymentFiltersReturn {
 }
 
 export const usePaymentFilters = (
-    payments: PaymentRecord[],
+    payments: PaymentRecordLegacy[],
     itemsPerPage: number = 20
 ): UsePaymentFiltersReturn => {
     const [searchTerm, setSearchTerm] = useState('');
@@ -30,25 +36,44 @@ export const usePaymentFilters = (
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
 
+    // Debounce search term - 500ms sonra işle
+    const debouncedSearchTerm = useDebounce(searchTerm, DEBOUNCE_DELAY);
+
+    // Minimum karakter kontrolü: 3 karakterden az ise undefined döndür
+    const effectiveSearchTerm = useMemo(() => {
+        const trimmed = debouncedSearchTerm.trim();
+        return trimmed.length >= MIN_SEARCH_LENGTH ? trimmed : undefined;
+    }, [debouncedSearchTerm]);
+
     // Reset page when filters change
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchTerm, statusFilter]);
+    }, [effectiveSearchTerm, statusFilter]);
 
+    // Client-side filtering (for local data)
+    // Note: When using API, filtering is done server-side
     const filteredPayments = useMemo(() => {
-        let result = payments.filter(p =>
-            p.residentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            p.unit.toLowerCase().includes(searchTerm.toLowerCase())
-        );
+        let result = payments;
 
+        // Apply search filter (only if >= 3 chars)
+        if (effectiveSearchTerm) {
+            const searchLower = effectiveSearchTerm.toLowerCase();
+            result = result.filter(p =>
+                p.residentName.toLowerCase().includes(searchLower) ||
+                p.unit.toLowerCase().includes(searchLower)
+            );
+        }
+
+        // Apply status filter
         if (statusFilter === 'paid') {
             result = result.filter(p => p.status === 'paid');
         } else if (statusFilter === 'unpaid') {
             result = result.filter(p => p.status === 'unpaid');
         }
 
+        // Apply sorting
         if (sortOrder) {
-            result.sort((a, b) => {
+            result = [...result].sort((a, b) => {
                 if (a.status === b.status) return 0;
                 const scoreA = a.status === 'paid' ? 1 : 0;
                 const scoreB = b.status === 'paid' ? 1 : 0;
@@ -57,7 +82,7 @@ export const usePaymentFilters = (
         }
 
         return result;
-    }, [payments, searchTerm, statusFilter, sortOrder]);
+    }, [payments, effectiveSearchTerm, statusFilter, sortOrder]);
 
     const paginatedPayments = useMemo(() => {
         const startIndex = (currentPage - 1) * itemsPerPage;
@@ -83,6 +108,8 @@ export const usePaymentFilters = (
     return {
         searchTerm,
         setSearchTerm,
+        debouncedSearchTerm,
+        effectiveSearchTerm,
         statusFilter,
         setStatusFilter,
         sortOrder,
@@ -95,4 +122,3 @@ export const usePaymentFilters = (
         incomeStats,
     };
 };
-

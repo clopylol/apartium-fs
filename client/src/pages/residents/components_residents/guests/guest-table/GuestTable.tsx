@@ -1,6 +1,7 @@
 import { Clock, LogIn, LogOut, MoreVertical, Smartphone, CarFront, CalendarDays, User } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { GuestVisit } from "@/types/residents.types";
+import { formatGuestVisitTime } from "@/utils/date";
 
 interface GuestTableProps {
     guests: GuestVisit[];
@@ -109,7 +110,7 @@ export function GuestTable({ guests, isLoading, onGuestSelect }: GuestTableProps
                                                         <LogIn className="w-3.5 h-3.5" /> {t("residents.guests.table.status.active")}
                                                     </span>
                                                     <div className="text-[10px] text-blue-400/60 mt-1 pl-1">
-                                                        {t("residents.guests.table.entry")} {guest.entryTime}
+                                                        {t("residents.guests.table.entry")} {formatGuestVisitTime(guest.entryTime)}
                                                     </div>
                                                 </div>
                                             )}
@@ -119,7 +120,7 @@ export function GuestTable({ guests, isLoading, onGuestSelect }: GuestTableProps
                                                         <LogOut className="w-3.5 h-3.5" /> {t("residents.guests.table.status.completed")}
                                                     </span>
                                                     <div className="text-[10px] text-slate-500 mt-1 pl-1">
-                                                        {t("residents.guests.table.exit")} {guest.exitTime}
+                                                        {t("residents.guests.table.exit")} {formatGuestVisitTime(guest.exitTime)}
                                                     </div>
                                                 </div>
                                             )}

@@ -4,7 +4,7 @@ import type { Building, ParkingSpotDefinition, VehicleSearchItem, GuestVisit } f
 export interface ParkingActionsParams {
     buildings: Building[];
     setBuildings: React.Dispatch<React.SetStateAction<Building[]>>;
-    activeBlockId: string;
+    activeBlockId: string | null;
     activeBlock: Building | undefined;
     activeParkingFloor: number;
     guestList: GuestVisit[];
@@ -180,45 +180,55 @@ export function useParkingActions(params: ParkingActionsParams): ParkingActionsR
         const vehicles: VehicleSearchItem[] = [];
 
         // Add Resident Vehicles
-        buildings.forEach((b) => {
-            b.units.forEach((u) => {
-                u.residents.forEach((r) => {
-                    r.vehicles.forEach((v) => {
-                        vehicles.push({
-                            id: v.id,
-                            plate: v.plate,
-                            blockName: b.name,
-                            unitNumber: u.number,
-                            name: r.name,
-                            phone: r.phone,
-                            vehicleModel: v.model,
-                            parkingSpot: v.parkingSpot,
-                            isGuest: false,
-                            type: r.type,
-                            avatar: r.avatar,
-                        });
+        if (buildings && Array.isArray(buildings)) {
+            buildings.forEach((b) => {
+                if (b.units && Array.isArray(b.units)) {
+                    b.units.forEach((u) => {
+                        if (u.residents && Array.isArray(u.residents)) {
+                            u.residents.forEach((r) => {
+                                if (r.vehicles && Array.isArray(r.vehicles)) {
+                                    r.vehicles.forEach((v) => {
+                                        vehicles.push({
+                                            id: v.id,
+                                            plate: v.plate,
+                                            blockName: b.name,
+                                            unitNumber: u.number,
+                                            name: r.name,
+                                            phone: r.phone,
+                                            vehicleModel: v.model,
+                                            parkingSpot: v.parkingSpot,
+                                            isGuest: false,
+                                            type: r.type,
+                                            avatar: r.avatar,
+                                        });
+                                    });
+                                }
+                            });
+                        }
                     });
-                });
+                }
             });
-        });
+        }
 
         // Add Guest Vehicles
-        guestList.forEach((g) => {
-            if (g.status === "active" || g.status === "pending") {
-                vehicles.push({
-                    id: g.id,
-                    plate: g.plate,
-                    blockName: g.blockName,
-                    unitNumber: g.unitNumber,
-                    name: g.guestName || "İsimsiz Misafir",
-                    phone: "-",
-                    vehicleModel: g.model,
-                    isGuest: true,
-                    status: g.status,
-                    source: g.source,
-                });
-            }
-        });
+        if (guestList && Array.isArray(guestList)) {
+            guestList.forEach((g) => {
+                if (g.status === "active" || g.status === "pending") {
+                    vehicles.push({
+                        id: g.id,
+                        plate: g.plate,
+                        blockName: g.blockName,
+                        unitNumber: g.unitNumber,
+                        name: g.guestName || "İsimsiz Misafir",
+                        phone: "-",
+                        vehicleModel: g.model,
+                        isGuest: true,
+                        status: g.status,
+                        source: g.source,
+                    });
+                }
+            });
+        }
 
         // Filter by search term if needed
         if (!searchTerm) return vehicles;
@@ -233,7 +243,7 @@ export function useParkingActions(params: ParkingActionsParams): ParkingActionsR
 
     // Computed: Parking Stats
     const parkingStats = useMemo(() => {
-        if (!activeBlock) {
+        if (!activeBlock || !activeBlock.parkingSpots || !Array.isArray(activeBlock.parkingSpots)) {
             return {
                 totalSpots: 0,
                 occupiedSpots: 0,
@@ -247,20 +257,23 @@ export function useParkingActions(params: ParkingActionsParams): ParkingActionsR
         
         // Calculate occupied spots by checking if any resident vehicle has this spot assigned
         const occupiedSpots = activeBlock.parkingSpots.filter((spot) => {
-            return activeBlock.units.some((unit) =>
-                unit.residents.some((resident) =>
-                    resident.vehicles.some((vehicle) => vehicle.parkingSpot === spot.name)
-                )
-            );
+            if (!activeBlock.units || !Array.isArray(activeBlock.units)) return false;
+            return activeBlock.units.some((unit) => {
+                if (!unit.residents || !Array.isArray(unit.residents)) return false;
+                return unit.residents.some((resident) => {
+                    if (!resident.vehicles || !Array.isArray(resident.vehicles)) return false;
+                    return resident.vehicles.some((vehicle) => vehicle.parkingSpot === spot.name);
+                });
+            });
         }).length;
 
         const availableSpots = totalSpots - occupiedSpots;
         const occupancyRate = totalSpots > 0 ? Math.round((occupiedSpots / totalSpots) * 100) : 0;
         
         // Count active guest vehicles
-        const guestVehicles = guestList.filter(
-            (g) => g.status === "active" || g.status === "pending"
-        ).length;
+        const guestVehicles = (guestList && Array.isArray(guestList)) 
+            ? guestList.filter((g) => g.status === "active" || g.status === "pending").length
+            : 0;
 
         return {
             totalSpots,

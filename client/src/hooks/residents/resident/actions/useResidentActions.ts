@@ -1,8 +1,8 @@
-import type { Building, Resident, ResidentVehicle } from "@/types/residents.types";
+import type { Resident, ResidentVehicle } from "@/types/residents.types";
+import { useResidentMutations } from "@/hooks/residents/api";
 
 export interface ResidentActionsParams {
-    buildings: Building[];
-    setBuildings: React.Dispatch<React.SetStateAction<Building[]>>;
+    buildingId: string | null;
     openAddResidentModal: (blockId?: string, unitId?: string) => void;
     closeAddResidentModal: () => void;
     openEditResidentModal: (resident: Resident, blockId: string, unitId: string) => void;
@@ -34,7 +34,7 @@ export interface ResidentActionsReturn {
 
 export function useResidentActions(params: ResidentActionsParams): ResidentActionsReturn {
     const {
-        setBuildings,
+        buildingId,
         openAddResidentModal,
         closeAddResidentModal,
         openEditResidentModal,
@@ -47,40 +47,28 @@ export function useResidentActions(params: ResidentActionsParams): ResidentActio
         editingResident,
     } = params;
 
+    // ✅ Use API mutations
+    const { createResident, updateResident, deleteResident } = useResidentMutations(buildingId);
+
     const handleOpenAddResident = (blockId?: string, unitId?: string) => {
         openAddResidentModal(blockId, unitId);
     };
 
-    const handleSaveResident = (residentData: any) => {
-        setBuildings((prevBuildings) => {
-            return prevBuildings.map((b) => {
-                if (b.id !== residentData.blockId) return b;
-
-                return {
-                    ...b,
-                    units: b.units.map((u) => {
-                        if (u.id !== residentData.unitId) return u;
-
-                        const newResident: Resident = {
-                            id: `res-${Date.now()}`,
-                            name: residentData.name,
-                            type: residentData.type,
-                            phone: residentData.phone,
-                            email: residentData.email,
-                            avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(residentData.name)}&background=random&color=fff`,
-                            vehicles: [],
-                        };
-
-                        return {
-                            ...u,
-                            status: "occupied",
-                            residents: [...u.residents, newResident],
-                        };
-                    }),
-                };
+    const handleSaveResident = async (residentData: any) => {
+        try {
+            await createResident.mutateAsync({
+                unitId: residentData.unitId,
+                name: residentData.name,
+                type: residentData.type,
+                phone: residentData.phone,
+                email: residentData.email || null,
+                avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(residentData.name)}&background=random&color=fff`,
             });
-        });
-        closeAddResidentModal();
+            closeAddResidentModal();
+        } catch (error) {
+            // Error handled by mutation
+            console.error('Failed to create resident:', error);
+        }
     };
 
     const handleOpenDeleteResident = (
@@ -92,63 +80,44 @@ export function useResidentActions(params: ResidentActionsParams): ResidentActio
         openDeleteResidentConfirm(residentId, residentName, blockId, unitId);
     };
 
-    const handleConfirmDeleteResident = () => {
-        const { residentId, blockId, unitId } = deleteResidentConfirm;
-        setBuildings((prevBuildings) =>
-            prevBuildings.map((b) => {
-                if (b.id !== blockId) return b;
-                return {
-                    ...b,
-                    units: b.units.map((u) => {
-                        if (u.id !== unitId) return u;
-                        const updatedResidents = u.residents.filter((r) => r.id !== residentId);
-                        return {
-                            ...u,
-                            residents: updatedResidents,
-                            status: updatedResidents.length > 0 ? "occupied" : "empty",
-                        };
-                    }),
-                };
-            })
-        );
-        closeDeleteResidentConfirm();
+    const handleConfirmDeleteResident = async () => {
+        const { residentId } = deleteResidentConfirm;
+        try {
+            await deleteResident.mutateAsync(residentId);
+            closeDeleteResidentConfirm();
+        } catch (error) {
+            // Error handled by mutation
+            console.error('Failed to delete resident:', error);
+        }
     };
 
     const handleOpenEditResident = (resident: Resident, blockId: string, unitId: string) => {
         openEditResidentModal(resident, blockId, unitId);
     };
 
-    const handleSaveEditResident = (updatedData: Partial<Resident>) => {
+    const handleSaveEditResident = async (updatedData: Partial<Resident>) => {
         if (!editingResident) return;
 
-        setBuildings((prev) =>
-            prev.map((b) => ({
-                ...b,
-                units: b.units.map((u) => ({
-                    ...u,
-                    residents: u.residents.map((r) =>
-                        r.id === editingResident.resident.id ? { ...r, ...updatedData } : r
-                    ),
-                })),
-            }))
-        );
-        closeEditResidentModal();
+        try {
+            await updateResident.mutateAsync({
+                id: editingResident.resident.id,
+                data: updatedData,
+            });
+            closeEditResidentModal();
+        } catch (error) {
+            // Error handled by mutation
+            console.error('Failed to update resident:', error);
+        }
     };
 
     const handleOpenVehicleManager = (resident: Resident, blockId: string, unitId: string) => {
         openVehicleManager(resident, blockId, unitId);
     };
 
-    const handleUpdateResidentVehicles = (residentId: string, vehicles: ResidentVehicle[]) => {
-        setBuildings((prev) =>
-            prev.map((b) => ({
-                ...b,
-                units: b.units.map((u) => ({
-                    ...u,
-                    residents: u.residents.map((r) => (r.id === residentId ? { ...r, vehicles } : r)),
-                })),
-            }))
-        );
+    const handleUpdateResidentVehicles = async (residentId: string, vehicles: ResidentVehicle[]) => {
+        // TODO: Implement vehicle update API call
+        // For now, just close the modal
+        console.log('Update vehicles for resident:', residentId, vehicles);
         closeVehicleManager();
     };
 

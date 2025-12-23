@@ -1,6 +1,7 @@
 import { X, Clock, LogIn, LogOut, CarFront, Home, Phone, CalendarDays, MessageSquare } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { GuestVisit } from "@/types/residents.types";
+import { formatGuestVisitTime } from "@/utils/date";
 
 interface GuestDetailModalProps {
     isOpen: boolean;
@@ -73,8 +74,8 @@ export function GuestDetailModal({ isOpen, onClose, guest, onCheckIn, onCheckOut
                             <p className="text-xs font-bold text-slate-500 uppercase mb-2 flex items-center gap-1"><CalendarDays className="w-3 h-3" /> {t("residents.guests.modals.detail.labels.visit")}</p>
                             <p className="text-slate-200 font-bold text-sm">{guest.expectedDate}</p>
                             <p className="text-slate-400 text-xs mt-1">{guest.durationDays} {t("residents.guests.modals.detail.labels.daysDuration")}</p>
-                            {guest.entryTime && <p className="text-blue-400 text-xs mt-2">{t("residents.guests.modals.detail.labels.entry")} {guest.entryTime}</p>}
-                            {guest.exitTime && <p className="text-slate-500 text-xs">{t("residents.guests.modals.detail.labels.exit")} {guest.exitTime}</p>}
+                            {guest.entryTime && <p className="text-blue-400 text-xs mt-2">{t("residents.guests.modals.detail.labels.entry")} {formatGuestVisitTime(guest.entryTime)}</p>}
+                            {guest.exitTime && <p className="text-slate-500 text-xs">{t("residents.guests.modals.detail.labels.exit")} {formatGuestVisitTime(guest.exitTime)}</p>}
                         </div>
                     </div>
 

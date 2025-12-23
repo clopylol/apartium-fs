@@ -15,6 +15,27 @@
       "when": 1766325778634,
       "tag": "0001_faulty_tana_nile",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1735077600000,
+      "tag": "0002_test_data_residents",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1735082400000,
+      "tag": "0003_add_sites_table",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1735086000000,
+      "tag": "0004_add_user_site_assignments",
+      "breakpoints": true
     }
   ]
 }

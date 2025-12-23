@@ -1,5 +1,26 @@
 export interface PaymentRecord {
     id: string;
+    residentId: string;
+    unitId: string;
+    amount: number | string; // Can be decimal string from DB
+    type: 'aidat' | 'demirbas' | 'yakit';
+    status: 'paid' | 'unpaid';
+    paymentDate: string | null; // ISO timestamp from DB
+    periodMonth: string;
+    periodYear: number;
+    createdAt: string;
+    updatedAt: string;
+    // JOIN data from API
+    residentName: string;
+    residentPhone: string;
+    residentAvatar: string | null;
+    unitNumber: string;
+    buildingId: string;
+}
+
+// Legacy format for components (temporary compatibility)
+export interface PaymentRecordLegacy {
+    id: string;
     unit: string;
     residentName: string;
     amount: number;
@@ -11,6 +32,23 @@ export interface PaymentRecord {
 }
 
 export interface ExpenseRecord {
+    id: string;
+    title: string;
+    category: 'utilities' | 'maintenance' | 'personnel' | 'general';
+    amount: number | string; // Can be decimal string from DB
+    expenseDate: string; // Date string from DB
+    status: 'paid' | 'pending';
+    description: string | null;
+    attachmentUrl: string | null;
+    periodMonth: string;
+    periodYear: number;
+    createdAt: string;
+    updatedAt: string;
+    deletedAt: string | null;
+}
+
+// Legacy format for components (temporary compatibility)
+export interface ExpenseRecordLegacy {
     id: string;
     title: string;
     category: 'utilities' | 'maintenance' | 'personnel' | 'general';
@@ -40,4 +78,40 @@ export interface ExpenseStats {
     total: number;
     paid: number;
     pending: number;
+}
+
+// API Response Types
+export interface PaymentsApiResponse {
+    payments: PaymentRecord[];
+    total: number;
+    stats: IncomeStats;
+}
+
+export interface ExpensesApiResponse {
+    expenses: ExpenseRecord[];
+    total: number;
+    stats: ExpenseStats;
+}
+
+// Form Data Types
+export interface PaymentStatusUpdateData {
+    status: 'paid' | 'unpaid';
+    paymentDate?: string;
+}
+
+export interface BulkAmountUpdateData {
+    month: string;
+    year: number;
+    amount: number;
+}
+
+export interface ExpenseFormData {
+    title: string;
+    category: 'utilities' | 'maintenance' | 'personnel' | 'general';
+    amount: number;
+    expenseDate: string;
+    status: 'paid' | 'pending';
+    description?: string;
+    periodMonth: string;
+    periodYear: number;
 }

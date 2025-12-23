@@ -73,11 +73,30 @@ export const users = pgTable('users', {
     deletedAt: timestamp('deleted_at', { withTimezone: true }),
 });
 
+// Sites (Siteler/Apartmanlar)
+export const sites = pgTable('sites', {
+    id: uuid('id').defaultRandom().primaryKey(),
+    name: varchar('name', { length: 255 }).notNull(),
+    address: text('address'),
+    totalBuildings: integer('total_buildings').notNull().default(0),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
+});
+
+// User Site Assignments (Kullanıcı-Site Atamaları)
+export const userSiteAssignments = pgTable('user_site_assignments', {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    siteId: uuid('site_id').notNull().references(() => sites.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 // Buildings (Bloklar)
 export const buildings = pgTable('buildings', {
     id: uuid('id').defaultRandom().primaryKey(),
+    siteId: uuid('site_id').notNull().references(() => sites.id, { onDelete: 'cascade' }),
     name: varchar('name', { length: 100 }).notNull(),
-    address: text('address'),
     floorCount: integer('floor_count').notNull().default(5),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -434,6 +453,12 @@ export const transactions = pgTable('transactions', {
 export const insertUserSchema = createInsertSchema(users);
 export const selectUserSchema = createSelectSchema(users);
 
+export const insertSiteSchema = createInsertSchema(sites);
+export const selectSiteSchema = createSelectSchema(sites);
+
+export const insertUserSiteAssignmentSchema = createInsertSchema(userSiteAssignments);
+export const selectUserSiteAssignmentSchema = createSelectSchema(userSiteAssignments);
+
 export const insertBuildingSchema = createInsertSchema(buildings);
 export const selectBuildingSchema = createSelectSchema(buildings);
 
@@ -454,10 +479,25 @@ export const insertGuestVisitSchema = createInsertSchema(guestVisits);
 export const selectGuestVisitSchema = createSelectSchema(guestVisits);
 
 // Payments & Expenses
-export const insertPaymentRecordSchema = createInsertSchema(paymentRecords);
+export const insertPaymentRecordSchema = createInsertSchema(paymentRecords, {
+    amount: z.union([z.string(), z.number()]).transform(val => String(val)),
+    paymentDate: z.union([z.string(), z.date()]).optional().nullable(),
+});
 export const selectPaymentRecordSchema = createSelectSchema(paymentRecords);
 
-export const insertExpenseRecordSchema = createInsertSchema(expenseRecords);
+export const insertExpenseRecordSchema = createInsertSchema(expenseRecords, {
+    amount: z.union([z.string(), z.number()]).transform(val => String(val)),
+    expenseDate: z.union([z.string(), z.date()]).transform(val => {
+        if (typeof val === 'string') {
+            // Validate date format YYYY-MM-DD
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(val)) {
+                throw new Error('expenseDate must be in YYYY-MM-DD format');
+            }
+            return val;
+        }
+        return val.toISOString().split('T')[0];
+    }),
+});
 export const selectExpenseRecordSchema = createSelectSchema(expenseRecords);
 
 // Facilities & Bookings
@@ -516,6 +556,12 @@ export const selectTransactionSchema = createSelectSchema(transactions);
 // Core Types
 export type User = z.infer<typeof selectUserSchema> & {};
 export type InsertUser = z.infer<typeof insertUserSchema> & {};
+
+export type Site = z.infer<typeof selectSiteSchema>;
+export type InsertSite = z.infer<typeof insertSiteSchema>;
+
+export type UserSiteAssignment = z.infer<typeof selectUserSiteAssignmentSchema>;
+export type InsertUserSiteAssignment = z.infer<typeof insertUserSiteAssignmentSchema>;
 
 export type Building = z.infer<typeof selectBuildingSchema> & {};
 export type InsertBuilding = z.infer<typeof insertBuildingSchema> & {};

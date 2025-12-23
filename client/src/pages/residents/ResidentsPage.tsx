@@ -44,8 +44,7 @@ export function ResidentsPage() {
 
     // Initialize Action Hooks
     const residentActions = useResidentActions({
-        buildings: residentsState.buildings,
-        setBuildings: residentsState.setBuildings,
+        buildingId: residentsState.activeBlockId,
         openAddResidentModal: modalState.openAddResidentModal,
         closeAddResidentModal: modalState.closeAddResidentModal,
         openEditResidentModal: modalState.openEditResidentModal,
@@ -90,15 +89,11 @@ export function ResidentsPage() {
     });
 
     const guestActions = useGuestActions({
-        buildings: residentsState.buildings,
-        guestList: guestState.guestList,
-        setGuestList: guestState.setGuestList,
         setCheckInConfirm: modalState.setCheckInConfirm,
         setCheckOutConfirm: modalState.setCheckOutConfirm,
         checkInConfirm: modalState.checkInConfirm,
         checkOutConfirm: modalState.checkOutConfirm,
         setSelectedGuest: modalState.setSelectedGuest,
-        openGuestModal: modalState.openGuestModal,
         closeGuestModal: modalState.closeGuestModal,
     });
 
@@ -106,6 +101,9 @@ export function ResidentsPage() {
         <div className="flex flex-col h-full bg-slate-950 overflow-hidden relative">
             {/* Header */}
             <ResidentsHeader
+                sites={residentsState.sites}
+                activeSiteId={residentsState.activeSiteId}
+                onSiteChange={residentsState.setActiveSiteId}
                 activeTab={activeTab}
                 onTabChange={setActiveTab}
                 searchTerm={residentsState.searchTerm}

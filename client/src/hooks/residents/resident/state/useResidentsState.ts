@@ -1,12 +1,17 @@
 import { useState, useEffect, useMemo } from "react";
-import type { Building } from "@/types/residents.types";
-import { INITIAL_BUILDINGS, ITEMS_PER_PAGE } from "@/constants/residents.constants";
+import type { Building, UnitWithResidents, Site } from "@/types/residents.types";
+import { ITEMS_PER_PAGE } from "@/constants/residents.constants";
+import { useBuildings, useBuildingData } from "@/hooks/residents/api";
+import { useSites } from "@/hooks/residents/site";
 
 export interface ResidentsStateReturn {
     // Core State
+    sites: Site[];
+    activeSiteId: string | null;
+    setActiveSiteId: (id: string) => void;
     buildings: Building[];
     setBuildings: React.Dispatch<React.SetStateAction<Building[]>>;
-    activeBlockId: string;
+    activeBlockId: string | null;
     setActiveBlockId: (id: string) => void;
     searchTerm: string;
     setSearchTerm: (term: string) => void;
@@ -28,8 +33,9 @@ export interface ResidentsStateReturn {
 
     // Computed Values
     activeBlock: Building | undefined;
-    filteredUnits: typeof INITIAL_BUILDINGS[0]["units"];
-    paginatedUnits: typeof INITIAL_BUILDINGS[0]["units"];
+    units: UnitWithResidents[];
+    filteredUnits: UnitWithResidents[];
+    paginatedUnits: UnitWithResidents[];
     stats: {
         total: number;
         occupied: number;
@@ -39,87 +45,84 @@ export interface ResidentsStateReturn {
 
 export function useResidentsState(): ResidentsStateReturn {
     // Core State
-    const [buildings, setBuildings] = useState<Building[]>(INITIAL_BUILDINGS);
-    const [activeBlockId, setActiveBlockId] = useState("A");
+    const [activeSiteId, setActiveSiteId] = useState<string | null>(null);
+    const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
-
-    // Granular Loading States
-    const [loadingStates, setLoadingStates] = useState({
-        buildings: true,
-        residents: true,
-        parking: true,
-        guests: true,
-    });
 
     // View State
     const [residentViewMode, setResidentViewMode] = useState<"grid" | "list">("grid");
     const [currentPage, setCurrentPage] = useState(1);
 
-    // Simulate Loading for each module
+    // ✅ Fetch sites from API
+    const { sites, isLoading: loadingSites } = useSites();
+
+    // ✅ Fetch buildings from API
+    const { data: buildingsData, isLoading: loadingBuildings } = useBuildings();
+    const allBuildings = buildingsData?.buildings || [];
+
+    // ✅ Filter buildings by active site
+    const buildings = useMemo(() => {
+        if (!activeSiteId) return [];
+        return allBuildings.filter((b: Building) => b.siteId === activeSiteId);
+    }, [allBuildings, activeSiteId]);
+
+    // ✅ Fetch active building's full data (lazy loading)
+    const { data: buildingData, isLoading: loadingBuildingData } = useBuildingData(activeBlockId);
+
+    // Set first site as active on load
     useEffect(() => {
-        // Buildings loaded first
-        const buildingsTimer = setTimeout(() => {
-            setLoadingStates(prev => ({ ...prev, buildings: false }));
-        }, 500);
+        if (sites.length > 0 && !activeSiteId) {
+            setActiveSiteId(sites[0].id);
+        }
+    }, [sites, activeSiteId]);
 
-        // Residents loaded
-        const residentsTimer = setTimeout(() => {
-            setLoadingStates(prev => ({ ...prev, residents: false }));
-        }, 1000);
+    // Set first building as active when site changes
+    useEffect(() => {
+        if (buildings.length > 0 && !activeBlockId) {
+            setActiveBlockId(buildings[0].id);
+        }
+    }, [buildings, activeBlockId]);
 
-        // Parking loaded
-        const parkingTimer = setTimeout(() => {
-            setLoadingStates(prev => ({ ...prev, parking: false }));
-        }, 1200);
-
-        // Guests loaded last
-        const guestsTimer = setTimeout(() => {
-            setLoadingStates(prev => ({ ...prev, guests: false }));
-        }, 1500);
-
-        return () => {
-            clearTimeout(buildingsTimer);
-            clearTimeout(residentsTimer);
-            clearTimeout(parkingTimer);
-            clearTimeout(guestsTimer);
-        };
-    }, []);
+    // Reset block selection when site changes
+    useEffect(() => {
+        if (activeSiteId) {
+            setActiveBlockId(null);
+        }
+    }, [activeSiteId]);
 
     // Reset Page on Filter Change
     useEffect(() => {
         setCurrentPage(1);
     }, [activeBlockId, searchTerm]);
 
-    // Computed: Any Loading
-    const isAnyLoading = useMemo(
-        () => Object.values(loadingStates).some(loading => loading),
-        [loadingStates]
-    );
-
     // Computed: Active Block
     const activeBlock = useMemo(
-        () => buildings.find((b) => b.id === activeBlockId),
+        () => buildings.find((b: Building) => b.id === activeBlockId),
         [buildings, activeBlockId]
     );
 
+    // Units from building data
+    const units = buildingData?.units || [];
+
     // Computed: Filtered Units
     const filteredUnits = useMemo(() => {
-        if (!activeBlock) return [];
+        if (!searchTerm) return units;
 
-        return activeBlock.units.filter((unit) => {
+        return units.filter((unit) => {
             const term = searchTerm.toLowerCase();
             const matchesSearch =
                 unit.number.includes(term) ||
                 unit.residents.some(
                     (r) =>
                         r.name.toLowerCase().includes(term) ||
+                        r.phone.includes(term) ||
                         r.vehicles.some((v) =>
                             v.plate.toLowerCase().replace(/\s/g, "").includes(term.replace(/\s/g, ""))
                         )
                 );
             return matchesSearch;
         });
-    }, [activeBlock, searchTerm]);
+    }, [units, searchTerm]);
 
     // Computed: Paginated Units
     const paginatedUnits = useMemo(() => {
@@ -129,19 +132,41 @@ export function useResidentsState(): ResidentsStateReturn {
 
     // Computed: Stats
     const stats = useMemo(() => {
-        if (!activeBlock) {
-            return { total: 0, occupied: 0, empty: 0 };
-        }
+        const totalUnits = units.length;
+        const occupiedUnits = units.filter((u) => u.status === "occupied").length;
 
         return {
-            total: activeBlock.units.length,
-            occupied: activeBlock.units.filter((u) => u.status === "occupied").length,
-            empty: activeBlock.units.filter((u) => u.status === "empty").length,
+            total: totalUnits,
+            occupied: occupiedUnits,
+            empty: totalUnits - occupiedUnits,
         };
-    }, [activeBlock]);
+    }, [units]);
+
+    // Loading States
+    const loadingStates = useMemo(() => ({
+        sites: loadingSites,
+        buildings: loadingBuildings,
+        residents: loadingBuildingData,
+        parking: false, // Will be set by parking hook
+        guests: false,  // Will be set by guests hook
+    }), [loadingSites, loadingBuildings, loadingBuildingData]);
+
+    // Computed: Any Loading
+    const isAnyLoading = useMemo(
+        () => Object.values(loadingStates).some(loading => loading),
+        [loadingStates]
+    );
+
+    // Dummy setBuildings for compatibility (not used with API)
+    const setBuildings = () => {
+        console.warn('setBuildings is deprecated with API usage');
+    };
 
     return {
         // Core State
+        sites,
+        activeSiteId,
+        setActiveSiteId,
         buildings,
         setBuildings,
         activeBlockId,
@@ -161,6 +186,7 @@ export function useResidentsState(): ResidentsStateReturn {
 
         // Computed Values
         activeBlock,
+        units,
         filteredUnits,
         paginatedUnits,
         stats,

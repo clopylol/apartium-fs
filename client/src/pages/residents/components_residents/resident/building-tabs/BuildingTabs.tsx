@@ -4,7 +4,7 @@ import type { Building } from "@/types/residents.types";
 
 interface BuildingTabsProps {
     buildings: Building[];
-    activeBlockId: string;
+    activeBlockId: string | null;
     onBlockChange: (blockId: string) => void;
     onAddBuilding: () => void;
     onEditBuilding: () => void;

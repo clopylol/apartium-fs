@@ -4,6 +4,7 @@ import type { IStorage } from './storage.js';
 import * as schema from 'apartium-shared';
 import type {
     User, InsertUser,
+    Site, InsertSite,
     Building, InsertBuilding,
     Unit, InsertUnit,
     Resident, InsertResident,
@@ -25,7 +26,8 @@ import type {
     CommunityRequest, InsertCommunityRequest,
     Poll, InsertPoll,
     PollVote, InsertPollVote,
-    Transaction, InsertTransaction
+    Transaction, InsertTransaction,
+    UserSiteAssignment, InsertUserSiteAssignment
 } from 'apartium-shared';
 
 /**
@@ -97,6 +99,113 @@ export class DatabaseStorage implements IStorage {
         await db.update(schema.users).set({ deletedAt: new Date(), isActive: false }).where(eq(schema.users.id, id));
     }
 
+    // ==================== SITES ====================
+    async getAllSites(): Promise<Site[]> {
+        return await db
+            .select()
+            .from(schema.sites)
+            .where(isNull(schema.sites.deletedAt))
+            .orderBy(schema.sites.name);
+    }
+
+    async getSiteById(id: string): Promise<Site | null> {
+        const [site] = await db
+            .select()
+            .from(schema.sites)
+            .where(
+                and(
+                    eq(schema.sites.id, id),
+                    isNull(schema.sites.deletedAt)
+                )
+            )
+            .limit(1);
+        return site || null;
+    }
+
+    async getSitesByUserId(userId: string): Promise<Site[]> {
+        // Admin kullanıcı tüm siteleri görebilir
+        const user = await this.getUserById(userId);
+        if (user?.role === 'admin') {
+            return this.getAllSites();
+        }
+
+        // Diğer kullanıcılar sadece atandıkları siteleri görebilir
+        const sites = await db
+            .select({
+                id: schema.sites.id,
+                name: schema.sites.name,
+                address: schema.sites.address,
+                totalBuildings: schema.sites.totalBuildings,
+                createdAt: schema.sites.createdAt,
+                updatedAt: schema.sites.updatedAt,
+                deletedAt: schema.sites.deletedAt,
+            })
+            .from(schema.sites)
+            .innerJoin(
+                schema.userSiteAssignments,
+                eq(schema.sites.id, schema.userSiteAssignments.siteId)
+            )
+            .where(
+                and(
+                    eq(schema.userSiteAssignments.userId, userId),
+                    isNull(schema.sites.deletedAt)
+                )
+            )
+            .orderBy(schema.sites.name);
+
+        return sites;
+    }
+
+    async createSite(site: InsertSite): Promise<Site> {
+        const [newSite] = await db
+            .insert(schema.sites)
+            .values(site)
+            .returning();
+        return newSite;
+    }
+
+    async updateSite(id: string, site: Partial<InsertSite>): Promise<Site> {
+        const [updated] = await db
+            .update(schema.sites)
+            .set({ ...site, updatedAt: new Date() })
+            .where(eq(schema.sites.id, id))
+            .returning();
+        return updated;
+    }
+
+    async deleteSite(id: string): Promise<void> {
+        await db
+            .update(schema.sites)
+            .set({ deletedAt: new Date() })
+            .where(eq(schema.sites.id, id));
+    }
+
+    async assignUserToSite(userId: string, siteId: string): Promise<UserSiteAssignment> {
+        const [assignment] = await db
+            .insert(schema.userSiteAssignments)
+            .values({ userId, siteId })
+            .returning();
+        return assignment;
+    }
+
+    async unassignUserFromSite(userId: string, siteId: string): Promise<void> {
+        await db
+            .delete(schema.userSiteAssignments)
+            .where(
+                and(
+                    eq(schema.userSiteAssignments.userId, userId),
+                    eq(schema.userSiteAssignments.siteId, siteId)
+                )
+            );
+    }
+
+    async getUserSiteAssignments(userId: string): Promise<UserSiteAssignment[]> {
+        return await db
+            .select()
+            .from(schema.userSiteAssignments)
+            .where(eq(schema.userSiteAssignments.userId, userId));
+    }
+
     // ==================== BUILDINGS ====================
     async getAllBuildings(): Promise<Building[]> {
         return await db
@@ -117,6 +226,19 @@ export class DatabaseStorage implements IStorage {
             )
             .limit(1);
         return building || null;
+    }
+
+    async getBuildingsBySiteId(siteId: string): Promise<Building[]> {
+        return await db
+            .select()
+            .from(schema.buildings)
+            .where(
+                and(
+                    eq(schema.buildings.siteId, siteId),
+                    isNull(schema.buildings.deletedAt)
+                )
+            )
+            .orderBy(schema.buildings.name);
     }
 
     async createBuilding(building: InsertBuilding): Promise<Building> {
@@ -368,6 +490,126 @@ export class DatabaseStorage implements IStorage {
             );
     }
 
+    async getPaymentRecordsPaginated(
+        month: string,
+        year: number,
+        page: number,
+        limit: number,
+        filters?: { search?: string; status?: 'paid' | 'unpaid' }
+    ): Promise<{
+        payments: any[];
+        total: number;
+        stats: { total: number; collected: number; pending: number; rate: number };
+    }> {
+        // Build WHERE conditions
+        const conditions = [
+            eq(schema.paymentRecords.periodMonth, month),
+            eq(schema.paymentRecords.periodYear, year),
+            isNull(schema.paymentRecords.deletedAt),
+        ];
+
+        // Add status filter
+        if (filters?.status) {
+            conditions.push(eq(schema.paymentRecords.status, filters.status));
+        }
+
+        // Add search filter (resident name or unit number)
+        // Search minimum 3 characters for security
+        if (filters?.search && filters.search.trim().length >= 3) {
+            const searchTerm = `%${filters.search.trim().toLowerCase()}%`;
+            conditions.push(
+                or(
+                    ilike(schema.residents.name, searchTerm),
+                    ilike(schema.units.number, searchTerm)
+                )
+            );
+        }
+
+        // Get total count
+        const [{ count: totalCount }] = await db
+            .select({ count: count() })
+            .from(schema.paymentRecords)
+            .leftJoin(schema.residents, eq(schema.paymentRecords.residentId, schema.residents.id))
+            .leftJoin(schema.units, eq(schema.paymentRecords.unitId, schema.units.id))
+            .where(and(...conditions));
+
+        // Get paginated data with JOINs
+        const offset = (page - 1) * limit;
+        const payments = await db
+            .select({
+                id: schema.paymentRecords.id,
+                residentId: schema.paymentRecords.residentId,
+                unitId: schema.paymentRecords.unitId,
+                amount: schema.paymentRecords.amount,
+                type: schema.paymentRecords.type,
+                status: schema.paymentRecords.status,
+                paymentDate: schema.paymentRecords.paymentDate,
+                periodMonth: schema.paymentRecords.periodMonth,
+                periodYear: schema.paymentRecords.periodYear,
+                createdAt: schema.paymentRecords.createdAt,
+                updatedAt: schema.paymentRecords.updatedAt,
+                // JOIN data
+                residentName: schema.residents.name,
+                residentPhone: schema.residents.phone,
+                residentAvatar: schema.residents.avatar,
+                unitNumber: schema.units.number,
+                buildingId: schema.units.buildingId,
+            })
+            .from(schema.paymentRecords)
+            .leftJoin(schema.residents, eq(schema.paymentRecords.residentId, schema.residents.id))
+            .leftJoin(schema.units, eq(schema.paymentRecords.unitId, schema.units.id))
+            .where(and(...conditions))
+            .orderBy(desc(schema.paymentRecords.createdAt))
+            .limit(limit)
+            .offset(offset);
+
+        // Calculate stats for the period (without search filter for accurate stats)
+        const statsConditions = [
+            eq(schema.paymentRecords.periodMonth, month),
+            eq(schema.paymentRecords.periodYear, year),
+            isNull(schema.paymentRecords.deletedAt),
+        ];
+
+        const [statsResult] = await db
+            .select({
+                totalAmount: sql<string>`COALESCE(SUM(${schema.paymentRecords.amount}), 0)`,
+                collectedAmount: sql<string>`COALESCE(SUM(CASE WHEN ${schema.paymentRecords.status} = 'paid' THEN ${schema.paymentRecords.amount} ELSE 0 END), 0)`,
+                totalCount: count(),
+            })
+            .from(schema.paymentRecords)
+            .where(and(...statsConditions));
+
+        const total = parseFloat(statsResult.totalAmount);
+        const collected = parseFloat(statsResult.collectedAmount);
+        const pending = total - collected;
+        const rate = total > 0 ? Math.round((collected / total) * 100) : 0;
+
+        return {
+            payments,
+            total: totalCount,
+            stats: { total, collected, pending, rate },
+        };
+    }
+
+    async updatePaymentAmountByPeriod(month: string, year: number, amount: string): Promise<number> {
+        const result = await db
+            .update(schema.paymentRecords)
+            .set({
+                amount: amount,
+                updatedAt: new Date(),
+            })
+            .where(
+                and(
+                    eq(schema.paymentRecords.periodMonth, month),
+                    eq(schema.paymentRecords.periodYear, year),
+                    isNull(schema.paymentRecords.deletedAt)
+                )
+            )
+            .returning({ id: schema.paymentRecords.id });
+        
+        return result.length;
+    }
+
     async getPaymentRecordsByResidentId(residentId: string): Promise<PaymentRecord[]> {
         return await db
             .select()
@@ -438,6 +680,83 @@ export class DatabaseStorage implements IStorage {
                     isNull(schema.expenseRecords.deletedAt)
                 )
             );
+    }
+
+    async getExpenseRecordsPaginated(
+        month: string,
+        year: number,
+        page: number,
+        limit: number,
+        filters?: { search?: string; category?: string }
+    ): Promise<{
+        expenses: ExpenseRecord[];
+        total: number;
+        stats: { total: number; paid: number; pending: number };
+    }> {
+        // Build WHERE conditions
+        const conditions = [
+            eq(schema.expenseRecords.periodMonth, month),
+            eq(schema.expenseRecords.periodYear, year),
+            isNull(schema.expenseRecords.deletedAt),
+        ];
+
+        // Add category filter
+        if (filters?.category) {
+            conditions.push(eq(schema.expenseRecords.category, filters.category as any));
+        }
+
+        // Add search filter (title or description)
+        // Search minimum 3 characters for security
+        if (filters?.search && filters.search.trim().length >= 3) {
+            const searchTerm = `%${filters.search.trim().toLowerCase()}%`;
+            conditions.push(
+                or(
+                    ilike(schema.expenseRecords.title, searchTerm),
+                    ilike(schema.expenseRecords.description, searchTerm)
+                )
+            );
+        }
+
+        // Get total count
+        const [{ count: totalCount }] = await db
+            .select({ count: count() })
+            .from(schema.expenseRecords)
+            .where(and(...conditions));
+
+        // Get paginated data
+        const offset = (page - 1) * limit;
+        const expenses = await db
+            .select()
+            .from(schema.expenseRecords)
+            .where(and(...conditions))
+            .orderBy(desc(schema.expenseRecords.expenseDate))
+            .limit(limit)
+            .offset(offset);
+
+        // Calculate stats for the period (without search filter for accurate stats)
+        const statsConditions = [
+            eq(schema.expenseRecords.periodMonth, month),
+            eq(schema.expenseRecords.periodYear, year),
+            isNull(schema.expenseRecords.deletedAt),
+        ];
+
+        const [statsResult] = await db
+            .select({
+                totalAmount: sql<string>`COALESCE(SUM(${schema.expenseRecords.amount}), 0)`,
+                paidAmount: sql<string>`COALESCE(SUM(CASE WHEN ${schema.expenseRecords.status} = 'paid' THEN ${schema.expenseRecords.amount} ELSE 0 END), 0)`,
+            })
+            .from(schema.expenseRecords)
+            .where(and(...statsConditions));
+
+        const total = parseFloat(statsResult.totalAmount);
+        const paid = parseFloat(statsResult.paidAmount);
+        const pending = total - paid;
+
+        return {
+            expenses,
+            total: totalCount,
+            stats: { total, paid, pending },
+        };
     }
 
     async getExpenseRecordById(id: string): Promise<ExpenseRecord | null> {
@@ -1349,5 +1668,185 @@ export class DatabaseStorage implements IStorage {
             month: Number(row.month),
             value: Number(row.value)
         }));
+    }
+
+    // ==================== RESIDENTS FULL DATA (JOIN) ====================
+    /**
+     * Get full building data with nested relationships (JOIN)
+     * Returns: building + units + residents + vehicles + parkingSpots
+     * This avoids waterfall requests by fetching all related data in one go
+     */
+    async getBuildingFullData(buildingId: string): Promise<any> {
+        // 1. Building bilgisi
+        const building = await this.getBuildingById(buildingId);
+        if (!building) throw new Error('Building not found');
+
+        // 2. Units + Residents + Vehicles (JOIN ile)
+        const unitsWithResidents = await db
+            .select({
+                unit: schema.units,
+                resident: schema.residents,
+                vehicle: schema.vehicles,
+            })
+            .from(schema.units)
+            .leftJoin(schema.residents, and(
+                eq(schema.residents.unitId, schema.units.id),
+                isNull(schema.residents.deletedAt)
+            ))
+            .leftJoin(schema.vehicles, and(
+                eq(schema.vehicles.residentId, schema.residents.id),
+                isNull(schema.vehicles.deletedAt)
+            ))
+            .where(
+                and(
+                    eq(schema.units.buildingId, buildingId),
+                    isNull(schema.units.deletedAt)
+                )
+            );
+
+        // 3. Parking Spots + Assigned Vehicles
+        const parkingSpotsWithVehicles = await db
+            .select({
+                spot: schema.parkingSpots,
+                vehicle: schema.vehicles,
+            })
+            .from(schema.parkingSpots)
+            .leftJoin(schema.vehicles, and(
+                eq(schema.vehicles.parkingSpotId, schema.parkingSpots.id),
+                isNull(schema.vehicles.deletedAt)
+            ))
+            .where(
+                and(
+                    eq(schema.parkingSpots.buildingId, buildingId),
+                    isNull(schema.parkingSpots.deletedAt)
+                )
+            );
+
+        // 4. Data'yı nested structure'a dönüştür
+        const units = this.transformToNestedUnits(unitsWithResidents);
+        const parkingSpots = this.transformToParkingSpots(parkingSpotsWithVehicles);
+
+        return {
+            building,
+            units,
+            parkingSpots,
+        };
+    }
+
+    /**
+     * Helper: Flat JOIN result'ı nested structure'a çevir
+     * Units -> Residents -> Vehicles hierarchy'si oluşturur
+     */
+    private transformToNestedUnits(rows: any[]): any[] {
+        const unitsMap = new Map<string, any>();
+        
+        rows.forEach(row => {
+            const unitId = row.unit.id;
+            
+            // Unit yoksa ekle
+            if (!unitsMap.has(unitId)) {
+                unitsMap.set(unitId, {
+                    ...row.unit,
+                    residents: [],
+                });
+            }
+            
+            const unit = unitsMap.get(unitId)!;
+            
+            // Resident varsa ekle
+            if (row.resident) {
+                let resident = unit.residents.find((r: any) => r.id === row.resident.id);
+                if (!resident) {
+                    resident = {
+                        ...row.resident,
+                        vehicles: [],
+                    };
+                    unit.residents.push(resident);
+                }
+                
+                // Vehicle varsa ekle
+                if (row.vehicle) {
+                    const vehicleExists = resident.vehicles.some((v: any) => v.id === row.vehicle.id);
+                    if (!vehicleExists) {
+                        resident.vehicles.push(row.vehicle);
+                    }
+                }
+            }
+        });
+        
+        return Array.from(unitsMap.values());
+    }
+
+    /**
+     * Helper: Parking spots ile assigned vehicles'ı birleştir
+     */
+    private transformToParkingSpots(rows: any[]): any[] {
+        const spotsMap = new Map<string, any>();
+        
+        rows.forEach(row => {
+            const spotId = row.spot.id;
+            
+            if (!spotsMap.has(spotId)) {
+                spotsMap.set(spotId, {
+                    ...row.spot,
+                    assignedVehicle: row.vehicle || null,
+                });
+            }
+        });
+        
+        return Array.from(spotsMap.values());
+    }
+
+    /**
+     * Get paginated guest visits with filters
+     */
+    async getGuestVisitsPaginated(
+        page: number,
+        limit: number,
+        filters?: { status?: string; search?: string }
+    ): Promise<{ visits: GuestVisit[]; total: number; page: number; limit: number }> {
+        const offset = (page - 1) * limit;
+        
+        // Build where conditions
+        const conditions = [isNull(schema.guestVisits.deletedAt)];
+        
+        if (filters?.status) {
+            conditions.push(eq(schema.guestVisits.status, filters.status as any));
+        }
+        
+        if (filters?.search) {
+            const searchCondition = or(
+                ilike(schema.guestVisits.plate, `%${filters.search}%`),
+                ilike(schema.guestVisits.guestName, `%${filters.search}%`)
+            );
+            if (searchCondition) {
+                conditions.push(searchCondition);
+            }
+        }
+        
+        // Build where clause
+        const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+        
+        // Get total count
+        const [{ count: totalCount }] = await db
+            .select({ count: count() })
+            .from(schema.guestVisits)
+            .where(whereClause);
+        
+        // Get paginated results
+        const visits = await db
+            .select()
+            .from(schema.guestVisits)
+            .where(whereClause)
+            .orderBy(desc(schema.guestVisits.createdAt))
+            .limit(limit)
+            .offset(offset);
+        
+        return {
+            visits,
+            total: Number(totalCount),
+            page,
+            limit,
+        };
     }
 }

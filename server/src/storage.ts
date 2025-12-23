@@ -1,5 +1,6 @@
 import type {
     User, InsertUser,
+    Site, InsertSite,
     Building, InsertBuilding,
     Unit, InsertUnit,
     Resident, InsertResident,
@@ -21,7 +22,8 @@ import type {
     CommunityRequest, InsertCommunityRequest,
     Poll, InsertPoll,
     PollVote, InsertPollVote,
-    Transaction, InsertTransaction
+    Transaction, InsertTransaction,
+    UserSiteAssignment, InsertUserSiteAssignment
 } from 'apartium-shared';
 
 /**
@@ -38,9 +40,21 @@ export interface IStorage {
     updateUser(id: string, user: Partial<InsertUser>): Promise<User>;
     deleteUser(id: string): Promise<void>;
 
+    // Sites
+    getAllSites(): Promise<Site[]>;
+    getSiteById(id: string): Promise<Site | null>;
+    getSitesByUserId(userId: string): Promise<Site[]>;
+    createSite(site: InsertSite): Promise<Site>;
+    updateSite(id: string, site: Partial<InsertSite>): Promise<Site>;
+    deleteSite(id: string): Promise<void>;
+    assignUserToSite(userId: string, siteId: string): Promise<UserSiteAssignment>;
+    unassignUserFromSite(userId: string, siteId: string): Promise<void>;
+    getUserSiteAssignments(userId: string): Promise<UserSiteAssignment[]>;
+
     // Buildings
     getAllBuildings(): Promise<Building[]>;
     getBuildingById(id: string): Promise<Building | null>;
+    getBuildingsBySiteId(siteId: string): Promise<Building[]>;
     createBuilding(building: InsertBuilding): Promise<Building>;
     updateBuilding(id: string, building: Partial<InsertBuilding>): Promise<Building>;
     deleteBuilding(id: string): Promise<void>;
@@ -75,14 +89,37 @@ export interface IStorage {
 
     // Payment Records
     getPaymentRecordsByPeriod(month: string, year: number): Promise<PaymentRecord[]>;
+    getPaymentRecordsPaginated(
+        month: string,
+        year: number,
+        page: number,
+        limit: number,
+        filters?: { search?: string; status?: 'paid' | 'unpaid' }
+    ): Promise<{
+        payments: any[]; // PaymentRecord with JOIN data (resident, unit)
+        total: number;
+        stats: { total: number; collected: number; pending: number; rate: number };
+    }>;
     getPaymentRecordsByResidentId(residentId: string): Promise<PaymentRecord[]>;
     getPaymentRecordById(id: string): Promise<PaymentRecord | null>;
     createPaymentRecord(payment: InsertPaymentRecord): Promise<PaymentRecord>;
     updatePaymentStatus(id: string, status: 'paid' | 'unpaid', paymentDate?: Date): Promise<PaymentRecord>;
+    updatePaymentAmountByPeriod(month: string, year: number, amount: string): Promise<number>;
     deletePaymentRecord(id: string): Promise<void>;
 
     // Expense Records
     getExpenseRecordsByPeriod(month: string, year: number): Promise<ExpenseRecord[]>;
+    getExpenseRecordsPaginated(
+        month: string,
+        year: number,
+        page: number,
+        limit: number,
+        filters?: { search?: string; category?: string }
+    ): Promise<{
+        expenses: ExpenseRecord[];
+        total: number;
+        stats: { total: number; paid: number; pending: number };
+    }>;
     getExpenseRecordById(id: string): Promise<ExpenseRecord | null>;
     createExpenseRecord(expense: InsertExpenseRecord): Promise<ExpenseRecord>;
     updateExpenseRecord(id: string, expense: Partial<InsertExpenseRecord>): Promise<ExpenseRecord>;
@@ -194,4 +231,12 @@ export interface IStorage {
     getRecentMaintenanceRequests(limit?: number): Promise<MaintenanceRequest[]>;
     getTodayBookings(): Promise<Booking[]>;
     getMonthlyIncome(year: number): Promise<{ month: number; value: number }[]>;
+
+    // Residents Full Data (JOIN)
+    getBuildingFullData(buildingId: string): Promise<any>;
+    getGuestVisitsPaginated(
+        page: number,
+        limit: number,
+        filters?: { status?: string; search?: string }
+    ): Promise<{ visits: GuestVisit[]; total: number; page: number; limit: number }>;
 }

@@ -11,10 +11,10 @@ import { ITEMS_PER_PAGE } from "@/constants/residents.constants";
 export interface ResidentsViewProps {
     // Data
     buildings: Building[];
-    activeBlockId: string;
+    activeBlockId: string | null;
     activeBlock: Building | undefined;
-    paginatedUnits: Building["units"];
-    filteredUnits: Building["units"];
+    paginatedUnits: any[]; // UnitWithResidents[]
+    filteredUnits: any[]; // UnitWithResidents[]
     currentPage: number;
     stats: {
         total: number;

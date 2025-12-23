@@ -1,12 +1,17 @@
 import { useState, useMemo } from "react";
 import type { GuestVisit } from "@/types/residents.types";
-import { INITIAL_GUESTS } from "@/constants/residents.constants";
+import { useGuestVisits } from "@/hooks/residents/api";
+import { GUESTS_PER_PAGE } from "@/constants/residents.constants";
 
 export interface GuestStateReturn {
     guestList: GuestVisit[];
     setGuestList: React.Dispatch<React.SetStateAction<GuestVisit[]>>;
     guestFilter: "all" | "pending" | "active" | "completed";
     setGuestFilter: (filter: "all" | "pending" | "active" | "completed") => void;
+    currentPage: number;
+    setCurrentPage: (page: number) => void;
+    totalPages: number;
+    isLoading: boolean;
 
     // Computed Values
     filteredGuests: GuestVisit[];
@@ -18,47 +23,41 @@ export interface GuestStateReturn {
 }
 
 export function useGuestState(searchTerm: string): GuestStateReturn {
-    const [guestList, setGuestList] = useState<GuestVisit[]>(INITIAL_GUESTS);
     const [guestFilter, setGuestFilter] = useState<"all" | "pending" | "active" | "completed">("all");
+    const [currentPage, setCurrentPage] = useState(1);
 
-    // Computed: Filtered Guests
-    const filteredGuests = useMemo(() => {
-        let filtered = guestList;
-
-        // Filter by status
-        if (guestFilter !== "all") {
-            filtered = filtered.filter((g) => g.status === guestFilter);
+    // ✅ Fetch guest visits with pagination from API
+    const { visits, total, isLoading } = useGuestVisits(
+        currentPage,
+        GUESTS_PER_PAGE,
+        {
+            status: guestFilter === 'all' ? undefined : guestFilter,
+            search: searchTerm.length >= 3 ? searchTerm : undefined,
         }
+    );
 
-        // Filter by search term
-        if (searchTerm) {
-            const term = searchTerm.toLowerCase();
-            filtered = filtered.filter(
-                (g) =>
-                    g.guestName?.toLowerCase().includes(term) ||
-                    g.plate?.toLowerCase().includes(term) ||
-                    g.hostName.toLowerCase().includes(term)
-            );
-        }
+    // Computed: Stats (from current page data)
+    const guestStats = useMemo(() => ({
+        active: visits.filter((g) => g.status === "active").length,
+        pending: visits.filter((g) => g.status === "pending").length,
+        completedToday: visits.filter((g) => g.status === "completed").length,
+    }), [visits]);
 
-        return filtered;
-    }, [guestList, guestFilter, searchTerm]);
-
-    // Computed: Guest Stats
-    const guestStats = useMemo(() => {
-        return {
-            active: guestList.filter((g) => g.status === "active").length,
-            pending: guestList.filter((g) => g.status === "pending").length,
-            completedToday: guestList.filter((g) => g.status === "completed").length,
-        };
-    }, [guestList]);
+    // Dummy setGuestList for compatibility (not used with API)
+    const setGuestList = () => {
+        console.warn('setGuestList is deprecated with API usage');
+    };
 
     return {
-        guestList,
+        guestList: visits,
         setGuestList,
         guestFilter,
         setGuestFilter,
-        filteredGuests,
+        currentPage,
+        setCurrentPage,
+        totalPages: Math.ceil(total / GUESTS_PER_PAGE),
+        isLoading,
+        filteredGuests: visits, // Already filtered by backend
         guestStats,
     };
 }

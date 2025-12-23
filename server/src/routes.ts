@@ -223,6 +223,17 @@ export function createRoutes(storage: IStorage): Router {
         }
     });
 
+    // GET /api/buildings/:id/full-data (Residents Page için tüm nested data)
+    router.get('/buildings/:id/full-data', async (req, res) => {
+        try {
+            const data = await storage.getBuildingFullData(req.params.id);
+            res.json(data);
+        } catch (error: any) {
+            console.error('Building full data error:', error);
+            res.status(500).json({ error: error.message || 'Building data yüklenirken hata oluştu' });
+        }
+    });
+
     // GET /api/units/:id
     router.get('/units/:id', requireAuth, async (req, res) => {
         try {
@@ -235,6 +246,17 @@ export function createRoutes(storage: IStorage): Router {
     });
 
     // GET /api/residents/:id
+    // GET /api/residents/building-data/:buildingId (Residents Page için)
+    router.get('/residents/building-data/:buildingId', async (req, res) => {
+        try {
+            const data = await storage.getBuildingFullData(req.params.buildingId);
+            res.json(data);
+        } catch (error: any) {
+            console.error('Building full data error:', error);
+            res.status(500).json({ error: error.message || 'Building data yüklenirken hata oluştu' });
+        }
+    });
+
     router.get('/residents/:id', requireAuth, async (req, res) => {
         try {
             const resident = await storage.getResidentById(req.params.id);
@@ -389,21 +411,75 @@ export function createRoutes(storage: IStorage): Router {
     });
 
     // ==================== PAYMENT ROUTES ====================
+    // TODO: Add auth back after implementing login page
 
     // GET /api/payments?month=Ocak&year=2025
-    router.get('/payments', requireAuth, async (req, res) => {
+    router.get('/payments', async (req, res) => {
         try {
-            const { month, year } = req.query;
-            if (!month || !year) return res.status(400).json({ error: 'month ve year parametreleri gerekli' });
-            const payments = await storage.getPaymentRecordsByPeriod(month as string, parseInt(year as string));
-            res.json({ payments });
-        } catch (error) {
-            res.status(500).json({ error: 'Ödemeler yüklenirken hata oluştu' });
+            const { month, year, page = '1', limit = '20', search, status } = req.query;
+            
+            console.log('Payment fetch request:', { month, year, page, limit, search, status });
+            
+            // Validation
+            if (!month || !year) {
+                return res.status(400).json({ error: 'month ve year parametreleri gerekli' });
+            }
+
+            const pageNum = parseInt(page as string);
+            const limitNum = parseInt(limit as string);
+
+            // Validate pagination
+            if (isNaN(pageNum) || pageNum < 1) {
+                return res.status(400).json({ error: 'Geçersiz sayfa numarası' });
+            }
+            if (isNaN(limitNum) || limitNum < 1 || limitNum > 100) {
+                return res.status(400).json({ error: 'Geçersiz limit değeri (1-100)' });
+            }
+
+            // Validate search (minimum 3 characters)
+            if (search && typeof search === 'string' && search.trim().length > 0 && search.trim().length < 3) {
+                return res.status(400).json({ error: 'Arama terimi en az 3 karakter olmalıdır' });
+            }
+
+            // Validate status
+            if (status && !['paid', 'unpaid'].includes(status as string)) {
+                return res.status(400).json({ error: 'Geçersiz status değeri' });
+            }
+
+            const filters: { search?: string; status?: 'paid' | 'unpaid' } = {};
+            if (search && typeof search === 'string' && search.trim().length >= 3) {
+                filters.search = search.trim();
+            }
+            if (status) {
+                filters.status = status as 'paid' | 'unpaid';
+            }
+
+            const result = await storage.getPaymentRecordsPaginated(
+                month as string,
+                parseInt(year as string),
+                pageNum,
+                limitNum,
+                filters
+            );
+
+            console.log('Payment fetch result:', { 
+                paymentCount: result.payments.length, 
+                total: result.total,
+                stats: result.stats 
+            });
+
+            res.json(result);
+        } catch (error: any) {
+            console.error('Payment fetch error:', error);
+            res.status(500).json({ 
+                error: 'Ödemeler yüklenirken hata oluştu',
+                message: error.message 
+            });
         }
     });
 
     // POST /api/payments
-    router.post('/payments', requireAuth, async (req, res) => {
+    router.post('/payments', async (req, res) => {
         try {
             const validatedData = insertPaymentRecordSchema.parse(req.body);
             const payment = await storage.createPaymentRecord(validatedData);
@@ -414,19 +490,74 @@ export function createRoutes(storage: IStorage): Router {
         }
     });
 
-    router.patch('/payments/:id/status', requireAuth, async (req, res) => {
+    router.patch('/payments/:id/status', async (req, res) => {
         try {
             const { id } = req.params;
-            const { status } = req.body;
-            if (!['paid', 'unpaid'].includes(status)) return res.status(400).json({ error: 'Geçersiz status değeri' });
-            const payment = await storage.updatePaymentStatus(id, status);
+            const { status, paymentDate } = req.body;
+            
+            // Validation
+            if (!['paid', 'unpaid'].includes(status)) {
+                return res.status(400).json({ error: 'Geçersiz status değeri' });
+            }
+
+            // UUID validation
+            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+            if (!uuidRegex.test(id)) {
+                return res.status(400).json({ error: 'Geçersiz ödeme ID' });
+            }
+
+            const payment = await storage.updatePaymentStatus(
+                id,
+                status,
+                paymentDate ? new Date(paymentDate) : undefined
+            );
+
+            if (!payment) {
+                return res.status(404).json({ error: 'Ödeme kaydı bulunamadı' });
+            }
+
             res.json({ payment });
         } catch (error) {
+            console.error('Payment status update error:', error);
             res.status(500).json({ error: 'Ödeme durumu güncellenemedi' });
         }
     });
 
-    router.delete('/payments/:id', requireAuth, async (req, res) => {
+    // PATCH /api/payments/bulk-amount - Update amount for all payments in a period
+    router.patch('/payments/bulk-amount', async (req, res) => {
+        try {
+            const { month, year, amount } = req.body;
+
+            // Validation
+            if (!month || !year || !amount) {
+                return res.status(400).json({ error: 'month, year ve amount parametreleri gerekli' });
+            }
+
+            const yearNum = parseInt(year);
+            const amountNum = parseFloat(amount);
+
+            if (isNaN(yearNum) || yearNum < 2000 || yearNum > 2100) {
+                return res.status(400).json({ error: 'Geçersiz yıl değeri' });
+            }
+
+            if (isNaN(amountNum) || amountNum <= 0) {
+                return res.status(400).json({ error: 'Geçersiz tutar değeri' });
+            }
+
+            const updatedCount = await storage.updatePaymentAmountByPeriod(
+                month,
+                yearNum,
+                amount.toString()
+            );
+
+            res.json({ message: 'Aidat tutarları güncellendi', updatedCount });
+        } catch (error) {
+            console.error('Bulk amount update error:', error);
+            res.status(500).json({ error: 'Aidat tutarları güncellenemedi' });
+        }
+    });
+
+    router.delete('/payments/:id', async (req, res) => {
         try {
             await storage.deletePaymentRecord(req.params.id);
             res.json({ message: 'Ödeme kaydı silindi' });
@@ -435,7 +566,7 @@ export function createRoutes(storage: IStorage): Router {
         }
     });
 
-    router.get('/residents/:id/payments', requireAuth, async (req, res) => {
+    router.get('/residents/:id/payments', async (req, res) => {
         try {
             const payments = await storage.getPaymentRecordsByResidentId(req.params.id);
             res.json({ payments });
@@ -445,43 +576,139 @@ export function createRoutes(storage: IStorage): Router {
     });
 
     // ==================== EXPENSE ROUTES ====================
+    // TODO: Add auth back after implementing login page
 
-    router.get('/expenses', requireAuth, async (req, res) => {
+    router.get('/expenses', async (req, res) => {
         try {
-            const { month, year } = req.query;
-            if (!month || !year) return res.status(400).json({ error: 'month ve year parametreleri gerekli' });
-            const expenses = await storage.getExpenseRecordsByPeriod(month as string, parseInt(year as string));
-            res.json({ expenses });
-        } catch (error) {
-            res.status(500).json({ error: 'Giderler yüklenirken hata oluştu' });
+            const { month, year, page = '1', limit = '20', search, category } = req.query;
+
+            console.log('Expense fetch request:', { month, year, page, limit, search, category });
+
+            // Validation
+            if (!month || !year) {
+                return res.status(400).json({ error: 'month ve year parametreleri gerekli' });
+            }
+
+            const pageNum = parseInt(page as string);
+            const limitNum = parseInt(limit as string);
+
+            // Validate pagination
+            if (isNaN(pageNum) || pageNum < 1) {
+                return res.status(400).json({ error: 'Geçersiz sayfa numarası' });
+            }
+            if (isNaN(limitNum) || limitNum < 1 || limitNum > 100) {
+                return res.status(400).json({ error: 'Geçersiz limit değeri (1-100)' });
+            }
+
+            // Validate search (minimum 3 characters)
+            if (search && typeof search === 'string' && search.trim().length > 0 && search.trim().length < 3) {
+                return res.status(400).json({ error: 'Arama terimi en az 3 karakter olmalıdır' });
+            }
+
+            // Validate category
+            const validCategories = ['utilities', 'maintenance', 'personnel', 'general'];
+            if (category && !validCategories.includes(category as string)) {
+                return res.status(400).json({ error: 'Geçersiz kategori değeri' });
+            }
+
+            const filters: { search?: string; category?: string } = {};
+            if (search && typeof search === 'string' && search.trim().length >= 3) {
+                filters.search = search.trim();
+            }
+            if (category) {
+                filters.category = category as string;
+            }
+
+            const result = await storage.getExpenseRecordsPaginated(
+                month as string,
+                parseInt(year as string),
+                pageNum,
+                limitNum,
+                filters
+            );
+
+            console.log('Expense fetch result:', { 
+                expenseCount: result.expenses.length, 
+                total: result.total,
+                stats: result.stats 
+            });
+
+            res.json(result);
+        } catch (error: any) {
+            console.error('Expense fetch error:', error);
+            res.status(500).json({ 
+                error: 'Giderler yüklenirken hata oluştu',
+                message: error.message 
+            });
         }
     });
 
-    router.post('/expenses', requireAuth, async (req, res) => {
+    router.post('/expenses', async (req, res) => {
         try {
+            console.log('Expense create request body:', req.body);
+            
+            // Zod validation
             const validatedData = insertExpenseRecordSchema.parse(req.body);
+            
+            console.log('Validated expense data:', validatedData);
+            
+            // Additional validation
+            if (validatedData.amount && parseFloat(validatedData.amount as any) <= 0) {
+                return res.status(400).json({ error: 'Tutar pozitif bir sayı olmalıdır' });
+            }
+
             const expense = await storage.createExpenseRecord(validatedData);
             res.status(201).json({ expense });
         } catch (error: any) {
-            if (error.name === 'ZodError') return res.status(400).json({ error: 'Geçersiz veri', details: error.errors });
-            res.status(500).json({ error: 'Gider oluşturulamadı' });
+            console.error('Expense create error:', error);
+            if (error.name === 'ZodError') {
+                console.error('Zod validation errors:', JSON.stringify(error.errors, null, 2));
+                return res.status(400).json({ 
+                    error: 'Geçersiz veri', 
+                    details: error.errors,
+                    message: error.message 
+                });
+            }
+            res.status(500).json({ 
+                error: 'Gider oluşturulamadı',
+                message: error.message 
+            });
         }
     });
 
-    router.patch('/expenses/:id', requireAuth, async (req, res) => {
+    router.patch('/expenses/:id', async (req, res) => {
         try {
+            // UUID validation
+            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+            if (!uuidRegex.test(req.params.id)) {
+                return res.status(400).json({ error: 'Geçersiz gider ID' });
+            }
+
             const expense = await storage.updateExpenseRecord(req.params.id, req.body);
+            
+            if (!expense) {
+                return res.status(404).json({ error: 'Gider kaydı bulunamadı' });
+            }
+
             res.json({ expense });
         } catch (error) {
+            console.error('Expense update error:', error);
             res.status(500).json({ error: 'Gider kaydı güncellenemedi' });
         }
     });
 
-    router.delete('/expenses/:id', requireAuth, async (req, res) => {
+    router.delete('/expenses/:id', async (req, res) => {
         try {
+            // UUID validation
+            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+            if (!uuidRegex.test(req.params.id)) {
+                return res.status(400).json({ error: 'Geçersiz gider ID' });
+            }
+
             await storage.deleteExpenseRecord(req.params.id);
             res.json({ message: 'Gider silindi' });
         } catch (error) {
+            console.error('Expense delete error:', error);
             res.status(500).json({ error: 'Gider silinemedi' });
         }
     });
@@ -1132,14 +1359,157 @@ export function createRoutes(storage: IStorage): Router {
         }
     });
 
+    // ==================== SITES ROUTES ====================
+
+    // GET /api/sites - Kullanıcının erişebileceği siteler
+    router.get('/sites', async (req, res) => {
+        try {
+            const userId = (req as any).user?.id;
+            
+            if (!userId) {
+                // Auth bypass için tüm siteleri döndür
+                const sites = await storage.getAllSites();
+                return res.json({ sites });
+            }
+
+            const user = await storage.getUserById(userId);
+            
+            if (!user) {
+                return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
+            }
+
+            // Admin tüm siteleri görebilir
+            if (user.role === 'admin') {
+                const sites = await storage.getAllSites();
+                return res.json({ sites });
+            }
+
+            // Diğer kullanıcılar sadece atandıkları siteleri görebilir
+            const sites = await storage.getSitesByUserId(userId);
+            res.json({ sites });
+        } catch (error) {
+            console.error('Sites fetch error:', error);
+            res.status(500).json({ error: 'Siteler yüklenirken hata oluştu' });
+        }
+    });
+
+    // GET /api/sites/:id - Belirli bir site detayı
+    router.get('/sites/:id', async (req, res) => {
+        try {
+            const site = await storage.getSiteById(req.params.id);
+            if (!site) {
+                return res.status(404).json({ error: 'Site bulunamadı' });
+            }
+            res.json({ site });
+        } catch (error) {
+            console.error('Site fetch error:', error);
+            res.status(500).json({ error: 'Site yüklenirken hata oluştu' });
+        }
+    });
+
+    // GET /api/sites/:id/buildings - Site'ın blokları
+    router.get('/sites/:id/buildings', async (req, res) => {
+        try {
+            const buildings = await storage.getBuildingsBySiteId(req.params.id);
+            res.json({ buildings });
+        } catch (error) {
+            console.error('Site buildings fetch error:', error);
+            res.status(500).json({ error: 'Site blokları yüklenirken hata oluştu' });
+        }
+    });
+
+    // POST /api/sites - Yeni site oluştur (Admin only)
+    router.post('/sites', async (req, res) => {
+        try {
+            const site = await storage.createSite(req.body);
+            res.status(201).json({ site });
+        } catch (error) {
+            console.error('Site create error:', error);
+            res.status(500).json({ error: 'Site oluşturulurken hata oluştu' });
+        }
+    });
+
+    // PUT /api/sites/:id - Site güncelle (Admin only)
+    router.put('/sites/:id', async (req, res) => {
+        try {
+            const site = await storage.updateSite(req.params.id, req.body);
+            res.json({ site });
+        } catch (error) {
+            console.error('Site update error:', error);
+            res.status(500).json({ error: 'Site güncellenirken hata oluştu' });
+        }
+    });
+
+    // DELETE /api/sites/:id - Site sil (Admin only)
+    router.delete('/sites/:id', async (req, res) => {
+        try {
+            await storage.deleteSite(req.params.id);
+            res.json({ success: true });
+        } catch (error) {
+            console.error('Site delete error:', error);
+            res.status(500).json({ error: 'Site silinirken hata oluştu' });
+        }
+    });
+
+    // POST /api/sites/:siteId/assign/:userId - Kullanıcıyı site'a ata (Admin only)
+    router.post('/sites/:siteId/assign/:userId', async (req, res) => {
+        try {
+            const assignment = await storage.assignUserToSite(req.params.userId, req.params.siteId);
+            res.status(201).json({ assignment });
+        } catch (error) {
+            console.error('User site assignment error:', error);
+            res.status(500).json({ error: 'Kullanıcı site\'a atanırken hata oluştu' });
+        }
+    });
+
+    // DELETE /api/sites/:siteId/unassign/:userId - Kullanıcının site atamasını kaldır (Admin only)
+    router.delete('/sites/:siteId/unassign/:userId', async (req, res) => {
+        try {
+            await storage.unassignUserFromSite(req.params.userId, req.params.siteId);
+            res.json({ success: true });
+        } catch (error) {
+            console.error('User site unassignment error:', error);
+            res.status(500).json({ error: 'Kullanıcı site ataması kaldırılırken hata oluştu' });
+        }
+    });
+
     // ==================== BUILDINGS ROUTES ====================
 
-    router.get('/buildings', requireAuth, async (req, res) => {
+    router.get('/buildings', async (req, res) => {
         try {
             const buildings = await storage.getAllBuildings();
             res.json({ buildings });
         } catch (error) {
             res.status(500).json({ error: 'Bloklar yüklenirken hata oluştu' });
+        }
+    });
+
+    // ==================== RESIDENTS FULL DATA (JOIN) ====================
+
+    // GET /api/residents/building-data/:buildingId
+    router.get('/residents/building-data/:buildingId', requireAuth, async (req, res) => {
+        try {
+            const data = await storage.getBuildingFullData(req.params.buildingId);
+            res.json(data);
+        } catch (error: any) {
+            console.error('Building full data error:', error);
+            res.status(500).json({ error: error.message || 'Building data yüklenirken hata oluştu' });
+        }
+    });
+
+    // GET /api/guest-visits?page=1&limit=10&status=active&search=34ABC
+    router.get('/guest-visits', async (req, res) => {
+        try {
+            const page = parseInt(req.query.page as string) || 1;
+            const limit = parseInt(req.query.limit as string) || 10;
+            const status = req.query.status as string | undefined;
+            const search = req.query.search as string | undefined;
+            
+            const result = await storage.getGuestVisitsPaginated(page, limit, { status, search });
+            res.json(result);
+        } catch (error: any) {
+            console.error('Guest visits error:', error);
+            res.status(500).json({ error: 'Guest visits yüklenirken hata oluştu' });
         }
     });
 

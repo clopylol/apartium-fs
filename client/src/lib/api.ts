@@ -71,9 +71,77 @@ export const api = {
             apiClient(`/expenses/${id}`, { method: 'DELETE' }),
     },
 
+    // Sites
+    sites: {
+        getAll: () => apiClient('/sites'),
+        getById: (id: string) => apiClient(`/sites/${id}`),
+        getBuildings: (siteId: string) => apiClient(`/sites/${siteId}/buildings`),
+        create: (data: any) => apiClient('/sites', { method: 'POST', data }),
+        update: (id: string, data: any) => apiClient(`/sites/${id}`, { method: 'PUT', data }),
+        delete: (id: string) => apiClient(`/sites/${id}`, { method: 'DELETE' }),
+        assignUser: (siteId: string, userId: string) => apiClient(`/sites/${siteId}/assign/${userId}`, { method: 'POST' }),
+        unassignUser: (siteId: string, userId: string) => apiClient(`/sites/${siteId}/unassign/${userId}`, { method: 'DELETE' }),
+    },
+
     // Buildings
     buildings: {
         getAll: () => apiClient('/buildings'),
+        getBySiteId: (siteId: string) => apiClient(`/sites/${siteId}/buildings`),
+        create: (data: any) => apiClient('/buildings', { method: 'POST', data }),
+        update: (id: string, data: any) => apiClient(`/buildings/${id}`, { method: 'PATCH', data }),
+        delete: (id: string) => apiClient(`/buildings/${id}`, { method: 'DELETE' }),
+    },
+
+    // Residents
+    residents: {
+        // Full building data (JOIN ile)
+        getBuildingData: (buildingId: string) =>
+            apiClient(`/residents/building-data/${buildingId}`),
+        
+        // CRUD - Residents
+        createResident: (data: any) =>
+            apiClient('/residents', { method: 'POST', data }),
+        updateResident: (id: string, data: any) =>
+            apiClient(`/residents/${id}`, { method: 'PATCH', data }),
+        deleteResident: (id: string) =>
+            apiClient(`/residents/${id}`, { method: 'DELETE' }),
+        
+        // CRUD - Vehicles
+        createVehicle: (data: any) =>
+            apiClient('/vehicles', { method: 'POST', data }),
+        updateVehicle: (id: string, data: any) =>
+            apiClient(`/vehicles/${id}`, { method: 'PATCH', data }),
+        deleteVehicle: (id: string) =>
+            apiClient(`/vehicles/${id}`, { method: 'DELETE' }),
+        
+        // CRUD - Parking Spots
+        createParkingSpot: (data: any) =>
+            apiClient('/parking-spots', { method: 'POST', data }),
+        updateParkingSpot: (id: string, data: any) =>
+            apiClient(`/parking-spots/${id}`, { method: 'PATCH', data }),
+        deleteParkingSpot: (id: string) =>
+            apiClient(`/parking-spots/${id}`, { method: 'DELETE' }),
+        
+        // Guest Visits
+        getGuestVisits: (page: number, limit: number, filters?: { status?: string; search?: string }) => {
+            const params = new URLSearchParams();
+            params.append('page', page.toString());
+            params.append('limit', limit.toString());
+            if (filters?.status) params.append('status', filters.status);
+            if (filters?.search) params.append('search', filters.search);
+            return apiClient(`/guest-visits?${params.toString()}`);
+        },
+        createGuestVisit: (data: any) =>
+            apiClient('/guest-visits', { method: 'POST', data }),
+        updateGuestVisit: (id: string, data: any) =>
+            apiClient(`/guest-visits/${id}`, { method: 'PATCH', data }),
+        deleteGuestVisit: (id: string) =>
+            apiClient(`/guest-visits/${id}`, { method: 'DELETE' }),
+        updateGuestVisitStatus: (id: string, status: string, timestamp?: Date) =>
+            apiClient(`/guest-visits/${id}/status`, { 
+                method: 'PATCH', 
+                data: { status, timestamp: timestamp?.toISOString() } 
+            }),
     },
 
     // Dashboard

@@ -82,3 +82,54 @@ export function formatRelativeTime(date: string | Date | null | undefined): stri
     }
 }
 
+// ==================== GUEST VISIT DATE/TIME UTILITIES ====================
+
+/**
+ * Format guest visit time for display
+ * @param date - Date object or null
+ * @returns Formatted time string (HH:MM) or empty string
+ */
+export function formatGuestVisitTime(date: Date | null | undefined): string {
+    if (!date) return '';
+    
+    return new Intl.DateTimeFormat('tr-TR', {
+        hour: '2-digit',
+        minute: '2-digit',
+    }).format(date);
+}
+
+/**
+ * Format guest visit date for display
+ * @param dateString - ISO date string (YYYY-MM-DD)
+ * @returns Formatted date string (DD.MM.YYYY)
+ */
+export function formatGuestVisitDate(dateString: string): string {
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('tr-TR').format(date);
+}
+
+/**
+ * Get guest visit status label with time info
+ * @param visit - Guest visit object
+ * @returns Status label with time info
+ */
+export function getGuestVisitStatusLabel(visit: { 
+    status: 'pending' | 'active' | 'completed';
+    entryTime?: Date | null;
+    exitTime?: Date | null;
+}): string {
+    switch (visit.status) {
+        case 'pending':
+            return 'Bekleniyor';
+        case 'active':
+            return visit.entryTime 
+                ? `İçeride (${formatGuestVisitTime(visit.entryTime)})`
+                : 'İçeride';
+        case 'completed':
+            return visit.exitTime
+                ? `Çıkış Yaptı (${formatGuestVisitTime(visit.exitTime)})`
+                : 'Tamamlandı';
+        default:
+            return 'Bilinmiyor';
+    }
+}

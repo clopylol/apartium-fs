@@ -1,85 +1,163 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import type { ExpenseRecord } from '@/types/payments';
+import type { ExpenseRecord, ExpenseRecordLegacy, ExpensesApiResponse, ExpenseFormData } from '@/types/payments';
 
-// --- Mock Data Generator ---
-const generateMockExpenses = (month: string, year: string): ExpenseRecord[] => {
-    return [
-        { id: 'exp-1', title: 'Asansör Bakımı', category: 'maintenance', amount: 3500, date: `5 ${month} ${year}`, status: 'paid' },
-        { id: 'exp-2', title: 'Ortak Elektrik', category: 'utilities', amount: 8450, date: `12 ${month} ${year}`, status: 'pending' },
-        { id: 'exp-3', title: 'Güvenlik Personeli', category: 'personnel', amount: 24000, date: `1 ${month} ${year}`, status: 'paid' },
-        { id: 'exp-4', title: 'Su Faturası', category: 'utilities', amount: 1200, date: `14 ${month} ${year}`, status: 'paid' },
-        { id: 'exp-5', title: 'Bahçe Düzenlemesi', category: 'maintenance', amount: 1500, date: `20 ${month} ${year}`, status: 'pending' },
-        { id: 'exp-6', title: 'Kırtasiye', category: 'general', amount: 450, date: `8 ${month} ${year}`, status: 'paid' },
-    ];
+// API Functions
+const fetchExpenses = async (
+    month: string,
+    year: string,
+    page: number,
+    limit: number,
+    filters?: { search?: string; category?: string }
+): Promise<ExpensesApiResponse> => {
+    const params = new URLSearchParams({
+        month,
+        year: year.toString(),
+        page: page.toString(),
+        limit: limit.toString(),
+    });
+
+    if (filters?.search && filters.search.trim().length >= 3) {
+        params.append('search', filters.search.trim());
+    }
+    if (filters?.category) {
+        params.append('category', filters.category);
+    }
+
+    const response = await fetch(`/api/expenses?${params.toString()}`, {
+        credentials: 'include',
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Giderler yüklenirken hata oluştu');
+    }
+
+    return response.json();
+};
+
+const createExpense = async (data: ExpenseFormData): Promise<{ expense: ExpenseRecord }> => {
+    const response = await fetch('/api/expenses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Gider oluşturulamadı');
+    }
+
+    return response.json();
+};
+
+const deleteExpenseApi = async (id: string): Promise<{ message: string }> => {
+    const response = await fetch(`/api/expenses/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Gider silinemedi');
+    }
+
+    return response.json();
+};
+
+// Transform DB data to legacy format for components
+const transformToLegacy = (expense: ExpenseRecord): ExpenseRecordLegacy => {
+    return {
+        id: expense.id,
+        title: expense.title,
+        category: expense.category,
+        amount: typeof expense.amount === 'string' ? parseFloat(expense.amount) : expense.amount,
+        date: expense.expenseDate,
+        status: expense.status,
+        description: expense.description || undefined,
+        attachment: expense.attachmentUrl || undefined,
+    };
 };
 
 export interface UseExpensesReturn {
-    expenses: ExpenseRecord[];
+    expenses: ExpenseRecordLegacy[];
     isLoading: boolean;
     error: string | null;
-    addExpense: (expense: Partial<ExpenseRecord>) => void;
+    addExpense: (expense: Partial<ExpenseRecordLegacy>) => void;
     deleteExpense: (id: string) => void;
     refetch: () => void;
 }
 
 export const useExpenses = (month: string, year: string): UseExpensesReturn => {
     const { t } = useTranslation();
-    const [expenses, setExpenses] = useState<ExpenseRecord[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const queryClient = useQueryClient();
 
-    const fetchExpenses = useCallback(async () => {
-        setIsLoading(true);
-        setError(null);
-        
-        try {
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            // Simulate random error (10% chance)
-            if (Math.random() < 0.1) {
-                throw new Error(t('payments.errorState.expenseLoadError'));
-            }
-            
-            const data = generateMockExpenses(month, year);
-            setExpenses(data);
-        } catch (err) {
-            setError(err instanceof Error ? err.message : t('payments.errorState.unknownError'));
-            setExpenses([]);
-        } finally {
-            setIsLoading(false);
-        }
-    }, [month, year, t]);
+    // Fetch expenses with React Query
+    const {
+        data,
+        isLoading,
+        error,
+        refetch,
+    } = useQuery({
+        queryKey: ['expenses', month, year],
+        queryFn: () => fetchExpenses(month, year, 1, 1000), // Get all for now (no pagination in UI yet)
+        staleTime: 30000, // 30 seconds
+    });
 
-    useEffect(() => {
-        fetchExpenses();
-    }, [fetchExpenses]);
+    // Mutation: Create expense
+    const createMutation = useMutation({
+        mutationFn: (data: ExpenseFormData) => createExpense(data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['expenses', month, year] });
+        },
+        onError: (error: Error) => {
+            console.error('Create expense error:', error);
+        },
+    });
 
-    const addExpense = useCallback((newExpense: Partial<ExpenseRecord>) => {
-        const expense: ExpenseRecord = {
-            id: `new-exp-${Date.now()}`,
+    // Mutation: Delete expense
+    const deleteMutation = useMutation({
+        mutationFn: (id: string) => deleteExpenseApi(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['expenses', month, year] });
+        },
+        onError: (error: Error) => {
+            console.error('Delete expense error:', error);
+        },
+    });
+
+    // Transform to legacy format
+    const expenses = data?.expenses.map(transformToLegacy) || [];
+
+    // Legacy methods for compatibility
+    const addExpense = useCallback((newExpense: Partial<ExpenseRecordLegacy>) => {
+        // Transform legacy format to API format
+        const expenseData: ExpenseFormData = {
             title: newExpense.title || '',
             category: newExpense.category as any,
             amount: Number(newExpense.amount),
-            date: newExpense.date || `${new Date().getDate()} ${month} ${year}`,
+            expenseDate: newExpense.date || new Date().toISOString().split('T')[0],
             status: newExpense.status as any,
-            attachment: newExpense.attachment
+            description: newExpense.description,
+            periodMonth: month,
+            periodYear: parseInt(year),
         };
-        setExpenses(prev => [...prev, expense]);
-    }, [month, year]);
+
+        createMutation.mutate(expenseData);
+    }, [month, year, createMutation]);
 
     const deleteExpense = useCallback((id: string) => {
-        setExpenses(prev => prev.filter(e => e.id !== id));
-    }, []);
+        deleteMutation.mutate(id);
+    }, [deleteMutation]);
 
     return {
         expenses,
         isLoading,
-        error,
+        error: error ? (error as Error).message : null,
         addExpense,
         deleteExpense,
-        refetch: fetchExpenses,
+        refetch,
     };
 };
-

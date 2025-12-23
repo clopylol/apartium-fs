@@ -1,3 +1,14 @@
+// ==================== BASE TYPES ====================
+
+export interface Site {
+    id: string;
+    name: string;
+    address?: string;
+    totalBuildings: number;
+    createdAt?: string;
+    updatedAt?: string;
+}
+
 export interface ResidentVehicle {
     id: string;
     plate: string;
@@ -31,10 +42,48 @@ export interface ParkingSpotDefinition {
 
 export interface Building {
     id: string;
+    siteId: string;
     name: string;
     units: Unit[];
     parkingSpots: ParkingSpotDefinition[];
 }
+
+// ==================== API RESPONSE TYPES (WITH NESTED DATA) ====================
+
+/**
+ * Backend'den gelen full building data response
+ * JOIN ile tüm nested relationships bir seferde gelir
+ */
+export interface BuildingDataResponse {
+    building: Building;
+    units: UnitWithResidents[];
+    parkingSpots: ParkingSpotWithVehicle[];
+}
+
+export interface UnitWithResidents extends Omit<Unit, 'residents'> {
+    residents: ResidentWithVehicles[];
+}
+
+export interface ResidentWithVehicles extends Omit<Resident, 'vehicles'> {
+    vehicles: Vehicle[];
+}
+
+export interface Vehicle {
+    id: string;
+    residentId: string;
+    parkingSpotId?: string | null;
+    plate: string;
+    model?: string | null;
+    createdAt: string;
+    updatedAt: string;
+    deletedAt?: string | null;
+}
+
+export interface ParkingSpotWithVehicle extends ParkingSpotDefinition {
+    assignedVehicle?: Vehicle | null;
+}
+
+// ==================== GUEST VISIT TYPES ====================
 
 export interface GuestVisit {
     id: string;
@@ -47,12 +96,41 @@ export interface GuestVisit {
     blockName: string;
     status: "pending" | "active" | "completed";
     source: "app" | "manual" | "phone";
-    expectedDate: string;
+    expectedDate: string; // YYYY-MM-DD
     durationDays: number;
-    entryTime?: string;
-    exitTime?: string;
+    entryTime?: Date | null; // ✅ Date object (parsed from ISO string)
+    exitTime?: Date | null;  // ✅ Date object (parsed from ISO string)
     note?: string;
     parkingSpot?: string;
+}
+
+/**
+ * Backend'den gelen raw guest visit (ISO string dates)
+ */
+export interface GuestVisitRaw {
+    id: string;
+    plate: string;
+    guestName?: string;
+    model?: string;
+    color?: string;
+    status: "pending" | "active" | "completed";
+    source: "app" | "manual" | "phone";
+    expectedDate: string;
+    durationDays: number;
+    entryTime?: string | null; // ISO string
+    exitTime?: string | null;  // ISO string
+    note?: string;
+    parkingSpotId?: string | null;
+}
+
+/**
+ * Paginated guest visits response
+ */
+export interface GuestVisitsPaginatedResponse {
+    visits: GuestVisitRaw[];
+    total: number;
+    page: number;
+    limit: number;
 }
 
 export interface VehicleSearchItem {
