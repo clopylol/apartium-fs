@@ -181,53 +181,53 @@ export function useParkingActions(params: ParkingActionsParams): ParkingActionsR
 
         // Add Resident Vehicles
         if (buildings && Array.isArray(buildings)) {
-            buildings.forEach((b) => {
+        buildings.forEach((b) => {
                 if (b.units && Array.isArray(b.units)) {
-                    b.units.forEach((u) => {
+            b.units.forEach((u) => {
                         if (u.residents && Array.isArray(u.residents)) {
-                            u.residents.forEach((r) => {
+                u.residents.forEach((r) => {
                                 if (r.vehicles && Array.isArray(r.vehicles)) {
-                                    r.vehicles.forEach((v) => {
-                                        vehicles.push({
-                                            id: v.id,
-                                            plate: v.plate,
-                                            blockName: b.name,
-                                            unitNumber: u.number,
-                                            name: r.name,
-                                            phone: r.phone,
-                                            vehicleModel: v.model,
-                                            parkingSpot: v.parkingSpot,
-                                            isGuest: false,
-                                            type: r.type,
-                                            avatar: r.avatar,
-                                        });
-                                    });
+                    r.vehicles.forEach((v) => {
+                        vehicles.push({
+                            id: v.id,
+                            plate: v.plate,
+                            blockName: b.name,
+                            unitNumber: u.number,
+                            name: r.name,
+                            phone: r.phone,
+                            vehicleModel: v.model,
+                            parkingSpot: v.parkingSpot,
+                            isGuest: false,
+                            type: r.type,
+                            avatar: r.avatar,
+                        });
+                    });
                                 }
                             });
                         }
-                    });
+                });
                 }
             });
         }
 
         // Add Guest Vehicles
         if (guestList && Array.isArray(guestList)) {
-            guestList.forEach((g) => {
-                if (g.status === "active" || g.status === "pending") {
-                    vehicles.push({
-                        id: g.id,
-                        plate: g.plate,
-                        blockName: g.blockName,
-                        unitNumber: g.unitNumber,
-                        name: g.guestName || "İsimsiz Misafir",
-                        phone: "-",
-                        vehicleModel: g.model,
-                        isGuest: true,
-                        status: g.status,
-                        source: g.source,
-                    });
-                }
-            });
+        guestList.forEach((g) => {
+            if (g.status === "active" || g.status === "pending") {
+                vehicles.push({
+                    id: g.id,
+                    plate: g.plate,
+                    blockName: g.blockName,
+                    unitNumber: g.unitNumber,
+                    name: g.guestName || "İsimsiz Misafir",
+                    phone: "-",
+                    vehicleModel: g.model,
+                    isGuest: true,
+                    status: g.status,
+                    source: g.source,
+                });
+            }
+        });
         }
 
         // Filter by search term if needed

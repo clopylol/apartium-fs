@@ -45,7 +45,7 @@ export function useGuestActions(params: GuestActionsParams): GuestActionsReturn 
                 status: 'pending',
                 source: 'manual',
             });
-            closeGuestModal();
+        closeGuestModal();
         } catch (error) {
             // Error handled by mutation
             console.error('Failed to create guest visit:', error);
@@ -69,8 +69,8 @@ export function useGuestActions(params: GuestActionsParams): GuestActionsReturn 
                 status: 'active',
                 timestamp: new Date(), // ✅ Current timestamp for entryTime
             });
-            setCheckInConfirm({ isOpen: false, guestId: null });
-            setSelectedGuest(null);
+        setCheckInConfirm({ isOpen: false, guestId: null });
+        setSelectedGuest(null);
         } catch (error) {
             // Error handled by mutation
             console.error('Failed to check in guest:', error);
@@ -86,8 +86,8 @@ export function useGuestActions(params: GuestActionsParams): GuestActionsReturn 
                 status: 'completed',
                 timestamp: new Date(), // ✅ Current timestamp for exitTime
             });
-            setCheckOutConfirm({ isOpen: false, guestId: null });
-            setSelectedGuest(null);
+        setCheckOutConfirm({ isOpen: false, guestId: null });
+        setSelectedGuest(null);
         } catch (error) {
             // Error handled by mutation
             console.error('Failed to check out guest:', error);

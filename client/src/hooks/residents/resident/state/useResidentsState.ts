@@ -76,19 +76,19 @@ export function useResidentsState(): ResidentsStateReturn {
         }
     }, [sites, activeSiteId]);
 
-    // Set first building as active when site changes
+    // Set first building as active when buildings are loaded or site changes
     useEffect(() => {
-        if (buildings.length > 0 && !activeBlockId) {
-            setActiveBlockId(buildings[0].id);
-        }
-    }, [buildings, activeBlockId]);
-
-    // Reset block selection when site changes
-    useEffect(() => {
-        if (activeSiteId) {
+        if (buildings.length > 0) {
+            // Eğer hiç aktif blok yoksa veya aktif blok bu sitenin bloklarından değilse, ilk blok'u seç
+            const isCurrentBlockValid = activeBlockId && buildings.some(b => b.id === activeBlockId);
+            if (!isCurrentBlockValid) {
+                setActiveBlockId(buildings[0].id);
+            }
+        } else if (!activeSiteId) {
+            // Hiç site seçili değilse blok'u da sıfırla
             setActiveBlockId(null);
         }
-    }, [activeSiteId]);
+    }, [buildings, activeSiteId, activeBlockId]);
 
     // Reset Page on Filter Change
     useEffect(() => {

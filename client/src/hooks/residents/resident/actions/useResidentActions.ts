@@ -58,13 +58,13 @@ export function useResidentActions(params: ResidentActionsParams): ResidentActio
         try {
             await createResident.mutateAsync({
                 unitId: residentData.unitId,
-                name: residentData.name,
-                type: residentData.type,
-                phone: residentData.phone,
+                            name: residentData.name,
+                            type: residentData.type,
+                            phone: residentData.phone,
                 email: residentData.email || null,
-                avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(residentData.name)}&background=random&color=fff`,
-            });
-            closeAddResidentModal();
+                            avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(residentData.name)}&background=random&color=fff`,
+        });
+        closeAddResidentModal();
         } catch (error) {
             // Error handled by mutation
             console.error('Failed to create resident:', error);
@@ -84,7 +84,7 @@ export function useResidentActions(params: ResidentActionsParams): ResidentActio
         const { residentId } = deleteResidentConfirm;
         try {
             await deleteResident.mutateAsync(residentId);
-            closeDeleteResidentConfirm();
+        closeDeleteResidentConfirm();
         } catch (error) {
             // Error handled by mutation
             console.error('Failed to delete resident:', error);
@@ -103,7 +103,7 @@ export function useResidentActions(params: ResidentActionsParams): ResidentActio
                 id: editingResident.resident.id,
                 data: updatedData,
             });
-            closeEditResidentModal();
+        closeEditResidentModal();
         } catch (error) {
             // Error handled by mutation
             console.error('Failed to update resident:', error);
