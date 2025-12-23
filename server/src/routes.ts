@@ -707,6 +707,17 @@ export function createRoutes(storage: IStorage): Router {
 
     // ==================== ANNOUNCEMENTS ====================
 
+    // GET /api/announcements/stats
+    router.get('/announcements/stats', async (req, res) => {
+        try {
+            const stats = await storage.getAnnouncementStats();
+            res.json(stats);
+        } catch (error) {
+            console.error('Announcement stats error:', error);
+            res.status(500).json({ error: 'İstatistikler yüklenirken hata oluştu' });
+        }
+    });
+
     // GET /api/announcements?page=1&limit=10
     router.get('/announcements', async (req, res) => {
         try {

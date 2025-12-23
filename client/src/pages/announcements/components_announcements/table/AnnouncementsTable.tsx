@@ -5,6 +5,7 @@ import type { Announcement } from "@/types/Announcement.types";
 import { IconButton } from "@/components/shared/button";
 import { AnnouncementSkeletonRow } from "../skeletons";
 import { AnnouncementsEmptyState, NoResultsEmptyState } from "../empty-state";
+import { formatDateShort } from "@/utils/date";
 
 interface AnnouncementsTableProps {
     announcements: Announcement[];
@@ -56,6 +57,7 @@ export const AnnouncementsTable: FC<AnnouncementsTableProps> = ({
                                 />
                             </th>
                             <th className="px-6 py-4">Başlık</th>
+                            <th className="px-6 py-4">Yazar</th>
                             <th className="px-6 py-4">Öncelik</th>
                             <th className="px-6 py-4">Görünürlük</th>
                             <th className="px-6 py-4">Yayın Tarihi</th>
@@ -91,6 +93,14 @@ export const AnnouncementsTable: FC<AnnouncementsTableProps> = ({
                                                 <div className="text-xs text-ds-muted-light dark:text-ds-muted-dark mt-1 line-clamp-1 max-w-xs">{ann.content}</div>
                                             </td>
                                             <td className="px-6 py-4">
+                                                <div className="text-sm text-ds-primary-light dark:text-ds-primary-dark font-medium">
+                                                    {ann.authorName}
+                                                </div>
+                                                <div className="text-xs text-ds-muted-light dark:text-ds-muted-dark">
+                                                    {ann.authorEmail}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
                                                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${getPriorityColor(ann.priority)}`}>
                                                     {ann.priority === 'High' ? 'Yüksek' : ann.priority === 'Medium' ? 'Orta' : 'Düşük'}
                                                 </span>
@@ -98,8 +108,8 @@ export const AnnouncementsTable: FC<AnnouncementsTableProps> = ({
                                             <td className="px-6 py-4 text-sm text-ds-muted-light dark:text-ds-muted-dark">
                                                 {ann.visibility === 'All Residents' ? 'Tüm Sakinler' : ann.visibility}
                                             </td>
-                                            <td className="px-6 py-4 text-sm text-ds-muted-light dark:text-ds-muted-dark font-mono">
-                                                {ann.publishDate}
+                                            <td className="px-6 py-4 text-sm text-ds-muted-light dark:text-ds-muted-dark">
+                                                {formatDateShort(ann.publishDate)}
                                             </td>
                                             <td className="px-6 py-4">
                                                 <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium ${getStatusColor(ann.status)}`}>
@@ -132,7 +142,7 @@ export const AnnouncementsTable: FC<AnnouncementsTableProps> = ({
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan={7} className="px-6 py-20 text-center text-ds-muted-light dark:text-ds-muted-dark">
+                                        <td colSpan={8} className="px-6 py-20 text-center text-ds-muted-light dark:text-ds-muted-dark">
                                             {totalAnnouncements === 0 ? (
                                                 <AnnouncementsEmptyState onAddNew={onAddNew} />
                                             ) : (

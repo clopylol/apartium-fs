@@ -26,6 +26,14 @@ export interface AnnouncementResponse {
     announcement: Announcement;
 }
 
+export interface AnnouncementStats {
+    totalCount: number;
+    activeCount: number;
+    scheduledCount: number;
+    draftCount: number;
+    highPriorityCount: number;
+}
+
 // Filter types
 export type AnnouncementPriority = 'All' | 'High' | 'Medium' | 'Low';
 export type AnnouncementStatus = 'All' | 'Published' | 'Scheduled' | 'Draft';

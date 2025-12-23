@@ -40,4 +40,4 @@ export type { Janitor, JanitorRequest, JanitorRequestType, JanitorRequestStatus,
 export type { CargoItem, ExpectedCargo, CourierVisit, MockResident, CargoStatus, CourierStatus, CargoType, CourierMethod } from './cargo.types';
 export type { Facility, Booking, BookingStatus, FacilityStatus } from './bookings.types';
 export type { DashboardStats, MonthlyIncome } from './dashboard.types';
-export type { Announcement, AnnouncementFormData, AnnouncementsResponse, AnnouncementResponse, AnnouncementPriority, AnnouncementStatus } from './Announcement.types';
+export type { Announcement, AnnouncementFormData, AnnouncementsResponse, AnnouncementResponse, AnnouncementStats, AnnouncementPriority, AnnouncementStatus } from './Announcement.types';

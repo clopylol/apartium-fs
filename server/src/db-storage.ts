@@ -796,6 +796,27 @@ export class DatabaseStorage implements IStorage {
         return announcement ? (announcement as Announcement & { authorName: string; authorEmail: string }) : null;
     }
 
+    async getAnnouncementStats(): Promise<{
+        totalCount: number;
+        activeCount: number;
+        scheduledCount: number;
+        draftCount: number;
+        highPriorityCount: number;
+    }> {
+        const [stats] = await db
+            .select({
+                totalCount: sql<number>`COUNT(*)::int`,
+                activeCount: sql<number>`COUNT(CASE WHEN ${schema.announcements.status} = 'Published' THEN 1 END)::int`,
+                scheduledCount: sql<number>`COUNT(CASE WHEN ${schema.announcements.status} = 'Scheduled' THEN 1 END)::int`,
+                draftCount: sql<number>`COUNT(CASE WHEN ${schema.announcements.status} = 'Draft' THEN 1 END)::int`,
+                highPriorityCount: sql<number>`COUNT(CASE WHEN ${schema.announcements.priority} = 'High' AND ${schema.announcements.status} = 'Published' THEN 1 END)::int`,
+            })
+            .from(schema.announcements)
+            .where(isNull(schema.announcements.deletedAt));
+
+        return stats;
+    }
+
     async createAnnouncement(announcement: InsertAnnouncement): Promise<Announcement> {
         const [newAnnouncement] = await db
             .insert(schema.announcements)

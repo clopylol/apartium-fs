@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Plus } from "lucide-react";
 
 import type { Announcement, AnnouncementPriority, AnnouncementFormData } from "@/types";
-import { useAnnouncements, useAnnouncementMutations } from "@/hooks/announcements";
+import { useAnnouncements, useAnnouncementMutations, useAnnouncementStats } from "@/hooks/announcements";
 import {
     AnnouncementStats,
     AnnouncementFilters,
@@ -20,14 +20,27 @@ export const AnnouncementsPage = () => {
     const [filterStatus, setFilterStatus] = useState("All");
     const [filterPriority, setFilterPriority] = useState<AnnouncementPriority>("All");
 
-    // Pagination (server-side)
+    // Pagination (client-side)
     const [currentPage, setCurrentPage] = useState(1);
 
-    // Fetch announcements from API
-    const { announcements: allAnnouncements, total, isLoading } = useAnnouncements(currentPage, ITEMS_PER_PAGE);
+    // Fetch ALL announcements from API (no pagination on server)
+    const { announcements: allAnnouncements, total, isLoading } = useAnnouncements(1, 1000);
+
+    // Fetch stats separately (independent of filters)
+    const { stats, isLoading: isLoadingStats } = useAnnouncementStats();
 
     // Mutations
-    const { createAnnouncement, updateAnnouncement, deleteAnnouncement, isCreating, isUpdating, isDeleting } = useAnnouncementMutations();
+    const { 
+        createAnnouncement, 
+        updateAnnouncement, 
+        deleteAnnouncement, 
+        isCreating, 
+        isUpdating, 
+        isDeleting,
+        createError,
+        updateError,
+        deleteError 
+    } = useAnnouncementMutations();
 
     // Modal states
     const [showModal, setShowModal] = useState(false);
@@ -66,12 +79,16 @@ export const AnnouncementsPage = () => {
         });
     }, [allAnnouncements, searchTerm, filterStatus, filterPriority]);
 
-    // Stats calculations
-    const activeCount = filteredAnnouncements.filter((a) => a.status === "Published").length;
-    const scheduledCount = filteredAnnouncements.filter((a) => a.status === "Scheduled").length;
-    const highPriorityCount = filteredAnnouncements.filter(
-        (a) => a.priority === "High" && a.status === "Published"
-    ).length;
+    // Client-side pagination
+    const paginatedAnnouncements = useMemo(() => {
+        const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+        return filteredAnnouncements.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+    }, [filteredAnnouncements, currentPage]);
+
+    // Stats from API (independent of filters)
+    const activeCount = stats?.activeCount || 0;
+    const scheduledCount = stats?.scheduledCount || 0;
+    const highPriorityCount = stats?.highPriorityCount || 0;
 
     const handleOpenAdd = (): void => {
         setIsEditing(false);
@@ -134,8 +151,32 @@ export const AnnouncementsPage = () => {
         } else {
             createAnnouncement(formData);
         }
-        setShowModal(false);
+        // Modal will close automatically via useEffect
     };
+
+    // Close modal when mutation completes
+    useEffect(() => {
+        if (!isCreating && !isUpdating && showModal) {
+            // Wait a bit to show success state
+            const timer = setTimeout(() => {
+                setShowModal(false);
+            }, 300);
+            return () => clearTimeout(timer);
+        }
+    }, [isCreating, isUpdating, showModal]);
+
+    // Error handling
+    useEffect(() => {
+        if (createError) {
+            alert(`Duyuru oluşturulurken hata: ${(createError as Error).message}`);
+        }
+        if (updateError) {
+            alert(`Duyuru güncellenirken hata: ${(updateError as Error).message}`);
+        }
+        if (deleteError) {
+            alert(`Duyuru silinirken hata: ${(deleteError as Error).message}`);
+        }
+    }, [createError, updateError, deleteError]);
 
     const handleClearFilters = (): void => {
         setSearchTerm("");
@@ -170,7 +211,7 @@ export const AnnouncementsPage = () => {
                     {/* Stats Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
                         <AnnouncementStats
-                            isLoading={isLoading}
+                            isLoading={isLoadingStats}
                             activeCount={activeCount}
                             highPriorityCount={highPriorityCount}
                             scheduledCount={scheduledCount}
@@ -189,7 +230,7 @@ export const AnnouncementsPage = () => {
 
                     {/* List/Table */}
                     <AnnouncementsTable
-                        announcements={filteredAnnouncements}
+                        announcements={paginatedAnnouncements}
                         isLoading={isLoading || isDeleting}
                         onEdit={handleOpenEdit}
                         onDelete={handleOpenDeleteConfirm}
@@ -200,7 +241,7 @@ export const AnnouncementsPage = () => {
 
                     {!isLoading && (
                         <Pagination
-                            totalItems={total}
+                            totalItems={filteredAnnouncements.length}
                             itemsPerPage={ITEMS_PER_PAGE}
                             currentPage={currentPage}
                             onPageChange={setCurrentPage}
@@ -217,6 +258,7 @@ export const AnnouncementsPage = () => {
                 onClose={() => setShowModal(false)}
                 onSave={handleSave}
                 onChange={setCurrentAnnouncement}
+                isLoading={isCreating || isUpdating}
             />
 
             {/* Delete Confirmation Modal */}

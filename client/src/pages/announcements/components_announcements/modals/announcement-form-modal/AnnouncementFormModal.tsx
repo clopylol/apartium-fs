@@ -3,6 +3,7 @@ import { Edit2, Megaphone, Globe, Calendar, AlertTriangle } from "lucide-react";
 import { FormModal } from "@/components/shared/modals";
 import { InfoBanner } from "@/components/shared/info-banner";
 import type { Announcement } from "@/types/Announcement.types";
+import { formatDateForInput } from "@/utils/date";
 
 interface AnnouncementFormModalProps {
     isOpen: boolean;
@@ -11,6 +12,7 @@ interface AnnouncementFormModalProps {
     onClose: () => void;
     onSave: () => void;
     onChange: (announcement: Partial<Announcement>) => void;
+    isLoading?: boolean;
 }
 
 export const AnnouncementFormModal: FC<AnnouncementFormModalProps> = ({
@@ -20,20 +22,23 @@ export const AnnouncementFormModal: FC<AnnouncementFormModalProps> = ({
     onClose,
     onSave,
     onChange,
+    isLoading = false,
 }) => {
     const footer = (
         <div className="flex gap-3">
             <button
                 onClick={onClose}
-                className="flex-1 py-3 rounded-xl bg-[#1A1D26] hover:bg-[#20242F] text-slate-400 font-bold text-sm transition-colors border border-white/5"
+                disabled={isLoading}
+                className="flex-1 py-3 rounded-xl bg-[#1A1D26] hover:bg-[#20242F] text-slate-400 font-bold text-sm transition-colors border border-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
             >
                 İptal
             </button>
             <button
                 onClick={onSave}
-                className="flex-1 py-3 rounded-xl bg-[#3B82F6] hover:bg-[#2563EB] text-white font-bold text-sm transition-colors shadow-lg shadow-blue-500/20"
+                disabled={isLoading}
+                className="flex-1 py-3 rounded-xl bg-[#3B82F6] hover:bg-[#2563EB] text-white font-bold text-sm transition-colors shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-                {isEditing ? 'Güncelle' : 'Oluştur'}
+                {isLoading ? 'Kaydediliyor...' : (isEditing ? 'Güncelle' : 'Oluştur')}
             </button>
         </div>
     );
@@ -120,7 +125,7 @@ export const AnnouncementFormModal: FC<AnnouncementFormModalProps> = ({
                             <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                             <input
                                 type="date"
-                                value={announcement.publishDate}
+                                value={formatDateForInput(announcement.publishDate)}
                                 onChange={(e) => onChange({ ...announcement, publishDate: e.target.value })}
                                 className="w-full bg-[#151821] border border-white/10 rounded-xl pl-10 pr-3 py-2.5 text-sm text-white focus:outline-none focus:border-[#3B82F6] transition-colors [color-scheme:dark]"
                             />

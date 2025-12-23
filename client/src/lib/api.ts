@@ -86,6 +86,8 @@ export const api = {
 
     // Announcements
     announcements: {
+        getStats: () => 
+            apiClient('/announcements/stats'),
         getAll: (page: number, limit: number) => 
             apiClient(`/announcements?page=${page}&limit=${limit}`),
         getById: (id: string) => 

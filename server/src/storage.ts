@@ -125,6 +125,13 @@ export interface IStorage {
         total: number;
     }>;
     getAnnouncementById(id: string): Promise<(Announcement & { authorName: string; authorEmail: string }) | null>;
+    getAnnouncementStats(): Promise<{
+        totalCount: number;
+        activeCount: number;
+        scheduledCount: number;
+        draftCount: number;
+        highPriorityCount: number;
+    }>;
     createAnnouncement(announcement: InsertAnnouncement): Promise<Announcement>;
     updateAnnouncement(id: string, announcement: Partial<InsertAnnouncement>): Promise<Announcement>;
     deleteAnnouncement(id: string): Promise<void>;
