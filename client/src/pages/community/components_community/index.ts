@@ -1,6 +1,7 @@
 // Community components barrel export
 export { CommunityHeader } from './community-header';
 export { CommunityStats } from './community-stats';
+export { CommunityFilters } from './filters';
 export { RequestsTable } from './requests-table';
 export { RequestRow } from './request-row';
 export { RequestStatusBadge } from './request-status-badge';

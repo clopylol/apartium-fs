@@ -105,4 +105,51 @@ export const api = {
         delete: (id: string) => 
             apiClient(`/announcements/${id}`, { method: 'DELETE' }),
     },
+
+    // Community
+    community: {
+        getStats: () => 
+            apiClient('/community/stats'),
+        
+        // Requests
+        getRequests: (page: number, limit: number, filters?: { search?: string; status?: string; type?: 'wish' | 'suggestion' }) => {
+            const params = new URLSearchParams();
+            params.append('page', page.toString());
+            params.append('limit', limit.toString());
+            if (filters?.search) params.append('search', filters.search);
+            if (filters?.status) params.append('status', filters.status);
+            if (filters?.type) params.append('type', filters.type);
+            return apiClient(`/community/requests?${params.toString()}`);
+        },
+        getAllRequests: () => 
+            apiClient('/community/requests?page=1&limit=1000'),
+        createRequest: (data: any) =>
+            apiClient('/community/requests', { method: 'POST', data }),
+        updateRequestType: (id: string, type: 'wish' | 'suggestion') =>
+            apiClient(`/community/requests/${id}/type`, { method: 'PATCH', data: { type } }),
+        updateRequestStatus: (id: string, status: string) =>
+            apiClient(`/community/requests/${id}/status`, { method: 'PATCH', data: { status } }),
+        deleteRequest: (id: string) =>
+            apiClient(`/community/requests/${id}`, { method: 'DELETE' }),
+        
+        // Polls
+        getPolls: (page: number, limit: number, filters?: { search?: string; status?: 'active' | 'closed' }) => {
+            const params = new URLSearchParams();
+            params.append('page', page.toString());
+            params.append('limit', limit.toString());
+            if (filters?.search) params.append('search', filters.search);
+            if (filters?.status) params.append('status', filters.status);
+            return apiClient(`/community/polls?${params.toString()}`);
+        },
+        getAllPolls: () => 
+            apiClient('/community/polls?page=1&limit=1000'),
+        createPoll: (data: any) =>
+            apiClient('/community/polls', { method: 'POST', data }),
+        updatePollStatus: (id: string, status: 'active' | 'closed') =>
+            apiClient(`/community/polls/${id}/status`, { method: 'PATCH', data: { status } }),
+        deletePoll: (id: string) =>
+            apiClient(`/community/polls/${id}`, { method: 'DELETE' }),
+        vote: (pollId: string, residentId: string, choice: 'yes' | 'no') =>
+            apiClient(`/community/polls/${pollId}/vote`, { method: 'POST', data: { residentId, choice } }),
+    },
 };

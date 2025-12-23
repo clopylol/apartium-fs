@@ -150,11 +150,29 @@ export interface IStorage {
     deleteJanitor(id: string): Promise<void>;
 
     // Community & Polls
+    getCommunityStats(): Promise<any>;
     getCommunityRequests(): Promise<CommunityRequest[]>;
+    getCommunityRequestsPaginated(
+        page: number,
+        limit: number,
+        filters?: { search?: string; status?: string; type?: 'wish' | 'suggestion' }
+    ): Promise<{
+        requests: CommunityRequest[];
+        total: number;
+    }>;
     createCommunityRequest(req: InsertCommunityRequest): Promise<CommunityRequest>;
+    updateCommunityRequestType(id: string, type: string): Promise<CommunityRequest>;
     updateCommunityRequestStatus(id: string, status: string): Promise<CommunityRequest>;
     deleteCommunityRequest(id: string): Promise<void>;
-    getPolls(): Promise<Poll[]>;
+    getPolls(): Promise<any[]>;
+    getPollsPaginated(
+        page: number,
+        limit: number,
+        filters?: { search?: string; status?: 'active' | 'closed' }
+    ): Promise<{
+        polls: any[];
+        total: number;
+    }>;
     createPoll(poll: InsertPoll): Promise<Poll>;
     updatePollStatus(id: string, status: string): Promise<Poll>;
     deletePoll(id: string): Promise<void>;

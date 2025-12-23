@@ -1,4 +1,4 @@
-import { eq, and, desc, gte, lte, count, isNull, sql } from 'drizzle-orm';
+import { eq, and, or, desc, gte, lte, count, isNull, ilike, sql } from 'drizzle-orm';
 import { db } from './db/index.js';
 import type { IStorage } from './storage.js';
 import * as schema from 'apartium-shared';
@@ -947,6 +947,56 @@ export class DatabaseStorage implements IStorage {
     }
 
     // ==================== COMMUNITY & POLLS ====================
+    async getCommunityStats(): Promise<any> {
+        const [pendingRequests] = await db
+            .select({ value: count() })
+            .from(schema.communityRequests)
+            .where(and(
+                eq(schema.communityRequests.status, 'pending'),
+                isNull(schema.communityRequests.deletedAt)
+            ));
+
+        const [resolvedRequests] = await db
+            .select({ value: count() })
+            .from(schema.communityRequests)
+            .where(and(
+                eq(schema.communityRequests.status, 'resolved'),
+                isNull(schema.communityRequests.deletedAt)
+            ));
+
+        const [rejectedRequests] = await db
+            .select({ value: count() })
+            .from(schema.communityRequests)
+            .where(and(
+                eq(schema.communityRequests.status, 'rejected'),
+                isNull(schema.communityRequests.deletedAt)
+            ));
+
+        const [activePolls] = await db
+            .select({ value: count() })
+            .from(schema.polls)
+            .where(and(
+                eq(schema.polls.status, 'active'),
+                isNull(schema.polls.deletedAt)
+            ));
+
+        const [closedPolls] = await db
+            .select({ value: count() })
+            .from(schema.polls)
+            .where(and(
+                eq(schema.polls.status, 'closed'),
+                isNull(schema.polls.deletedAt)
+            ));
+
+        return {
+            pendingRequests: pendingRequests.value,
+            resolvedRequests: resolvedRequests.value,
+            rejectedRequests: rejectedRequests.value,
+            activePolls: activePolls.value,
+            closedPolls: closedPolls.value,
+        };
+    }
+
     async getCommunityRequests(): Promise<CommunityRequest[]> {
         return await db
             .select()
@@ -955,12 +1005,76 @@ export class DatabaseStorage implements IStorage {
             .orderBy(desc(schema.communityRequests.createdAt));
     }
 
+    async getCommunityRequestsPaginated(
+        page: number,
+        limit: number,
+        filters?: { search?: string; status?: string; type?: 'wish' | 'suggestion' }
+    ): Promise<{
+        requests: CommunityRequest[];
+        total: number;
+    }> {
+        const offset = (page - 1) * limit;
+
+        // Build where clause with filters
+        const whereConditions = [isNull(schema.communityRequests.deletedAt)];
+
+        if (filters?.search) {
+            whereConditions.push(
+                or(
+                    ilike(schema.communityRequests.title, `%${filters.search}%`),
+                    ilike(schema.communityRequests.description, `%${filters.search}%`)
+                ) as any
+            );
+        }
+
+        if (filters?.status) {
+            whereConditions.push(eq(schema.communityRequests.status, filters.status as any));
+        }
+
+        if (filters?.type) {
+            whereConditions.push(eq(schema.communityRequests.type, filters.type));
+        }
+
+        const whereClause = and(...whereConditions);
+
+        const [requests, totalResult] = await Promise.all([
+            db
+                .select()
+                .from(schema.communityRequests)
+                .where(whereClause)
+                .orderBy(desc(schema.communityRequests.createdAt))
+                .limit(limit)
+                .offset(offset),
+            db
+                .select({ count: count() })
+                .from(schema.communityRequests)
+                .where(whereClause)
+        ]);
+
+        return {
+            requests,
+            total: totalResult[0]?.count || 0,
+        };
+    }
+
     async createCommunityRequest(req: InsertCommunityRequest): Promise<CommunityRequest> {
         const [newRequest] = await db
             .insert(schema.communityRequests)
             .values(req)
             .returning();
         return newRequest;
+    }
+
+    async updateCommunityRequestType(id: string, type: string): Promise<CommunityRequest> {
+        const [updated] = await db
+            .update(schema.communityRequests)
+            .set({
+                type: type as any,
+                updatedAt: new Date(),
+            })
+            .where(eq(schema.communityRequests.id, id))
+            .returning();
+        return updated;
     }
 
     async updateCommunityRequestStatus(id: string, status: string): Promise<CommunityRequest> {
@@ -982,12 +1096,86 @@ export class DatabaseStorage implements IStorage {
             .where(eq(schema.communityRequests.id, id));
     }
 
-    async getPolls(): Promise<Poll[]> {
-        return await db
+    async getPolls(): Promise<any[]> {
+        // Get all polls
+        const polls = await db
             .select()
             .from(schema.polls)
             .where(isNull(schema.polls.deletedAt))
             .orderBy(desc(schema.polls.createdAt));
+
+        // Get votes for each poll
+        const pollsWithVotes = await Promise.all(
+            polls.map(async (poll) => {
+                const votes = await this.getPollVotes(poll.id);
+                return {
+                    ...poll,
+                    votes,
+                };
+            })
+        );
+
+        return pollsWithVotes;
+    }
+
+    async getPollsPaginated(
+        page: number,
+        limit: number,
+        filters?: { search?: string; status?: 'active' | 'closed' }
+    ): Promise<{
+        polls: any[];
+        total: number;
+    }> {
+        const offset = (page - 1) * limit;
+
+        // Build where clause with filters
+        const whereConditions = [isNull(schema.polls.deletedAt)];
+
+        if (filters?.search) {
+            whereConditions.push(
+                or(
+                    ilike(schema.polls.title, `%${filters.search}%`),
+                    ilike(schema.polls.description, `%${filters.search}%`)
+                ) as any
+            );
+        }
+
+        if (filters?.status) {
+            whereConditions.push(eq(schema.polls.status, filters.status));
+        }
+
+        const whereClause = and(...whereConditions);
+
+        // Get paginated polls
+        const [polls, totalResult] = await Promise.all([
+            db
+                .select()
+                .from(schema.polls)
+                .where(whereClause)
+                .orderBy(desc(schema.polls.createdAt))
+                .limit(limit)
+                .offset(offset),
+            db
+                .select({ count: count() })
+                .from(schema.polls)
+                .where(whereClause)
+        ]);
+
+        // Get votes for each poll
+        const pollsWithVotes = await Promise.all(
+            polls.map(async (poll) => {
+                const votes = await this.getPollVotes(poll.id);
+                return {
+                    ...poll,
+                    votes,
+                };
+            })
+        );
+
+        return {
+            polls: pollsWithVotes,
+            total: totalResult[0]?.count || 0,
+        };
     }
 
     async createPoll(poll: InsertPoll): Promise<Poll> {

@@ -1,3 +1,61 @@
+// DB'den gelen type'lar
+export interface CommunityRequest {
+    id: string;
+    authorId: string;
+    unitId: string;
+    type: 'wish' | 'suggestion';
+    title: string;
+    description: string;
+    status: 'pending' | 'in-progress' | 'resolved' | 'rejected';
+    requestDate: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface PollVote {
+    id: string;
+    pollId: string;
+    residentId: string;
+    choice: 'yes' | 'no';
+    createdAt: string;
+}
+
+export interface Poll {
+    id: string;
+    authorId: string;
+    title: string;
+    description: string;
+    startDate: string;
+    endDate: string;
+    status: 'active' | 'closed';
+    votes: PollVote[];
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface CommunityStats {
+    pendingRequests: number;
+    resolvedRequests: number;
+    rejectedRequests: number;
+    activePolls: number;
+    closedPolls: number;
+}
+
+// Form data types
+export interface CommunityRequestFormData {
+    title: string;
+    description: string;
+    type: 'wish' | 'suggestion';
+}
+
+export interface PollFormData {
+    title: string;
+    description: string;
+    startDate: string;
+    endDate: string;
+}
+
+// Legacy types for backward compatibility (will be removed)
 export interface Request {
     id: string;
     type: 'wish' | 'suggestion';
@@ -14,17 +72,6 @@ export interface Vote {
     residentName: string;
     choice: 'yes' | 'no';
     timestamp: string;
-}
-
-export interface Poll {
-    id: string;
-    title: string;
-    description: string;
-    author: string;
-    startDate: string;
-    endDate: string;
-    status: 'active' | 'closed';
-    votes: Vote[];
 }
 
 export interface ResidentMock {

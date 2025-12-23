@@ -2,26 +2,28 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
+// 2. Hooks
+import { useCommunityRequests, useCommunityPolls, useCommunityMutations } from '@/hooks/community';
+import { useDebounce } from '@/hooks/useDebounce';
+
 // 4. Icons
 import { BarChart2 } from 'lucide-react';
 
 // 7. Types
-import type { Request, Poll } from '@/types/community';
+import type { CommunityRequest, Poll, CommunityRequestFormData, PollFormData } from '@/types';
 
 // 8. Constants
-import {
-    ITEMS_PER_PAGE,
-    MOCK_RESIDENTS,
-    INITIAL_REQUESTS,
-    GENERATED_REQUESTS,
-    INITIAL_POLLS,
-    GENERATED_POLLS
-} from '@/constants/community';
+import { MOCK_RESIDENTS } from '@/constants/community';
+
+const ITEMS_PER_PAGE = 10;
+const MIN_SEARCH_LENGTH = 3;
+const DEBOUNCE_DELAY = 500; // 500ms
 
 // 3. Components
 import {
     CommunityHeader,
     CommunityStats,
+    CommunityFilters,
     RequestsTable,
     PollCard,
     PollCardSkeleton,
@@ -29,26 +31,55 @@ import {
     CreateModal,
 } from './components_community';
 import { ConfirmationModal } from '@/components/shared/modals';
+import { Pagination } from '@/components/shared/pagination';
 
 
 export const CommunityPage = () => {
     const { t } = useTranslation();
     const [activeTab, setActiveTab] = useState<'requests' | 'polls'>('requests');
-    const [isLoading, setIsLoading] = useState(true);
-
-    // Initialize with 80% chance of data, 20% chance of empty state
-    const [requests, setRequests] = useState<Request[]>(() => {
-        return Math.random() > 0.2 ? [...INITIAL_REQUESTS, ...GENERATED_REQUESTS] : [];
-    });
-    const [polls, setPolls] = useState<Poll[]>(() => {
-        return Math.random() > 0.2 ? [...INITIAL_POLLS, ...GENERATED_POLLS] : [];
-    });
-
-    const [searchTerm, setSearchTerm] = useState('');
 
     // Pagination State
     const [requestPage, setRequestPage] = useState(1);
     const [pollPage, setPollPage] = useState(1);
+
+    // Filter State
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filterStatus, setFilterStatus] = useState('all');
+    const [filterType, setFilterType] = useState<'all' | 'wish' | 'suggestion'>('all');
+
+    // Debounce search term - 500ms sonra API'ye gönder
+    const debouncedSearchTerm = useDebounce(searchTerm, DEBOUNCE_DELAY);
+
+    // Minimum karakter kontrolü: 3 karakterden az ise arama yapma (undefined gönder)
+    const effectiveSearchTerm = debouncedSearchTerm.length >= MIN_SEARCH_LENGTH ? debouncedSearchTerm : undefined;
+
+    // Fetch data from API with pagination and filters
+    // const { stats, isLoading: isLoadingStats } = useCommunityStats(); // TODO: Use stats from API
+    const { requests, total: totalRequests, isLoading: isLoadingRequests } = useCommunityRequests(
+        requestPage,
+        ITEMS_PER_PAGE,
+        effectiveSearchTerm,
+        filterStatus === 'all' ? undefined : filterStatus,
+        filterType === 'all' ? undefined : filterType
+    );
+    const { polls, total: totalPolls, isLoading: isLoadingPolls } = useCommunityPolls(
+        pollPage,
+        ITEMS_PER_PAGE,
+        effectiveSearchTerm,
+        filterStatus === 'all' ? undefined : (filterStatus as 'active' | 'closed')
+    );
+    const {
+        createRequest,
+        updateRequestType,
+        deleteRequest,
+        createPoll,
+        updatePollStatus,
+        deletePoll,
+        vote,
+        createRequestError,
+        createPollError,
+        voteError,
+    } = useCommunityMutations();
 
     // Modals
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -75,39 +106,64 @@ export const CommunityPage = () => {
     });
     const [notificationSelection, setNotificationSelection] = useState<string[]>([]);
 
-    // Simulate Loading
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setIsLoading(false);
-        }, 1500);
-        return () => clearTimeout(timer);
-    }, []);
+    // Combined loading state
+    const isLoading = isLoadingRequests || isLoadingPolls;
 
-    // Reset Pagination on Filter Change
+    // Error handling
+    useEffect(() => {
+        if (createRequestError) {
+            alert(`Talep oluşturulurken hata: ${(createRequestError as Error).message}`);
+        }
+        if (createPollError) {
+            alert(`Anket oluşturulurken hata: ${(createPollError as Error).message}`);
+        }
+        if (voteError) {
+            alert(`Oy kullanılırken hata: ${(voteError as Error).message}`);
+        }
+    }, [createRequestError, createPollError, voteError]);
+
+    // Reset Pagination on Tab Change or Filter Change
     useEffect(() => {
         setRequestPage(1);
+    }, [activeTab, effectiveSearchTerm, filterStatus, filterType]);
+
+    useEffect(() => {
         setPollPage(1);
-    }, [searchTerm, activeTab]);
+    }, [activeTab, effectiveSearchTerm, filterStatus]);
 
-    // Filter Logic
-    const filteredRequests = useMemo(() => requests.filter(r =>
-        r.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.description.toLowerCase().includes(searchTerm.toLowerCase())
-    ), [requests, searchTerm]);
+    // Transform DB data to legacy format for components (temporary)
+    const legacyRequests = useMemo(() => requests.map(r => ({
+        id: r.id,
+        type: r.type,
+        title: r.title,
+        description: r.description,
+        author: 'Admin', // TODO: Get from authorId JOIN
+        unit: 'A-101', // TODO: Get from unitId JOIN
+        date: new Date(r.requestDate || r.createdAt).toISOString().split('T')[0],
+        status: r.status,
+    })), [requests]);
 
-    const paginatedRequests = useMemo(() => {
-        const startIndex = (requestPage - 1) * ITEMS_PER_PAGE;
-        return filteredRequests.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-    }, [filteredRequests, requestPage]);
-
-    const filteredPolls = useMemo(() => polls.filter(p =>
-        p.title.toLowerCase().includes(searchTerm.toLowerCase())
-    ), [polls, searchTerm]);
-
-    const paginatedPolls = useMemo(() => {
-        const startIndex = (pollPage - 1) * ITEMS_PER_PAGE;
-        return filteredPolls.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-    }, [filteredPolls, pollPage]);
+    const legacyPolls = useMemo(() => polls.map(p => ({
+        id: p.id,
+        authorId: p.authorId,
+        title: p.title,
+        description: p.description,
+        author: 'Admin', // TODO: Get from authorId JOIN
+        startDate: new Date(p.startDate).toISOString().split('T')[0],
+        endDate: new Date(p.endDate).toISOString().split('T')[0],
+        status: p.status,
+        createdAt: p.createdAt,
+        updatedAt: p.updatedAt,
+        votes: p.votes.map(v => ({
+            id: v.id,
+            pollId: v.pollId,
+            residentId: v.residentId,
+            residentName: 'Resident', // TODO: Get from residentId JOIN
+            choice: v.choice,
+            timestamp: v.createdAt,
+            createdAt: v.createdAt,
+        })),
+    })), [polls]);
 
     // --- Handlers ---
 
@@ -116,17 +172,12 @@ export const CommunityPage = () => {
 
         if (createType === 'request') {
             // Direct create for requests
-                    const req: Request = {
-                        id: `req-${Date.now()}`,
-                        type: newItem.type as 'wish' | 'suggestion',
-                        title: newItem.title,
-                        description: newItem.description,
-                        author: t('community.messages.author'),
-                        unit: t('community.messages.unit'),
-                        date: new Date().toISOString().split('T')[0],
-                        status: 'pending'
-                    };
-            setRequests([req, ...requests]);
+            const requestData: CommunityRequestFormData = {
+                title: newItem.title,
+                description: newItem.description,
+                type: newItem.type as 'wish' | 'suggestion',
+            };
+            createRequest(requestData);
             setShowCreateModal(false);
             setNewItem({ title: '', description: '', type: 'wish', startDate: '', endDate: '' });
         } else {
@@ -137,17 +188,13 @@ export const CommunityPage = () => {
                 message: t('community.modals.startPoll.message', { title: newItem.title }),
                 type: 'approve',
                 action: () => {
-                    const poll: Poll = {
-                        id: `poll-${Date.now()}`,
+                    const pollData: PollFormData = {
                         title: newItem.title,
                         description: newItem.description,
-                        author: t('community.messages.author'),
                         startDate: newItem.startDate || new Date().toISOString().split('T')[0],
                         endDate: newItem.endDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-                        status: 'active',
-                        votes: []
                     };
-                    setPolls([poll, ...polls]);
+                    createPoll(pollData);
                     setActiveTab('polls');
                     setShowCreateModal(false);
                     setNewItem({ title: '', description: '', type: 'wish', startDate: '', endDate: '' });
@@ -162,12 +209,12 @@ export const CommunityPage = () => {
             title: t('community.modals.deleteRecord.title'),
             message: t('community.modals.deleteRecord.message'),
             type: 'danger',
-            action: () => setRequests(requests.filter(r => r.id !== id))
+            action: () => deleteRequest(id)
         });
     };
 
     const handleConvertToSuggestion = (id: string) => {
-        setRequests(prev => prev.map(r => r.id === id ? { ...r, type: 'suggestion' } : r));
+        updateRequestType({ id, type: 'suggestion' });
     };
 
     const handleDeletePollRequest = (id: string) => {
@@ -177,7 +224,7 @@ export const CommunityPage = () => {
             message: t('community.modals.deletePoll.message'),
             type: 'danger',
             action: () => {
-                setPolls(polls.filter(p => p.id !== id));
+                deletePoll(id);
                 setShowPollDetailModal(false);
             }
         });
@@ -190,7 +237,7 @@ export const CommunityPage = () => {
             message: t('community.modals.closePoll.message'),
             type: 'approve',
             action: () => {
-                setPolls(polls.map(p => p.id === id ? { ...p, status: 'closed' } : p));
+                updatePollStatus({ id, status: 'closed' });
                 if (selectedPoll?.id === id) {
                     setSelectedPoll(prev => prev ? ({ ...prev, status: 'closed' }) : null);
                 }
@@ -199,28 +246,20 @@ export const CommunityPage = () => {
     };
 
     const handleVote = (pollId: string, choice: 'yes' | 'no') => {
-        // Simulating "Current User" voting.
-        const currentUser = { id: 'r7', name: 'Ali Veli' };
+        // Mock current user - TODO: Replace with actual user from auth
+        const currentUser = { id: 'c52b03e1-83c2-42ca-b21d-583a227450ec', name: 'Ali Veli' };
 
-        setPolls(prev => prev.map(p => {
-            if (p.id !== pollId) return p;
-            if (p.votes.some(v => v.residentId === currentUser.id)) {
-                alert(t('community.messages.alreadyVoted'));
-                return p;
-            }
-            return {
-                ...p,
-                votes: [...p.votes, {
-                    residentId: currentUser.id,
-                    residentName: currentUser.name,
-                    choice,
-                    timestamp: new Date().toISOString()
-                }]
-            };
-        }));
+        // Check if already voted (client-side check)
+        const poll = polls.find(p => p.id === pollId);
+        if (poll?.votes.some(v => v.residentId === currentUser.id)) {
+            alert(t('community.messages.alreadyVoted'));
+            return;
+        }
+
+        vote({ pollId, residentId: currentUser.id, choice });
     };
 
-    const convertSuggestionToPoll = (req: Request) => {
+    const convertSuggestionToPoll = (req: CommunityRequest) => {
         setCreateType('poll');
         // Default 1 week duration
         const today = new Date().toISOString().split('T')[0];
@@ -297,25 +336,50 @@ export const CommunityPage = () => {
                     {/* Stats Area (Contextual) */}
                     <CommunityStats
                         activeTab={activeTab}
-                        requests={requests}
-                        polls={polls}
+                        requests={legacyRequests}
+                        polls={legacyPolls}
                         isLoading={isLoading}
+                    />
+
+                    {/* Filters */}
+                    <CommunityFilters
+                        activeTab={activeTab}
+                        searchTerm={searchTerm}
+                        onSearchChange={setSearchTerm}
+                        filterStatus={filterStatus}
+                        onStatusChange={setFilterStatus}
+                        filterType={filterType}
+                        onTypeChange={setFilterType}
                     />
 
                     {/* === REQUESTS TAB === */}
                     {activeTab === 'requests' && (
-                        <RequestsTable
-                            requests={requests}
-                            paginatedRequests={paginatedRequests}
-                            filteredCount={filteredRequests.length}
-                            currentPage={requestPage}
-                            itemsPerPage={ITEMS_PER_PAGE}
-                            isLoading={isLoading}
-                            onPageChange={setRequestPage}
-                            onConvertToSuggestion={handleConvertToSuggestion}
-                            onConvertToPoll={convertSuggestionToPoll}
-                            onDelete={handleDeleteRequestRequest}
-                        />
+                        <>
+                            <RequestsTable
+                                requests={legacyRequests}
+                                paginatedRequests={legacyRequests}
+                                filteredCount={totalRequests}
+                                currentPage={requestPage}
+                                itemsPerPage={ITEMS_PER_PAGE}
+                                isLoading={isLoading}
+                                onPageChange={setRequestPage}
+                                onConvertToSuggestion={handleConvertToSuggestion}
+                                onConvertToPoll={(req) => {
+                                    // Find original request to get full data
+                                    const original = requests.find(r => r.id === req.id);
+                                    if (original) convertSuggestionToPoll(original);
+                                }}
+                                onDelete={handleDeleteRequestRequest}
+                            />
+                            {!isLoading && totalRequests > 0 && (
+                                <Pagination
+                                    totalItems={totalRequests}
+                                    itemsPerPage={ITEMS_PER_PAGE}
+                                    currentPage={requestPage}
+                                    onPageChange={setRequestPage}
+                                />
+                            )}
+                        </>
                     )}
 
                     {/* === POLLS TAB === */}
@@ -329,8 +393,8 @@ export const CommunityPage = () => {
                                         <PollCardSkeleton />
                                         <PollCardSkeleton />
                                     </>
-                                ) : paginatedPolls.length > 0 ? (
-                                    paginatedPolls.map(poll => (
+                                ) : legacyPolls.length > 0 ? (
+                                    legacyPolls.map(poll => (
                                         <PollCard
                                             key={poll.id}
                                             poll={poll}
@@ -349,6 +413,14 @@ export const CommunityPage = () => {
                                     </div>
                                 )}
                             </div>
+                            {!isLoading && totalPolls > 0 && (
+                                <Pagination
+                                    totalItems={totalPolls}
+                                    itemsPerPage={ITEMS_PER_PAGE}
+                                    currentPage={pollPage}
+                                    onPageChange={setPollPage}
+                                />
+                            )}
                         </div>
                     )}
 

@@ -41,3 +41,4 @@ export type { CargoItem, ExpectedCargo, CourierVisit, MockResident, CargoStatus,
 export type { Facility, Booking, BookingStatus, FacilityStatus } from './bookings.types';
 export type { DashboardStats, MonthlyIncome } from './dashboard.types';
 export type { Announcement, AnnouncementFormData, AnnouncementsResponse, AnnouncementResponse, AnnouncementStats, AnnouncementPriority, AnnouncementStatus } from './Announcement.types';
+export type { CommunityRequest, Poll, PollVote, CommunityStats, CommunityRequestFormData, PollFormData, Request, Vote, ResidentMock } from './community';

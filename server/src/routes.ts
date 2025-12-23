@@ -907,81 +907,77 @@ export function createRoutes(storage: IStorage): Router {
 
     // ==================== COMMUNITY & POLLS ====================
 
-    router.get('/polls', requireAuth, async (req, res) => {
+    // GET /api/community/stats (no auth for now)
+    router.get('/community/stats', async (req, res) => {
         try {
-            const polls = await storage.getPolls();
-            res.json({ polls });
+            const stats = await storage.getCommunityStats();
+            res.json(stats);
         } catch (error) {
-            res.status(500).json({ error: 'Anketler yüklenirken hata oluştu' });
+            console.error('Community stats error:', error);
+            res.status(500).json({ error: 'İstatistikler yüklenirken hata oluştu' });
         }
     });
 
-    router.post('/polls', requireAuth, async (req, res) => {
+    // GET /api/community/requests?page=1&limit=10 (no auth for now)
+    router.get('/community/requests', async (req, res) => {
         try {
-            const validatedData = insertPollSchema.parse(req.body);
-            const poll = await storage.createPoll(validatedData);
-            res.status(201).json({ poll });
-        } catch (error: any) {
-            if (error.name === 'ZodError') return res.status(400).json({ error: 'Geçersiz veri', details: error.errors });
-            res.status(500).json({ error: 'Anket oluşturulamadı' });
-        }
-    });
-
-    router.patch('/polls/:id/status', requireAuth, async (req, res) => {
-        try {
-            const { status } = req.body;
-            const poll = await storage.updatePollStatus(req.params.id, status);
-            res.json({ poll });
+            // Import validation utilities
+            const { sanitizeSearchQuery, validateEnum, validatePagination } = await import('./utils/validation.js');
+            
+            // Validate pagination
+            const rawPage = parseInt(req.query.page as string) || 1;
+            const rawLimit = parseInt(req.query.limit as string) || 1000;
+            const { page, limit } = validatePagination(rawPage, rawLimit);
+            
+            // Sanitize search query
+            const search = sanitizeSearchQuery(req.query.search as string | undefined);
+            
+            // Validate enum values
+            const status = validateEnum(req.query.status as string | undefined, ['pending', 'in-progress', 'resolved', 'rejected']);
+            const type = validateEnum(req.query.type as string | undefined, ['wish', 'suggestion']);
+            
+            const result = await storage.getCommunityRequestsPaginated(page, limit, { search, status, type });
+            res.json(result);
         } catch (error) {
-            res.status(500).json({ error: 'Anket durumu güncellenemedi' });
-        }
-    });
-
-    router.post('/polls/:id/vote', requireAuth, async (req, res) => {
-        try {
-            const { residentId } = req.body;
-            const hasVoted = await storage.hasResidentVotedInPoll(residentId, req.params.id);
-            if (hasVoted) return res.status(400).json({ error: 'Zaten oy kullandınız' });
-
-            const validatedData = insertPollVoteSchema.parse({ ...req.body, pollId: req.params.id });
-            const vote = await storage.createPollVote(validatedData);
-            res.status(201).json({ vote });
-        } catch (error: any) {
-            if (error.name === 'ZodError') return res.status(400).json({ error: 'Geçersiz veri', details: error.errors });
-            res.status(500).json({ error: 'Oy kullanılamadı' });
-        }
-    });
-
-    router.delete('/polls/:id', requireAuth, async (req, res) => {
-        try {
-            await storage.deletePoll(req.params.id);
-            res.json({ message: 'Anket silindi' });
-        } catch (error) {
-            res.status(500).json({ error: 'Anket silinemedi' });
-        }
-    });
-
-    router.get('/community-requests', requireAuth, async (req, res) => {
-        try {
-            const requests = await storage.getCommunityRequests();
-            res.json({ requests });
-        } catch (error) {
+            console.error('Community requests error:', error);
             res.status(500).json({ error: 'Talepler yüklenirken hata oluştu' });
         }
     });
 
-    router.post('/community-requests', requireAuth, async (req, res) => {
+    // POST /api/community/requests (no auth for now)
+    router.post('/community/requests', async (req, res) => {
         try {
-            const validatedData = insertCommunityRequestSchema.parse(req.body);
+            // Mock authorId - TODO: Replace with actual user from session
+            const MOCK_AUTHOR_ID = 'c52b03e1-83c2-42ca-b21d-583a227450ec';
+            const MOCK_UNIT_ID = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
+            
+            const validatedData = insertCommunityRequestSchema.parse({
+                ...req.body,
+                authorId: MOCK_AUTHOR_ID,
+                unitId: MOCK_UNIT_ID,
+            });
             const request = await storage.createCommunityRequest(validatedData);
             res.status(201).json({ request });
         } catch (error: any) {
+            console.error('Community request creation error:', error);
             if (error.name === 'ZodError') return res.status(400).json({ error: 'Geçersiz veri', details: error.errors });
             res.status(500).json({ error: 'Talep oluşturulamadı' });
         }
     });
 
-    router.patch('/community-requests/:id/status', requireAuth, async (req, res) => {
+    // PATCH /api/community/requests/:id/type (no auth for now)
+    router.patch('/community/requests/:id/type', async (req, res) => {
+        try {
+            const { type } = req.body;
+            const request = await storage.updateCommunityRequestType(req.params.id, type);
+            res.json({ request });
+        } catch (error) {
+            res.status(500).json({ error: 'Talep tipi güncellenemedi' });
+        }
+    });
+
+    // PATCH /api/community/requests/:id/status (no auth for now)
+    router.patch('/community/requests/:id/status', async (req, res) => {
         try {
             const { status } = req.body;
             const request = await storage.updateCommunityRequestStatus(req.params.id, status);
@@ -991,12 +987,105 @@ export function createRoutes(storage: IStorage): Router {
         }
     });
 
-    router.delete('/community-requests/:id', requireAuth, async (req, res) => {
+    // DELETE /api/community/requests/:id (no auth for now)
+    router.delete('/community/requests/:id', async (req, res) => {
         try {
             await storage.deleteCommunityRequest(req.params.id);
             res.json({ message: 'Talep silindi' });
         } catch (error) {
             res.status(500).json({ error: 'Talep silinemedi' });
+        }
+    });
+
+    // GET /api/community/polls?page=1&limit=10 (no auth for now)
+    router.get('/community/polls', async (req, res) => {
+        try {
+            // Import validation utilities
+            const { sanitizeSearchQuery, validateEnum, validatePagination } = await import('./utils/validation.js');
+            
+            // Validate pagination
+            const rawPage = parseInt(req.query.page as string) || 1;
+            const rawLimit = parseInt(req.query.limit as string) || 1000;
+            const { page, limit } = validatePagination(rawPage, rawLimit);
+            
+            // Sanitize search query
+            const search = sanitizeSearchQuery(req.query.search as string | undefined);
+            
+            // Validate enum values
+            const status = validateEnum(req.query.status as string | undefined, ['active', 'closed']);
+            
+            const result = await storage.getPollsPaginated(page, limit, { search, status });
+            res.json(result);
+        } catch (error) {
+            console.error('Community polls error:', error);
+            res.status(500).json({ error: 'Anketler yüklenirken hata oluştu' });
+        }
+    });
+
+    // POST /api/community/polls (no auth for now)
+    router.post('/community/polls', async (req, res) => {
+        try {
+            // Mock authorId - TODO: Replace with actual user from session
+            const MOCK_AUTHOR_ID = 'c52b03e1-83c2-42ca-b21d-583a227450ec';
+            
+            // Convert date strings to timestamps
+            const startDate = req.body.startDate ? new Date(req.body.startDate) : new Date();
+            const endDate = req.body.endDate ? new Date(req.body.endDate) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+            
+            const validatedData = insertPollSchema.parse({
+                ...req.body,
+                authorId: MOCK_AUTHOR_ID,
+                startDate,
+                endDate,
+            });
+            const poll = await storage.createPoll(validatedData);
+            res.status(201).json({ poll });
+        } catch (error: any) {
+            console.error('Poll creation error:', error);
+            if (error.name === 'ZodError') return res.status(400).json({ error: 'Geçersiz veri', details: error.errors });
+            res.status(500).json({ error: 'Anket oluşturulamadı' });
+        }
+    });
+
+    // PATCH /api/community/polls/:id/status (no auth for now)
+    router.patch('/community/polls/:id/status', async (req, res) => {
+        try {
+            const { status } = req.body;
+            const poll = await storage.updatePollStatus(req.params.id, status);
+            res.json({ poll });
+        } catch (error) {
+            res.status(500).json({ error: 'Anket durumu güncellenemedi' });
+        }
+    });
+
+    // DELETE /api/community/polls/:id (no auth for now)
+    router.delete('/community/polls/:id', async (req, res) => {
+        try {
+            await storage.deletePoll(req.params.id);
+            res.json({ message: 'Anket silindi' });
+        } catch (error) {
+            res.status(500).json({ error: 'Anket silinemedi' });
+        }
+    });
+
+    // POST /api/community/polls/:id/vote (no auth for now)
+    router.post('/community/polls/:id/vote', async (req, res) => {
+        try {
+            const { residentId, choice } = req.body;
+            const hasVoted = await storage.hasResidentVotedInPoll(residentId, req.params.id);
+            if (hasVoted) return res.status(400).json({ error: 'Zaten oy kullandınız' });
+
+            const validatedData = insertPollVoteSchema.parse({ 
+                pollId: req.params.id,
+                residentId,
+                choice,
+            });
+            const vote = await storage.createPollVote(validatedData);
+            res.status(201).json({ vote });
+        } catch (error: any) {
+            console.error('Vote creation error:', error);
+            if (error.name === 'ZodError') return res.status(400).json({ error: 'Geçersiz veri', details: error.errors });
+            res.status(500).json({ error: 'Oy kullanılamadı' });
         }
     });
 
