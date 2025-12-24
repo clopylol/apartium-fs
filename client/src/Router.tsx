@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { DashboardLayout, BlankLayout } from "@/components/shared/layout";
+import { ProtectedRoute } from "@/components/shared/protected-route";
 import { DashboardPage } from "@/pages/dashboard";
 import { LoginPage } from "@/pages/login";
 import { PlaceholderPage } from "@/pages/placeholder";
@@ -13,18 +14,25 @@ import { DesignSystemPage } from "@/pages/design-system";
 import { CargoPage } from "@/pages/cargo";
 import { MaintenancePage } from "@/pages/maintenance";
 import { BookingsPage } from "@/pages/bookings";
+
 export function Router() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Blank Layout Routes */}
+        {/* Blank Layout Routes - Public */}
         <Route element={<BlankLayout />}>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/security-login" element={<PlaceholderPage />} />
         </Route>
 
-        {/* Dashboard Layout Routes */}
-        <Route element={<DashboardLayout />}>
+        {/* Dashboard Layout Routes - Protected */}
+        <Route
+          element={
+            <ProtectedRoute>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }
+        >
           <Route path="/" element={<DashboardPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/announcements" element={<AnnouncementsPage />} />

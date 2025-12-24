@@ -215,6 +215,7 @@ export function ResidentsPage() {
                 onClose={modalState.closeAddResidentModal}
                 onSave={residentActions.handleSaveResident}
                 buildings={residentsState.buildings}
+                activeBuildingData={residentsState.buildingData}
                 initialBlockId={modalState.addModalProps.blockId}
                 initialUnitId={modalState.addModalProps.unitId}
             />

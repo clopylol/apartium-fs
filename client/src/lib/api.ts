@@ -4,10 +4,21 @@ interface FetchOptions extends RequestInit {
     data?: any;
 }
 
+// Global logout callback - AuthProvider tarafından set edilecek
+let onUnauthorizedCallback: (() => void) | null = null;
+
+/**
+ * API Client'a logout callback'i set etmek için kullanılır
+ */
+export function setOnUnauthorizedCallback(callback: () => void): void {
+    onUnauthorizedCallback = callback;
+}
+
 /**
  * API Client
  * Tüm API çağrıları bu fonksiyon üzerinden yapılır
  * Otomatik credentials (cookie) gönderir
+ * 401 hatalarında otomatik logout yapar
  */
 export async function apiClient<T = any>(
     endpoint: string,
@@ -29,6 +40,19 @@ export async function apiClient<T = any>(
     const response = await fetch(`${API_BASE_URL}/api${endpoint}`, config);
 
     if (!response.ok) {
+        // 401 Unauthorized - Oturum geçersiz, logout yap
+        if (response.status === 401) {
+            // Auth endpoint'leri hariç (login, logout, me) - bunlar zaten auth işlemleri
+            if (!endpoint.startsWith('/auth/')) {
+                if (onUnauthorizedCallback) {
+                    onUnauthorizedCallback();
+                } else {
+                    // Fallback: window.location ile redirect
+                    window.location.href = '/login';
+                }
+            }
+        }
+
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || `API Error: ${response.status}`);
     }

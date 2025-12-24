@@ -8,6 +8,7 @@ interface AddResidentModalProps {
     onClose: () => void;
     onSave: (residentData: any) => void;
     buildings: Building[];
+    activeBuildingData?: any; // Full building data with units
     initialBlockId?: string;
     initialUnitId?: string;
 }
@@ -17,6 +18,7 @@ export function AddResidentModal({
     onClose,
     onSave,
     buildings,
+    activeBuildingData,
     initialBlockId,
     initialUnitId,
 }: AddResidentModalProps) {
@@ -43,8 +45,8 @@ export function AddResidentModal({
 
     if (!isOpen) return null;
 
-    const activeBlock = buildings.find((b) => b.id === formData.blockId);
-    const availableUnits = activeBlock ? activeBlock.units : [];
+    // Get units from activeBuildingData if available, otherwise fallback to basic logic
+    const availableUnits = activeBuildingData?.units || [];
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
