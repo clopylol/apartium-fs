@@ -29,7 +29,7 @@ const getPriorityColor = (p: string): string => {
 const getStatusColor = (s: string): string => {
     switch (s) {
         case 'Published': return 'bg-ds-in-success-500/20 text-ds-in-success-400';
-        case 'Scheduled': return 'bg-ds-in-sky-500/20 text-ds-in-sky-400';
+        case 'Scheduled': return 'bg-ds-in-violet-500/20 text-ds-in-violet-400';
         case 'Draft': return 'bg-ds-card-light dark:bg-ds-card-dark text-ds-muted-light dark:text-ds-muted-dark';
         default: return 'bg-ds-card-light dark:bg-ds-card-dark text-ds-muted-light dark:text-ds-muted-dark';
     }
@@ -120,7 +120,7 @@ export const AnnouncementsTable: FC<AnnouncementsTableProps> = ({
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-right">
-                                                <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <div className="flex items-center justify-end gap-2">
                                                     <IconButton
                                                         onClick={() => onEdit(ann)}
                                                         icon={<Edit2 className="w-4 h-4" />}
