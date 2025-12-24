@@ -1,6 +1,10 @@
 // 1. External & React
-import React from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+
+// 2. Hooks
+import { useSites } from '@/hooks/residents/site/useSites';
+import { useBuildings } from '@/hooks/residents/api/useResidentsData';
 
 // 3. Components
 import { Button } from '@/components/shared/button';
@@ -8,7 +12,7 @@ import { ToggleSwitch } from '@/components/shared/inputs';
 import { FormModal } from '@/components/shared/modals';
 
 // 4. Icons
-import { Plus } from 'lucide-react';
+import { Plus, Building2 } from 'lucide-react';
 
 interface CreateModalProps {
     isOpen: boolean;
@@ -19,6 +23,8 @@ interface CreateModalProps {
         type: string;
         startDate: string;
         endDate: string;
+        siteId?: string;
+        buildingId?: string;
     };
     onClose: () => void;
     onTypeChange: (type: 'request' | 'poll') => void;
@@ -36,6 +42,46 @@ export const CreateModal: React.FC<CreateModalProps> = ({
     onSubmit
 }) => {
     const { t } = useTranslation();
+
+    // Fetch sites and buildings
+    const { sites, isLoading: isLoadingSites } = useSites();
+    const { data: buildingsData, isLoading: isLoadingBuildings } = useBuildings();
+    const allBuildings = buildingsData?.buildings || [];
+
+    // Selected site and building state
+    const [selectedSiteId, setSelectedSiteId] = useState<string>("");
+    const [selectedBuildingId, setSelectedBuildingId] = useState<string>("");
+
+    // Filter buildings by selected site
+    const availableBuildings = useMemo(() => {
+        if (!selectedSiteId) return [];
+        return allBuildings.filter((b: any) => b.siteId === selectedSiteId);
+    }, [allBuildings, selectedSiteId]);
+
+    // Initialize selected site when modal opens
+    useEffect(() => {
+        if (isOpen && sites.length > 0) {
+            const firstSiteId = sites[0].id;
+            if (!selectedSiteId || selectedSiteId !== firstSiteId) {
+                setSelectedSiteId(firstSiteId);
+                setSelectedBuildingId("");
+            }
+        }
+    }, [isOpen, sites, selectedSiteId]);
+
+    // Update newItem when site/building changes
+    useEffect(() => {
+        if (!isOpen) return;
+        if (!selectedSiteId || selectedSiteId === "") return;
+
+        if (selectedBuildingId && selectedBuildingId !== "") {
+            onItemChange('buildingId', selectedBuildingId);
+            onItemChange('siteId', '');
+        } else {
+            onItemChange('siteId', selectedSiteId);
+            onItemChange('buildingId', '');
+        }
+    }, [selectedBuildingId, selectedSiteId, isOpen]);
 
     const footer = (
         <div className="flex gap-3">
@@ -96,6 +142,56 @@ export const CreateModal: React.FC<CreateModalProps> = ({
                         </select>
                     </div>
                 )}
+
+                {/* Site and Building Selection */}
+                <div className="space-y-4">
+                    <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider flex items-center gap-2">
+                            <Building2 className="w-3 h-3" />
+                            Site / Blok Seçimi
+                        </label>
+                        <select
+                            value={selectedSiteId}
+                            onChange={(e) => {
+                                setSelectedSiteId(e.target.value);
+                                setSelectedBuildingId("");
+                            }}
+                            disabled={isLoadingSites}
+                            className="w-full bg-[#151821] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[#3B82F6] transition-colors appearance-none cursor-pointer disabled:opacity-50"
+                        >
+                            {isLoadingSites ? (
+                                <option>Yükleniyor...</option>
+                            ) : (
+                                sites.map((site: any) => (
+                                    <option key={site.id} value={site.id}>
+                                        {site.name}
+                                    </option>
+                                ))
+                            )}
+                        </select>
+                    </div>
+
+                    {selectedSiteId && (
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">
+                                Blok Seçimi (Opsiyonel - Tüm Bloklar için boş bırakın)
+                            </label>
+                            <select
+                                value={selectedBuildingId}
+                                onChange={(e) => setSelectedBuildingId(e.target.value)}
+                                disabled={isLoadingBuildings || !selectedSiteId}
+                                className="w-full bg-[#151821] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[#3B82F6] transition-colors appearance-none cursor-pointer disabled:opacity-50"
+                            >
+                                <option value="">Tüm Bloklar</option>
+                                {availableBuildings.map((building: any) => (
+                                    <option key={building.id} value={building.id}>
+                                        {building.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
+                </div>
 
                 <div className="space-y-1.5">
                     <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">{t('community.createModal.labels.title')}</label>

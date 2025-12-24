@@ -2,9 +2,13 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
+// Utils
+import { showError } from '@/utils/toast';
+
 // 2. Hooks
 import { useCommunityRequests, useCommunityPolls, useCommunityMutations } from '@/hooks/community';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useSites } from '@/hooks/residents/site/useSites';
 
 // 4. Icons
 import { BarChart2 } from 'lucide-react';
@@ -29,6 +33,7 @@ import {
     PollCardSkeleton,
     PollDetailModal,
     CreateModal,
+    RequestDetailModal,
 } from './components_community';
 import { ConfirmationModal } from '@/components/shared/modals';
 import { Pagination } from '@/components/shared/pagination';
@@ -46,6 +51,10 @@ export const CommunityPage = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState('all');
     const [filterType, setFilterType] = useState<'all' | 'wish' | 'suggestion'>('all');
+
+    // Sorting State
+    const [sortField, setSortField] = useState<string | null>(null);
+    const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
     // Debounce search term - 500ms sonra API'ye gönder
     const debouncedSearchTerm = useDebounce(searchTerm, DEBOUNCE_DELAY);
@@ -81,10 +90,15 @@ export const CommunityPage = () => {
         voteError,
     } = useCommunityMutations();
 
+    // Fetch sites for fallback
+    const { sites } = useSites();
+
     // Modals
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showPollDetailModal, setShowPollDetailModal] = useState(false);
+    const [showRequestDetailModal, setShowRequestDetailModal] = useState(false);
     const [selectedPoll, setSelectedPoll] = useState<Poll | null>(null);
+    const [selectedRequest, setSelectedRequest] = useState<CommunityRequest | null>(null);
     const [createType, setCreateType] = useState<'request' | 'poll'>('request');
 
     // Confirmation Modal State
@@ -102,30 +116,22 @@ export const CommunityPage = () => {
         description: '',
         type: 'wish',
         startDate: '',
-        endDate: ''
+        endDate: '',
+        siteId: '',
+        buildingId: ''
     });
     const [notificationSelection, setNotificationSelection] = useState<string[]>([]);
 
     // Combined loading state
     const isLoading = isLoadingRequests || isLoadingPolls;
 
-    // Error handling
-    useEffect(() => {
-        if (createRequestError) {
-            alert(`Talep oluşturulurken hata: ${(createRequestError as Error).message}`);
-        }
-        if (createPollError) {
-            alert(`Anket oluşturulurken hata: ${(createPollError as Error).message}`);
-        }
-        if (voteError) {
-            alert(`Oy kullanılırken hata: ${(voteError as Error).message}`);
-        }
-    }, [createRequestError, createPollError, voteError]);
+    // Error handling is now done in useCommunityMutations hook via toast notifications
+    // No need for manual error handling here
 
     // Reset Pagination on Tab Change or Filter Change
     useEffect(() => {
         setRequestPage(1);
-    }, [activeTab, effectiveSearchTerm, filterStatus, filterType]);
+    }, [activeTab, effectiveSearchTerm, filterStatus, filterType, sortField, sortDirection]);
 
     useEffect(() => {
         setPollPage(1);
@@ -142,6 +148,47 @@ export const CommunityPage = () => {
         date: new Date(r.requestDate || r.createdAt).toISOString().split('T')[0],
         status: r.status,
     })), [requests]);
+
+    // Client-side sorting for requests
+    const sortedRequests = useMemo(() => {
+        if (!sortField) return legacyRequests;
+
+        return [...legacyRequests].sort((a, b) => {
+            let aValue: any;
+            let bValue: any;
+
+            switch (sortField) {
+                case "subject":
+                    aValue = a.title.toLowerCase();
+                    bValue = b.title.toLowerCase();
+                    break;
+                case "type":
+                    const typeOrder = { wish: 1, suggestion: 2 };
+                    aValue = typeOrder[a.type] || 0;
+                    bValue = typeOrder[b.type] || 0;
+                    break;
+                case "sender":
+                    aValue = a.author.toLowerCase();
+                    bValue = b.author.toLowerCase();
+                    break;
+                case "date":
+                    aValue = a.date ? new Date(a.date).getTime() : 0;
+                    bValue = b.date ? new Date(b.date).getTime() : 0;
+                    break;
+                case "status":
+                    const statusOrder = { pending: 1, 'in-progress': 2, resolved: 3, rejected: 4 };
+                    aValue = statusOrder[a.status as keyof typeof statusOrder] || 0;
+                    bValue = statusOrder[b.status as keyof typeof statusOrder] || 0;
+                    break;
+                default:
+                    return 0;
+            }
+
+            if (aValue < bValue) return sortDirection === "asc" ? -1 : 1;
+            if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
+            return 0;
+        });
+    }, [legacyRequests, sortField, sortDirection]);
 
     const legacyPolls = useMemo(() => polls.map(p => ({
         id: p.id,
@@ -171,15 +218,31 @@ export const CommunityPage = () => {
         if (!newItem.title) return;
 
         if (createType === 'request') {
+            // Get siteId and buildingId - ensure at least one is set
+            let siteId = newItem.siteId && newItem.siteId !== '' ? newItem.siteId : null;
+            let buildingId = newItem.buildingId && newItem.buildingId !== '' ? newItem.buildingId : null;
+
+            // Fallback: If both are null/empty, use first site as default
+            if (!siteId && !buildingId && sites.length > 0) {
+                siteId = sites[0].id;
+                console.log('[CommunityPage] handleCreateSubmit - Using fallback siteId:', siteId);
+            }
+
+            // Debug log
+            console.log('[CommunityPage] handleCreateSubmit - siteId:', siteId, 'buildingId:', buildingId);
+            console.log('[CommunityPage] handleCreateSubmit - newItem:', newItem);
+
             // Direct create for requests
             const requestData: CommunityRequestFormData = {
                 title: newItem.title,
                 description: newItem.description,
                 type: newItem.type as 'wish' | 'suggestion',
+                siteId: siteId,
+                buildingId: buildingId,
             };
             createRequest(requestData);
             setShowCreateModal(false);
-            setNewItem({ title: '', description: '', type: 'wish', startDate: '', endDate: '' });
+            setNewItem({ title: '', description: '', type: 'wish', startDate: '', endDate: '', siteId: '', buildingId: '' });
         } else {
             // For Polls, ask for confirmation
             setConfirmModal({
@@ -188,16 +251,28 @@ export const CommunityPage = () => {
                 message: t('community.modals.startPoll.message', { title: newItem.title }),
                 type: 'approve',
                 action: () => {
+                    // Get siteId and buildingId - ensure at least one is set
+                    let siteId = newItem.siteId && newItem.siteId !== '' ? newItem.siteId : null;
+                    let buildingId = newItem.buildingId && newItem.buildingId !== '' ? newItem.buildingId : null;
+
+                    // Fallback: If both are null/empty, use first site as default
+                    if (!siteId && !buildingId && sites.length > 0) {
+                        siteId = sites[0].id;
+                        console.log('[CommunityPage] handleCreateSubmit (poll) - Using fallback siteId:', siteId);
+                    }
+
                     const pollData: PollFormData = {
                         title: newItem.title,
                         description: newItem.description,
                         startDate: newItem.startDate || new Date().toISOString().split('T')[0],
                         endDate: newItem.endDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                        siteId: siteId,
+                        buildingId: buildingId,
                     };
                     createPoll(pollData);
                     setActiveTab('polls');
                     setShowCreateModal(false);
-                    setNewItem({ title: '', description: '', type: 'wish', startDate: '', endDate: '' });
+                    setNewItem({ title: '', description: '', type: 'wish', startDate: '', endDate: '', siteId: '', buildingId: '' });
                 }
             });
         }
@@ -252,11 +327,32 @@ export const CommunityPage = () => {
         // Check if already voted (client-side check)
         const poll = polls.find(p => p.id === pollId);
         if (poll?.votes.some(v => v.residentId === currentUser.id)) {
-            alert(t('community.messages.alreadyVoted'));
+            showError(t('community.messages.alreadyVoted'));
             return;
         }
 
         vote({ pollId, residentId: currentUser.id, choice });
+    };
+
+    const handleViewRequestDetail = (req: Request) => {
+        // Find original request to get full data (Request is legacy type, need to find CommunityRequest)
+        const original = requests.find(r => r.id === req.id);
+        if (original) {
+            setSelectedRequest(original);
+            setShowRequestDetailModal(true);
+        }
+    };
+
+    // Handle sort
+    const handleSort = (field: string): void => {
+        if (sortField === field) {
+            // Toggle direction if same field
+            setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+        } else {
+            // New field, default to asc
+            setSortField(field);
+            setSortDirection("asc");
+        }
     };
 
     const convertSuggestionToPoll = (req: CommunityRequest) => {
@@ -265,12 +361,15 @@ export const CommunityPage = () => {
         const today = new Date().toISOString().split('T')[0];
         const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
+        // Preserve siteId and buildingId from the original request
         setNewItem({
             title: req.title,
             description: req.description,
             type: 'poll',
             startDate: today,
-            endDate: nextWeek
+            endDate: nextWeek,
+            siteId: req.siteId || '',
+            buildingId: req.buildingId || ''
         });
         setShowCreateModal(true);
     };
@@ -325,7 +424,9 @@ export const CommunityPage = () => {
                 onCreateClick={() => {
                     setShowCreateModal(true);
                     setCreateType('request');
-                    setNewItem({ title: '', description: '', type: 'wish', startDate: '', endDate: '' });
+                    // Set first site as default when modal opens
+                    const defaultSiteId = sites.length > 0 ? sites[0].id : '';
+                    setNewItem({ title: '', description: '', type: 'wish', startDate: '', endDate: '', siteId: defaultSiteId, buildingId: '' });
                 }}
             />
 
@@ -357,7 +458,7 @@ export const CommunityPage = () => {
                         <>
                             <RequestsTable
                                 requests={legacyRequests}
-                                paginatedRequests={legacyRequests}
+                                paginatedRequests={sortedRequests}
                                 filteredCount={totalRequests}
                                 currentPage={requestPage}
                                 itemsPerPage={ITEMS_PER_PAGE}
@@ -370,6 +471,10 @@ export const CommunityPage = () => {
                                     if (original) convertSuggestionToPoll(original);
                                 }}
                                 onDelete={handleDeleteRequestRequest}
+                                sortField={sortField}
+                                sortDirection={sortDirection}
+                                onSort={handleSort}
+                                onRowClick={handleViewRequestDetail}
                             />
                             {!isLoading && totalRequests > 0 && (
                                 <Pagination
@@ -434,7 +539,7 @@ export const CommunityPage = () => {
                 newItem={newItem}
                 onClose={() => setShowCreateModal(false)}
                 onTypeChange={setCreateType}
-                onItemChange={(field, value) => setNewItem({ ...newItem, [field]: value })}
+                onItemChange={(field, value) => setNewItem((prev) => ({ ...prev, [field]: value }))}
                 onSubmit={handleCreateSubmit}
             />
 
@@ -463,6 +568,22 @@ export const CommunityPage = () => {
                     setConfirmModal({ ...confirmModal, isOpen: false });
                 }}
                 onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+            />
+
+            {/* Request Detail Modal */}
+            <RequestDetailModal
+                isOpen={showRequestDetailModal}
+                request={selectedRequest}
+                onClose={() => {
+                    setShowRequestDetailModal(false);
+                    setSelectedRequest(null);
+                }}
+                onDelete={handleDeleteRequestRequest}
+                onConvertToSuggestion={handleConvertToSuggestion}
+                onConvertToPoll={(req) => {
+                    const original = requests.find(r => r.id === req.id);
+                    if (original) convertSuggestionToPoll(original);
+                }}
             />
 
         </div>

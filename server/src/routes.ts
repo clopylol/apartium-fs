@@ -1352,7 +1352,10 @@ export function createRoutes(storage: IStorage): Router {
             const status = validateEnum(req.query.status as string | undefined, ['pending', 'in-progress', 'resolved', 'rejected']);
             const type = validateEnum(req.query.type as string | undefined, ['wish', 'suggestion']);
             
-            const result = await storage.getCommunityRequestsPaginated(page, limit, { search, status, type });
+            // Get userId from authenticated user
+            const userId = (req.user as any)?.id;
+            
+            const result = await storage.getCommunityRequestsPaginated(page, limit, { search, status, type }, userId);
             res.json(result);
         } catch (error) {
             console.error('Community requests error:', error);
@@ -1368,16 +1371,145 @@ export function createRoutes(storage: IStorage): Router {
             if (!authorId) {
                 return res.status(401).json({ error: 'Kullanıcı bilgisi bulunamadı' });
             }
+
+            // Get user info for role check
+            const user = await storage.getUserById(authorId);
+            if (!user) {
+                return res.status(401).json({ error: 'Kullanıcı bulunamadı' });
+            }
             
-            // unitId is required from request body or can be optional
-            const unitId = req.body.unitId || null;
+            // Get resident to get unitId
+            // Note: Admin/staff users are not residents, so we need to handle that case
+            let unitId: string | null = null;
+            const resident = await storage.getResidentById(authorId);
             
+            if (resident) {
+                // User is a resident, use their unitId
+                unitId = resident.unitId;
+            } else {
+                // User is admin/staff (not a resident)
+                // We'll get unitId from the selected building or site later
+                // For now, leave it null - we'll set it after validating buildingId/siteId
+            }
+
+            // Validate siteId and buildingId
+            const hasBuildingId = req.body.buildingId && req.body.buildingId !== "";
+            const hasSiteId = req.body.siteId && req.body.siteId !== "";
+
+            if (hasBuildingId && hasSiteId) {
+                return res.status(400).json({ error: 'Talep hem bina hem de site ID\'si ile oluşturulamaz. Lütfen sadece birini seçin.' });
+            }
+
+            if (!hasBuildingId && !hasSiteId) {
+                return res.status(400).json({ error: 'Talep için site ID veya bina ID\'si gereklidir.' });
+            }
+
+            // If buildingId is provided, verify user has access to that building's site
+            let selectedBuildingId: string | null = null;
+            if (hasBuildingId) {
+                const building = await storage.getBuildingById(req.body.buildingId);
+                if (!building) {
+                    return res.status(400).json({ error: 'Geçersiz bina ID' });
+                }
+
+                selectedBuildingId = building.id;
+
+                // Admin can create requests for any building
+                if (user.role !== 'admin') {
+                    // Check if user is assigned to the building's site
+                    const userSiteAssignments = await storage.getUserSiteAssignments(authorId);
+                    const hasAccess = userSiteAssignments.some(
+                        assignment => assignment.siteId === building.siteId
+                    );
+
+                    if (!hasAccess) {
+                        return res.status(403).json({ 
+                            error: 'Bu bina için yetkiniz bulunmamaktadır' 
+                        });
+                    }
+                }
+            }
+
+            // If siteId is provided, verify user has access to that site
+            let selectedSiteId: string | null = null;
+            if (hasSiteId) {
+                const site = await storage.getSiteById(req.body.siteId);
+                if (!site) {
+                    return res.status(400).json({ error: 'Geçersiz site ID' });
+                }
+
+                selectedSiteId = site.id;
+
+                // Admin can create requests for any site
+                if (user.role !== 'admin') {
+                    // Check if user is assigned to the site
+                    const userSiteAssignments = await storage.getUserSiteAssignments(authorId);
+                    const hasAccess = userSiteAssignments.some(
+                        assignment => assignment.siteId === req.body.siteId
+                    );
+
+                    if (!hasAccess) {
+                        return res.status(403).json({ 
+                            error: 'Bu site için yetkiniz bulunmamaktadır' 
+                        });
+                    }
+                }
+            }
+            
+            // If user is not a resident (admin/staff), we need to get a unitId from the building/site
+            if (!resident && !unitId) {
+                if (selectedBuildingId) {
+                    // Get first unit from the selected building
+                    const units = await storage.getUnitsByBuildingId(selectedBuildingId);
+                    if (units.length === 0) {
+                        return res.status(400).json({ 
+                            error: 'Seçilen binada daire bulunamadı. Lütfen başka bir bina seçin.' 
+                        });
+                    }
+                    unitId = units[0].id;
+                } else if (selectedSiteId) {
+                    // Get first building from the site, then first unit from that building
+                    const buildings = await storage.getBuildingsBySiteId(selectedSiteId);
+                    if (buildings.length === 0) {
+                        return res.status(400).json({ 
+                            error: 'Seçilen sitede bina bulunamadı.' 
+                        });
+                    }
+                    const units = await storage.getUnitsByBuildingId(buildings[0].id);
+                    if (units.length === 0) {
+                        return res.status(400).json({ 
+                            error: 'Seçilen sitede daire bulunamadı.' 
+                        });
+                    }
+                    unitId = units[0].id;
+                }
+            }
+            
+            // Final check: unitId must be set
+            if (!unitId) {
+                return res.status(400).json({ 
+                    error: 'Daire bilgisi belirlenemedi. Lütfen tekrar deneyin.' 
+                });
+            }
+            
+            const buildingId = hasBuildingId ? req.body.buildingId : null;
+            const siteId = hasSiteId ? req.body.siteId : null;
+
             const validatedData = insertCommunityRequestSchema.parse({
                 ...req.body,
                 authorId,
                 unitId,
+                buildingId: buildingId || undefined,
+                siteId: siteId || undefined,
             });
-            const request = await storage.createCommunityRequest(validatedData);
+
+            const finalData = {
+                ...validatedData,
+                buildingId: buildingId ?? null,
+                siteId: siteId ?? null,
+            };
+
+            const request = await storage.createCommunityRequest(finalData);
             res.status(201).json({ request });
         } catch (error: any) {
             console.error('Community request creation error:', error);
@@ -1435,11 +1567,125 @@ export function createRoutes(storage: IStorage): Router {
             // Validate enum values
             const status = validateEnum(req.query.status as string | undefined, ['active', 'closed']);
             
-            const result = await storage.getPollsPaginated(page, limit, { search, status });
+            // Get userId from authenticated user
+            const userId = (req.user as any)?.id;
+            
+            const result = await storage.getPollsPaginated(page, limit, { search, status }, userId);
             res.json(result);
         } catch (error) {
             console.error('Community polls error:', error);
             res.status(500).json({ error: 'Anketler yüklenirken hata oluştu' });
+        }
+    });
+
+    // POST /api/community/polls
+    router.post('/community/polls', requireAuth, async (req, res) => {
+        try {
+            // Get authorId from authenticated user
+            const authorId = (req.user as any)?.id;
+            if (!authorId) {
+                return res.status(401).json({ error: 'Kullanıcı bilgisi bulunamadı' });
+            }
+
+            // Get user info for role check
+            const user = await storage.getUserById(authorId);
+            if (!user) {
+                return res.status(401).json({ error: 'Kullanıcı bulunamadı' });
+            }
+
+            // Validate siteId and buildingId
+            const hasBuildingId = req.body.buildingId && req.body.buildingId !== "";
+            const hasSiteId = req.body.siteId && req.body.siteId !== "";
+
+            if (hasBuildingId && hasSiteId) {
+                return res.status(400).json({ error: 'Anket hem bina hem de site ID\'si ile oluşturulamaz. Lütfen sadece birini seçin.' });
+            }
+
+            if (!hasBuildingId && !hasSiteId) {
+                return res.status(400).json({ error: 'Anket için site ID veya bina ID\'si gereklidir.' });
+            }
+
+            // If buildingId is provided, verify user has access to that building's site
+            if (hasBuildingId) {
+                const building = await storage.getBuildingById(req.body.buildingId);
+                if (!building) {
+                    return res.status(400).json({ error: 'Geçersiz bina ID' });
+                }
+
+                // Admin can create polls for any building
+                if (user.role !== 'admin') {
+                    // Check if user is assigned to the building's site
+                    const userSiteAssignments = await storage.getUserSiteAssignments(authorId);
+                    const hasAccess = userSiteAssignments.some(
+                        assignment => assignment.siteId === building.siteId
+                    );
+
+                    if (!hasAccess) {
+                        return res.status(403).json({ 
+                            error: 'Bu bina için yetkiniz bulunmamaktadır' 
+                        });
+                    }
+                }
+            }
+
+            // If siteId is provided, verify user has access to that site
+            if (hasSiteId) {
+                const site = await storage.getSiteById(req.body.siteId);
+                if (!site) {
+                    return res.status(400).json({ error: 'Geçersiz site ID' });
+                }
+
+                // Admin can create polls for any site
+                if (user.role !== 'admin') {
+                    // Check if user is assigned to the site
+                    const userSiteAssignments = await storage.getUserSiteAssignments(authorId);
+                    const hasAccess = userSiteAssignments.some(
+                        assignment => assignment.siteId === req.body.siteId
+                    );
+
+                    if (!hasAccess) {
+                        return res.status(403).json({ 
+                            error: 'Bu site için yetkiniz bulunmamaktadır' 
+                        });
+                    }
+                }
+            }
+            
+            // Convert date strings to timestamps
+            const startDate = req.body.startDate ? new Date(req.body.startDate) : new Date();
+            const endDate = req.body.endDate ? new Date(req.body.endDate) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+            
+            const buildingId = hasBuildingId ? req.body.buildingId : null;
+            const siteId = hasSiteId ? req.body.siteId : null;
+
+            const validatedData = insertPollSchema.parse({
+                ...req.body,
+                authorId,
+                startDate,
+                endDate,
+                buildingId: buildingId || undefined,
+                siteId: siteId || undefined,
+            });
+
+            const finalData = {
+                ...validatedData,
+                buildingId: buildingId ?? null,
+                siteId: siteId ?? null,
+            };
+
+            const poll = await storage.createPoll(finalData);
+            res.status(201).json({ poll });
+        } catch (error: any) {
+            console.error('Poll creation error:', error);
+            console.error('Poll creation error details:', {
+                message: error.message,
+                stack: error.stack,
+                name: error.name,
+                code: error.code,
+                body: req.body
+            });
+            if (error.name === 'ZodError') return res.status(400).json({ error: 'Geçersiz veri', details: error.errors });
+            res.status(500).json({ error: 'Anket oluşturulamadı', details: error.message });
         }
     });
 

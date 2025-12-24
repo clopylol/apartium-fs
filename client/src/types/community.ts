@@ -3,6 +3,8 @@ export interface CommunityRequest {
     id: string;
     authorId: string;
     unitId: string;
+    siteId?: string | null;
+    buildingId?: string | null;
     type: 'wish' | 'suggestion';
     title: string;
     description: string;
@@ -10,6 +12,8 @@ export interface CommunityRequest {
     requestDate: string;
     createdAt: string;
     updatedAt: string;
+    authorName?: string;
+    authorEmail?: string;
 }
 
 export interface PollVote {
@@ -46,6 +50,8 @@ export interface CommunityRequestFormData {
     title: string;
     description: string;
     type: 'wish' | 'suggestion';
+    siteId?: string | null;
+    buildingId?: string | null;
 }
 
 export interface PollFormData {
@@ -53,6 +59,8 @@ export interface PollFormData {
     description: string;
     startDate: string;
     endDate: string;
+    siteId?: string | null;
+    buildingId?: string | null;
 }
 
 // Legacy types for backward compatibility (will be removed)

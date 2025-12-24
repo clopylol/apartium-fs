@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import type { CommunityRequestFormData, PollFormData } from '@/types';
+import { showSuccess, showError } from '@/utils/toast';
 
 /**
  * Hook for community CRUD mutations
@@ -14,6 +15,10 @@ export function useCommunityMutations() {
         mutationFn: (data: CommunityRequestFormData) => api.community.createRequest(data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['community'] });
+            showSuccess('Talep başarıyla oluşturuldu');
+        },
+        onError: (error: Error) => {
+            showError(error.message || 'Talep oluşturulurken bir hata oluştu');
         },
     });
 
@@ -22,6 +27,10 @@ export function useCommunityMutations() {
             api.community.updateRequestType(id, type),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['community'] });
+            showSuccess('Talep tipi başarıyla güncellendi');
+        },
+        onError: (error: Error) => {
+            showError(error.message || 'Talep tipi güncellenirken bir hata oluştu');
         },
     });
 
@@ -30,6 +39,10 @@ export function useCommunityMutations() {
             api.community.updateRequestStatus(id, status),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['community'] });
+            showSuccess('Talep durumu başarıyla güncellendi');
+        },
+        onError: (error: Error) => {
+            showError(error.message || 'Talep durumu güncellenirken bir hata oluştu');
         },
     });
 
@@ -37,6 +50,10 @@ export function useCommunityMutations() {
         mutationFn: (id: string) => api.community.deleteRequest(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['community'] });
+            showSuccess('Talep başarıyla silindi');
+        },
+        onError: (error: Error) => {
+            showError(error.message || 'Talep silinirken bir hata oluştu');
         },
     });
 
@@ -45,6 +62,10 @@ export function useCommunityMutations() {
         mutationFn: (data: PollFormData) => api.community.createPoll(data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['community'] });
+            showSuccess('Anket başarıyla oluşturuldu');
+        },
+        onError: (error: Error) => {
+            showError(error.message || 'Anket oluşturulurken bir hata oluştu');
         },
     });
 
@@ -53,6 +74,10 @@ export function useCommunityMutations() {
             api.community.updatePollStatus(id, status),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['community'] });
+            showSuccess('Anket durumu başarıyla güncellendi');
+        },
+        onError: (error: Error) => {
+            showError(error.message || 'Anket durumu güncellenirken bir hata oluştu');
         },
     });
 
@@ -60,6 +85,10 @@ export function useCommunityMutations() {
         mutationFn: (id: string) => api.community.deletePoll(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['community'] });
+            showSuccess('Anket başarıyla silindi');
+        },
+        onError: (error: Error) => {
+            showError(error.message || 'Anket silinirken bir hata oluştu');
         },
     });
 
@@ -68,6 +97,10 @@ export function useCommunityMutations() {
             api.community.vote(pollId, residentId, choice),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['community', 'polls'] });
+            showSuccess('Oyunuz başarıyla kaydedildi');
+        },
+        onError: (error: Error) => {
+            showError(error.message || 'Oy kullanılırken bir hata oluştu');
         },
     });
 

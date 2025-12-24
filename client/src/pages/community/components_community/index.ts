@@ -6,6 +6,7 @@ export { RequestsTable } from './requests-table';
 export { RequestRow } from './request-row';
 export { RequestStatusBadge } from './request-status-badge';
 export { RequestTableSkeleton } from './request-table-skeleton';
+export { RequestDetailModal } from './request-detail-modal';
 export { PollCard } from './poll-card';
 export { PollProgressBar } from './poll-progress-bar';
 export { PollVoteButtons } from './poll-vote-buttons';

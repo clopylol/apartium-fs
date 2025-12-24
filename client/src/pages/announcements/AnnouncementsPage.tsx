@@ -8,6 +8,8 @@ import {
     AnnouncementFilters,
     AnnouncementsTable,
     AnnouncementFormModal,
+    AnnouncementDetailModal,
+    BulkActionBar,
 } from "./components_announcements";
 import { ConfirmationModal } from "@/components/shared/modals";
 import { Pagination } from "@/components/shared/pagination";
@@ -41,9 +43,6 @@ export const AnnouncementsPage = () => {
         isCreating, 
         isUpdating, 
         isDeleting,
-        createError,
-        updateError,
-        deleteError 
     } = useAnnouncementMutations();
 
     // Modal states
@@ -66,6 +65,22 @@ export const AnnouncementsPage = () => {
         isOpen: false,
         announcementId: "",
         title: "",
+    });
+
+    // Bulk selection state
+    const [selectedAnnouncementIds, setSelectedAnnouncementIds] = useState<string[]>([]);
+
+    // Detail modal state
+    const [showDetailModal, setShowDetailModal] = useState(false);
+    const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
+
+    // Bulk delete confirmation state
+    const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState<{
+        isOpen: boolean;
+        count: number;
+    }>({
+        isOpen: false,
+        count: 0,
     });
 
     // Reset to page 1 when filters or sorting change
@@ -260,6 +275,63 @@ export const AnnouncementsPage = () => {
         setFilterPriority("All");
     };
 
+    // Bulk selection handlers
+    const handleToggleSelect = (id: string): void => {
+        setSelectedAnnouncementIds((prev) =>
+            prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+        );
+    };
+
+    const handleToggleSelectAll = (): void => {
+        if (selectedAnnouncementIds.length === paginatedAnnouncements.length) {
+            setSelectedAnnouncementIds([]);
+        } else {
+            setSelectedAnnouncementIds(paginatedAnnouncements.map((ann) => ann.id));
+        }
+    };
+
+    // Bulk delete handler
+    const handleBulkDelete = (): void => {
+        setBulkDeleteConfirm({
+            isOpen: true,
+            count: selectedAnnouncementIds.length,
+        });
+    };
+
+    const handleConfirmBulkDelete = (): void => {
+        selectedAnnouncementIds.forEach((id) => {
+            deleteAnnouncement(id);
+        });
+        setSelectedAnnouncementIds([]);
+        setBulkDeleteConfirm({ isOpen: false, count: 0 });
+    };
+
+    // Detail modal handlers
+    const handleViewDetail = (announcement: Announcement): void => {
+        setSelectedAnnouncement(announcement);
+        setShowDetailModal(true);
+    };
+
+    // Duplicate handler
+    const handleDuplicate = (announcement: Announcement): void => {
+        setIsEditing(false);
+        const publishDateStr = announcement.publishDate 
+            ? new Date(announcement.publishDate).toISOString().split("T")[0]
+            : new Date().toISOString().split("T")[0];
+        
+        setCurrentAnnouncement({
+            title: `${announcement.title} (Kopya)`,
+            content: announcement.content,
+            priority: announcement.priority,
+            visibility: announcement.visibility,
+            status: "Draft", // Always set to Draft for duplicates
+            publishDate: publishDateStr,
+            buildingId: (announcement as any).buildingId || undefined,
+            siteId: (announcement as any).siteId || undefined,
+        } as any);
+        setShowModal(true);
+    };
+
     return (
         <div className="flex flex-col h-full overflow-hidden relative">
             {/* Header */}
@@ -316,6 +388,10 @@ export const AnnouncementsPage = () => {
                         sortField={sortField}
                         sortDirection={sortDirection}
                         onSort={handleSort}
+                        selectedIds={selectedAnnouncementIds}
+                        onToggleSelect={handleToggleSelect}
+                        onToggleSelectAll={handleToggleSelectAll}
+                        onRowClick={handleViewDetail}
                     />
 
                     {!isLoading && (
@@ -333,10 +409,10 @@ export const AnnouncementsPage = () => {
             <AnnouncementFormModal
                 isOpen={showModal}
                 isEditing={isEditing}
-                announcement={currentAnnouncement}
+                announcement={currentAnnouncement as Partial<Announcement>}
                 onClose={() => setShowModal(false)}
                 onSave={handleSave}
-                onChange={setCurrentAnnouncement}
+                onChange={(ann) => setCurrentAnnouncement(ann as Partial<AnnouncementFormData>)}
                 isLoading={isCreating || isUpdating}
             />
 
@@ -353,6 +429,41 @@ export const AnnouncementsPage = () => {
                     </p>
                 }
                 variant="danger"
+            />
+
+            {/* Bulk Delete Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={bulkDeleteConfirm.isOpen}
+                onClose={() => setBulkDeleteConfirm({ isOpen: false, count: 0 })}
+                onConfirm={handleConfirmBulkDelete}
+                title="Toplu Silme Onayı"
+                message={
+                    <p>
+                        <span className="font-bold text-white">{bulkDeleteConfirm.count}</span> adet duyuruyu
+                        silmek istediğinize emin misiniz? Bu işlem geri alınamaz.
+                    </p>
+                }
+                variant="danger"
+            />
+
+            {/* Detail Modal */}
+            <AnnouncementDetailModal
+                isOpen={showDetailModal}
+                announcement={selectedAnnouncement}
+                onClose={() => {
+                    setShowDetailModal(false);
+                    setSelectedAnnouncement(null);
+                }}
+                onEdit={handleOpenEdit}
+                onDelete={handleOpenDeleteConfirm}
+                onDuplicate={handleDuplicate}
+            />
+
+            {/* Bulk Action Bar */}
+            <BulkActionBar
+                selectedCount={selectedAnnouncementIds.length}
+                onBulkDelete={handleBulkDelete}
+                onCancel={() => setSelectedAnnouncementIds([])}
             />
         </div>
     );

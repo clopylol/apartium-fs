@@ -17,18 +17,39 @@ interface RequestRowProps {
     onConvertToSuggestion: (id: string) => void;
     onConvertToPoll: (req: Request) => void;
     onDelete: (id: string) => void;
+    onRowClick?: (request: Request) => void;
 }
 
 export const RequestRow: React.FC<RequestRowProps> = ({
     request,
     onConvertToSuggestion,
     onConvertToPoll,
-    onDelete
+    onDelete,
+    onRowClick,
 }) => {
     const { t } = useTranslation();
 
+    const handleRowClick = (e: React.MouseEvent): void => {
+        // Don't trigger row click if clicking on action buttons
+        const target = e.target as HTMLElement;
+        if (
+            target.closest('button') ||
+            target.closest('[role="button"]')
+        ) {
+            return;
+        }
+        onRowClick?.(request);
+    };
+
+    const handleActionClick = (e: React.MouseEvent): void => {
+        e.stopPropagation();
+    };
+
     return (
-        <tr className="hover:bg-ds-border-dark/30 transition-colors group">
+        <tr 
+            onClick={onRowClick ? handleRowClick : undefined}
+            className={`hover:bg-ds-border-dark/30 transition-colors group ${onRowClick ? 'cursor-pointer' : ''}`}
+        >
             <td className="px-6 py-4">
                 <div className="font-medium text-ds-primary-dark">{request.title}</div>
                 <div className="text-xs text-ds-muted-dark mt-1 max-w-md truncate">{request.description}</div>
@@ -49,7 +70,7 @@ export const RequestRow: React.FC<RequestRowProps> = ({
             <td className="px-6 py-4">
                 <RequestStatusBadge status={request.status} />
             </td>
-            <td className="px-6 py-4 text-right">
+            <td className="px-6 py-4 text-right" onClick={handleActionClick}>
                 <div className="flex items-center justify-end gap-2">
                     {/* Convert Wish to Suggestion */}
                     {request.type === 'wish' && request.status !== 'resolved' && (

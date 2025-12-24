@@ -192,9 +192,10 @@ export interface IStorage {
     getCommunityRequestsPaginated(
         page: number,
         limit: number,
-        filters?: { search?: string; status?: string; type?: 'wish' | 'suggestion' }
+        filters?: { search?: string; status?: string; type?: 'wish' | 'suggestion' },
+        userId?: string
     ): Promise<{
-        requests: CommunityRequest[];
+        requests: (CommunityRequest & { authorName: string; authorEmail: string })[];
         total: number;
     }>;
     createCommunityRequest(req: InsertCommunityRequest): Promise<CommunityRequest>;
@@ -205,7 +206,8 @@ export interface IStorage {
     getPollsPaginated(
         page: number,
         limit: number,
-        filters?: { search?: string; status?: 'active' | 'closed' }
+        filters?: { search?: string; status?: 'active' | 'closed' },
+        userId?: string
     ): Promise<{
         polls: any[];
         total: number;

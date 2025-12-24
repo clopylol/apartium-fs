@@ -394,8 +394,10 @@ export const janitorRequests = pgTable('janitor_requests', {
 // Community Requests (İstek/Öneri)
 export const communityRequests = pgTable('community_requests', {
     id: uuid('id').defaultRandom().primaryKey(),
-    authorId: uuid('author_id').notNull().references(() => residents.id, { onDelete: 'cascade' }),
+    authorId: uuid('author_id').notNull(), // Can be resident ID or user ID (no FK constraint to allow both)
     unitId: uuid('unit_id').notNull().references(() => units.id, { onDelete: 'cascade' }),
+    siteId: uuid('site_id').references(() => sites.id, { onDelete: 'set null' }),
+    buildingId: uuid('building_id').references(() => buildings.id, { onDelete: 'set null' }),
     type: communityRequestTypeEnum('type').notNull(),
     title: varchar('title', { length: 255 }).notNull(),
     description: text('description').notNull(),
@@ -409,7 +411,9 @@ export const communityRequests = pgTable('community_requests', {
 // Polls (Anketler)
 export const polls = pgTable('polls', {
     id: uuid('id').defaultRandom().primaryKey(),
-    authorId: uuid('author_id').notNull().references(() => residents.id, { onDelete: 'cascade' }),
+    authorId: uuid('author_id').notNull(), // Can be resident ID or user ID (no FK constraint to allow both)
+    siteId: uuid('site_id').references(() => sites.id, { onDelete: 'set null' }),
+    buildingId: uuid('building_id').references(() => buildings.id, { onDelete: 'set null' }),
     title: varchar('title', { length: 255 }).notNull(),
     description: text('description').notNull(),
     startDate: timestamp('start_date', { withTimezone: true }).notNull(),

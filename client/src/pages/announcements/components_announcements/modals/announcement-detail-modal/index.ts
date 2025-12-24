@@ -1,0 +1,2 @@
+export { AnnouncementDetailModal } from "./AnnouncementDetailModal";
+

@@ -1488,7 +1488,8 @@ export class DatabaseStorage implements IStorage {
     async getCommunityRequestsPaginated(
         page: number,
         limit: number,
-        filters?: { search?: string; status?: string; type?: 'wish' | 'suggestion' }
+        filters?: { search?: string; status?: string; type?: 'wish' | 'suggestion' },
+        userId?: string
     ): Promise<{
         requests: CommunityRequest[];
         total: number;
@@ -1515,12 +1516,84 @@ export class DatabaseStorage implements IStorage {
             whereConditions.push(eq(schema.communityRequests.type, filters.type));
         }
 
+        // Filter by user's authorized sites if userId provided
+        if (userId) {
+            const user = await this.getUserById(userId);
+            
+            // Admin can see all requests
+            if (user?.role !== 'admin') {
+                // Get user's site assignments
+                const userSiteAssignments = await this.getUserSiteAssignments(userId);
+                const userSiteIds = userSiteAssignments.map(assignment => assignment.siteId);
+
+                if (userSiteIds.length > 0) {
+                    // Get buildings for user's sites
+                    const userBuildings = await db
+                        .select({ id: schema.buildings.id })
+                        .from(schema.buildings)
+                        .where(
+                            and(
+                                inArray(schema.buildings.siteId, userSiteIds),
+                                isNull(schema.buildings.deletedAt)
+                            )
+                        );
+
+                    const userBuildingIds = userBuildings.map(b => b.id);
+
+                    // Filter requests: Show requests for user's buildings OR user's sites
+                    const conditions: any[] = [];
+                    
+                    if (userBuildingIds.length > 0 && schema.communityRequests.buildingId) {
+                        conditions.push(inArray(schema.communityRequests.buildingId, userBuildingIds));
+                    }
+                    
+                    if (userSiteIds.length > 0 && schema.communityRequests.siteId) {
+                        conditions.push(inArray(schema.communityRequests.siteId, userSiteIds));
+                    }
+
+                    if (conditions.length > 0) {
+                        // Show requests that match either building OR site
+                        whereConditions.push(or(...conditions));
+                    } else {
+                        // No buildings and no sites = show nothing (user has no access)
+                        whereConditions.push(sql`1 = 0`); // Always false condition
+                    }
+                } else {
+                    // User has no site assignments, only show their own requests
+                    whereConditions.push(eq(schema.communityRequests.authorId, userId));
+                }
+            }
+        }
+
         const whereClause = and(...whereConditions);
+
+        // Select with author information from both residents and users
+        const selectObj = {
+            id: schema.communityRequests.id,
+            authorId: schema.communityRequests.authorId,
+            unitId: schema.communityRequests.unitId,
+            siteId: schema.communityRequests.siteId,
+            buildingId: schema.communityRequests.buildingId,
+            type: schema.communityRequests.type,
+            title: schema.communityRequests.title,
+            description: schema.communityRequests.description,
+            status: schema.communityRequests.status,
+            requestDate: schema.communityRequests.requestDate,
+            createdAt: schema.communityRequests.createdAt,
+            updatedAt: schema.communityRequests.updatedAt,
+            deletedAt: schema.communityRequests.deletedAt,
+            // Author name: try residents first, then users
+            authorName: sql<string>`COALESCE(${schema.residents.name}, ${schema.users.name}, 'Bilinmeyen')`.as('authorName'),
+            // Author email: try users first (residents may not have email), then residents
+            authorEmail: sql<string>`COALESCE(${schema.users.email}, ${schema.residents.email}, '')`.as('authorEmail'),
+        };
 
         const [requests, totalResult] = await Promise.all([
             db
-                .select()
+                .select(selectObj)
                 .from(schema.communityRequests)
+                .leftJoin(schema.residents, eq(schema.communityRequests.authorId, schema.residents.id))
+                .leftJoin(schema.users, eq(schema.communityRequests.authorId, schema.users.id))
                 .where(whereClause)
                 .orderBy(desc(schema.communityRequests.createdAt))
                 .limit(limit)
@@ -1532,15 +1605,22 @@ export class DatabaseStorage implements IStorage {
         ]);
 
         return {
-            requests,
+            requests: requests as (CommunityRequest & { authorName: string; authorEmail: string })[],
             total: totalResult[0]?.count || 0,
         };
     }
 
     async createCommunityRequest(req: InsertCommunityRequest): Promise<CommunityRequest> {
+        // Ensure buildingId and siteId are explicitly null (not undefined) if not provided
+        const insertData = {
+            ...req,
+            buildingId: req.buildingId ?? null,
+            siteId: req.siteId ?? null,
+        };
+
         const [newRequest] = await db
             .insert(schema.communityRequests)
-            .values(req)
+            .values(insertData)
             .returning();
         return newRequest;
     }
@@ -1601,7 +1681,8 @@ export class DatabaseStorage implements IStorage {
     async getPollsPaginated(
         page: number,
         limit: number,
-        filters?: { search?: string; status?: 'active' | 'closed' }
+        filters?: { search?: string; status?: 'active' | 'closed' },
+        userId?: string
     ): Promise<{
         polls: any[];
         total: number;
@@ -1622,6 +1703,55 @@ export class DatabaseStorage implements IStorage {
 
         if (filters?.status) {
             whereConditions.push(eq(schema.polls.status, filters.status));
+        }
+
+        // Filter by user's authorized sites if userId provided
+        if (userId) {
+            const user = await this.getUserById(userId);
+            
+            // Admin can see all polls
+            if (user?.role !== 'admin') {
+                // Get user's site assignments
+                const userSiteAssignments = await this.getUserSiteAssignments(userId);
+                const userSiteIds = userSiteAssignments.map(assignment => assignment.siteId);
+
+                if (userSiteIds.length > 0) {
+                    // Get buildings for user's sites
+                    const userBuildings = await db
+                        .select({ id: schema.buildings.id })
+                        .from(schema.buildings)
+                        .where(
+                            and(
+                                inArray(schema.buildings.siteId, userSiteIds),
+                                isNull(schema.buildings.deletedAt)
+                            )
+                        );
+
+                    const userBuildingIds = userBuildings.map(b => b.id);
+
+                    // Filter polls: Show polls for user's buildings OR user's sites
+                    const conditions: any[] = [];
+                    
+                    if (userBuildingIds.length > 0 && schema.polls.buildingId) {
+                        conditions.push(inArray(schema.polls.buildingId, userBuildingIds));
+                    }
+                    
+                    if (userSiteIds.length > 0 && schema.polls.siteId) {
+                        conditions.push(inArray(schema.polls.siteId, userSiteIds));
+                    }
+
+                    if (conditions.length > 0) {
+                        // Show polls that match either building OR site
+                        whereConditions.push(or(...conditions));
+                    } else {
+                        // No buildings and no sites = show nothing (user has no access)
+                        whereConditions.push(sql`1 = 0`); // Always false condition
+                    }
+                } else {
+                    // User has no site assignments, only show their own polls
+                    whereConditions.push(eq(schema.polls.authorId, userId));
+                }
+            }
         }
 
         const whereClause = and(...whereConditions);
@@ -1659,9 +1789,16 @@ export class DatabaseStorage implements IStorage {
     }
 
     async createPoll(poll: InsertPoll): Promise<Poll> {
+        // Ensure buildingId and siteId are explicitly null (not undefined) if not provided
+        const insertData = {
+            ...poll,
+            buildingId: poll.buildingId ?? null,
+            siteId: poll.siteId ?? null,
+        };
+
         const [newPoll] = await db
             .insert(schema.polls)
-            .values(poll)
+            .values(insertData)
             .returning();
         return newPoll;
     }
