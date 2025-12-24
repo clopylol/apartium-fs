@@ -21,6 +21,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "building_id": {
+          "name": "building_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
         "title": {
           "name": "title",
           "type": "varchar(255)",
@@ -96,6 +102,19 @@
             "id"
           ],
           "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "announcements_building_id_buildings_id_fk": {
+          "name": "announcements_building_id_buildings_id_fk",
+          "tableFrom": "announcements",
+          "tableTo": "buildings",
+          "columnsFrom": [
+            "building_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },

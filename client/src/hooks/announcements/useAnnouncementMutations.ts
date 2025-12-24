@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import type { AnnouncementFormData } from '@/types';
+import { showSuccess, showError } from '@/utils/toast';
 
 /**
  * Hook for announcement CRUD mutations
@@ -13,6 +14,11 @@ export function useAnnouncementMutations() {
         mutationFn: (data: AnnouncementFormData) => api.announcements.create(data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['announcements'] });
+            queryClient.invalidateQueries({ queryKey: ['announcementStats'] });
+            showSuccess('Duyuru başarıyla oluşturuldu');
+        },
+        onError: (error: Error) => {
+            showError(error.message || 'Duyuru oluşturulurken bir hata oluştu');
         },
     });
 
@@ -21,6 +27,11 @@ export function useAnnouncementMutations() {
             api.announcements.update(id, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['announcements'] });
+            queryClient.invalidateQueries({ queryKey: ['announcementStats'] });
+            showSuccess('Duyuru başarıyla güncellendi');
+        },
+        onError: (error: Error) => {
+            showError(error.message || 'Duyuru güncellenirken bir hata oluştu');
         },
     });
 
@@ -28,6 +39,11 @@ export function useAnnouncementMutations() {
         mutationFn: (id: string) => api.announcements.delete(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['announcements'] });
+            queryClient.invalidateQueries({ queryKey: ['announcementStats'] });
+            showSuccess('Duyuru başarıyla silindi');
+        },
+        onError: (error: Error) => {
+            showError(error.message || 'Duyuru silinirken bir hata oluştu');
         },
     });
 

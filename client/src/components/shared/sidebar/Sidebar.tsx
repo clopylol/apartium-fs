@@ -1,9 +1,15 @@
 // 1. External & React
-import React from 'react';
-import { NavLink } from 'react-router-dom';
+import React, { useState } from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
+
+// 2. Contexts
+import { useAuth } from '@/contexts/auth';
+
+// 3. Components
+import { ConfirmationModal } from '@/components/shared/modals';
 
 // 4. Icons
-import { LayoutDashboard, Users, CreditCard, Wrench, Calendar, BarChart3, Settings, Building2, Megaphone, X, Package, LogIn, ShieldCheck, MessageSquare, UserCog, Palette } from 'lucide-react';
+import { LayoutDashboard, Users, CreditCard, Wrench, Calendar, BarChart3, Settings, Building2, Megaphone, X, Package, LogOut, ShieldCheck, MessageSquare, UserCog, Palette } from 'lucide-react';
 
 interface SidebarProps {
     isOpen: boolean;
@@ -11,6 +17,32 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
+    const { user, logout } = useAuth();
+    const navigate = useNavigate();
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+    const handleLogoutClick = () => {
+        setShowLogoutModal(true);
+    };
+
+    const handleLogoutConfirm = async () => {
+        setShowLogoutModal(false);
+        await logout();
+        navigate('/login');
+        onClose();
+    };
+
+    // Role Türkçe çevirisi
+    const getRoleLabel = (role: string): string => {
+        const roleMap: Record<string, string> = {
+            admin: 'Yönetici',
+            manager: 'Apartman Yöneticisi',
+            staff: 'Personel',
+            resident: 'Sakin',
+        };
+        return roleMap[role] || role;
+    };
+
     const menuItems = [
         { path: '/dashboard', icon: LayoutDashboard, label: 'Panel' },
         { path: '/announcements', icon: Megaphone, label: 'Duyurular' },
@@ -84,17 +116,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                             <span className="font-medium text-sm">Ayarlar</span>
                         </NavLink>
 
-                        <NavLink
-                            to="/login"
-                            onClick={onClose}
-                            className={({ isActive }) => `w-full flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all duration-200 group ${isActive
-                                ? 'bg-ds-sidebar-accent-light dark:bg-ds-sidebar-accent-dark text-ds-sidebar-foreground-light dark:text-ds-sidebar-foreground-dark shadow-sm'
-                                : 'text-ds-muted-light dark:text-ds-muted-dark hover:bg-ds-sidebar-accent-light/50 dark:hover:bg-ds-sidebar-accent-dark/50 hover:text-ds-sidebar-foreground-light dark:hover:text-ds-sidebar-foreground-dark'
-                                }`}
-                        >
-                            <LogIn className="w-5 h-5" />
-                            <span className="font-medium text-sm">Giriş Yap</span>
-                        </NavLink>
 
                         <NavLink
                             to="/security-login"
@@ -123,20 +144,51 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                 </nav>
 
                 {/* User Profile */}
+                {user && (
                 <div className="p-4 border-t border-ds-sidebar-border-light dark:border-ds-sidebar-border-dark">
-                    <div className="flex items-center gap-3 px-2">
-                        <img
-                            src="https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=64&h=64"
-                            alt="User"
-                            className="w-10 h-10 rounded-full border-2 border-ds-sidebar-border-light dark:border-ds-sidebar-border-dark object-cover"
-                        />
-                        <div className="flex flex-col">
-                            <span className="text-sm font-semibold text-ds-sidebar-foreground-light dark:text-ds-sidebar-foreground-dark">Ahmet Yılmaz</span>
-                            <span className="text-xs text-ds-muted-light dark:text-ds-muted-dark">Yönetici</span>
+                        <div className="flex items-center gap-3 px-2 mb-3">
+                            <div className="w-10 h-10 rounded-full bg-ds-action dark:bg-ds-action flex items-center justify-center border-2 border-ds-sidebar-border-light dark:border-ds-sidebar-border-dark">
+                                <span className="text-white font-semibold text-sm">
+                                    {user.name
+                                        .split(' ')
+                                        .map((n) => n[0])
+                                        .join('')
+                                        .toUpperCase()
+                                        .slice(0, 2)}
+                                </span>
+                            </div>
+                            <div className="flex-1 flex flex-col min-w-0">
+                                <span className="text-sm font-semibold text-ds-sidebar-foreground-light dark:text-ds-sidebar-foreground-dark truncate">
+                                    {user.name}
+                                </span>
+                                <span className="text-xs text-ds-muted-light dark:text-ds-muted-dark">
+                                    {getRoleLabel(user.role)}
+                                </span>
+                            </div>
                         </div>
+                        <button
+                            onClick={handleLogoutClick}
+                            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 text-ds-muted-light dark:text-ds-muted-dark hover:bg-ds-sidebar-accent-light/50 dark:hover:bg-ds-sidebar-accent-dark/50 hover:text-ds-destructive dark:hover:text-ds-destructive group"
+                        >
+                            <LogOut className="w-4 h-4" />
+                            <span className="font-medium text-sm">Çıkış Yap</span>
+                        </button>
                     </div>
-                </div>
+                )}
+
             </aside>
+
+            {/* Logout Confirmation Modal - Sayfanın ortasında */}
+            <ConfirmationModal
+                isOpen={showLogoutModal}
+                onClose={() => setShowLogoutModal(false)}
+                onConfirm={handleLogoutConfirm}
+                title="Çıkış Yap"
+                message="Hesabınızdan çıkmak istediğinize emin misiniz?"
+                variant="danger"
+                confirmText="Evet, Çıkış Yap"
+                cancelText="İptal"
+            />
         </>
     );
 };

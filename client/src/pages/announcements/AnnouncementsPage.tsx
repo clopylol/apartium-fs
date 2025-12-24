@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Plus } from "lucide-react";
 
 import type { Announcement, AnnouncementPriority, AnnouncementFormData } from "@/types";
@@ -96,9 +96,11 @@ export const AnnouncementsPage = () => {
             title: "",
             content: "",
             priority: "Medium",
-            visibility: "All Residents",
+            visibility: "",
             status: "Draft",
             publishDate: new Date().toISOString().split("T")[0],
+            buildingId: undefined,
+            siteId: undefined,
         });
         setShowModal(true);
     };
@@ -118,6 +120,8 @@ export const AnnouncementsPage = () => {
             visibility: ann.visibility,
             status: ann.status,
             publishDate: publishDateStr,
+            buildingId: (ann as any).buildingId || undefined, // Include buildingId for editing
+            siteId: (ann as any).siteId || undefined, // Include siteId for editing
         } as any);
         setShowModal(true);
     };
@@ -132,8 +136,16 @@ export const AnnouncementsPage = () => {
     };
 
     const handleSave = (): void => {
-        if (!currentAnnouncement.title || !currentAnnouncement.publishDate) return;
+        if (!currentAnnouncement.title || !currentAnnouncement.publishDate) {
+            return;
+        }
 
+        const buildingId = (currentAnnouncement as any).buildingId;
+        const siteId = (currentAnnouncement as any).siteId;
+        
+        // Debug: Log the values before processing
+        console.log('[AnnouncementsPage] handleSave - buildingId:', buildingId, 'siteId:', siteId);
+        
         const formData: AnnouncementFormData = {
             title: currentAnnouncement.title,
             content: currentAnnouncement.content || "",
@@ -141,7 +153,13 @@ export const AnnouncementsPage = () => {
             visibility: currentAnnouncement.visibility || "All Residents",
             status: currentAnnouncement.status || "Draft",
             publishDate: currentAnnouncement.publishDate,
+            // Convert empty string or undefined to null for backend
+            buildingId: buildingId && buildingId !== "" ? buildingId : null,
+            siteId: siteId && siteId !== "" ? siteId : null,
         };
+        
+        // Debug: Log the final formData
+        console.log('[AnnouncementsPage] handleSave - formData:', formData);
 
         if (isEditing && (currentAnnouncement as any).id) {
             updateAnnouncement({ 
@@ -154,29 +172,30 @@ export const AnnouncementsPage = () => {
         // Modal will close automatically via useEffect
     };
 
-    // Close modal when mutation completes
+    // Track previous mutation states to detect completion
+    const prevIsCreating = useRef(isCreating);
+    const prevIsUpdating = useRef(isUpdating);
+
+    // Close modal when mutation completes (only when transitioning from true to false)
     useEffect(() => {
-        if (!isCreating && !isUpdating && showModal) {
+        // Check if mutation just completed (was true, now false)
+        const createJustCompleted = prevIsCreating.current && !isCreating;
+        const updateJustCompleted = prevIsUpdating.current && !isUpdating;
+
+        if ((createJustCompleted || updateJustCompleted) && showModal) {
             // Wait a bit to show success state
             const timer = setTimeout(() => {
                 setShowModal(false);
             }, 300);
             return () => clearTimeout(timer);
         }
+
+        // Update refs for next render
+        prevIsCreating.current = isCreating;
+        prevIsUpdating.current = isUpdating;
     }, [isCreating, isUpdating, showModal]);
 
-    // Error handling
-    useEffect(() => {
-        if (createError) {
-            alert(`Duyuru oluşturulurken hata: ${(createError as Error).message}`);
-        }
-        if (updateError) {
-            alert(`Duyuru güncellenirken hata: ${(updateError as Error).message}`);
-        }
-        if (deleteError) {
-            alert(`Duyuru silinirken hata: ${(deleteError as Error).message}`);
-        }
-    }, [createError, updateError, deleteError]);
+    // Error handling is now done in useAnnouncementMutations hook via toast
 
     const handleClearFilters = (): void => {
         setSearchTerm("");

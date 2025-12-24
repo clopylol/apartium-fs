@@ -74,7 +74,7 @@ export const LoginPage = () => {
     showError(`${provider === "google" ? "Google" : "Facebook"} ile giriş henüz aktif değil`);
   };
 
-  return (
+    return (
     <div className="min-h-screen w-full flex bg-ds-background-light dark:bg-ds-background-dark text-ds-primary-light dark:text-ds-primary-dark font-sans relative z-50">
       {/* Left Panel - Visual (Hidden on Mobile) */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-ds-card-dark dark:bg-ds-card-dark">
@@ -322,6 +322,6 @@ export const LoginPage = () => {
           </div>
         </div>
       </div>
-    </div>
-  );
+        </div>
+    );
 };

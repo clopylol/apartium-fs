@@ -114,7 +114,7 @@ export const ConfirmationModal: FC<ConfirmationModalProps> = ({
       onClose={onClose}
       maxWidth={maxWidth}
       showCloseButton={false}
-      zIndex={60}
+      zIndex={9999}
     >
       <div className={`border ${styles.borderColor} rounded-2xl overflow-hidden`}>
         <div className="p-8 flex flex-col items-center text-center">

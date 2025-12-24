@@ -332,6 +332,8 @@ export const maintenanceRequests = pgTable('maintenance_requests', {
 export const announcements = pgTable('announcements', {
     id: uuid('id').defaultRandom().primaryKey(),
     authorId: uuid('author_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    siteId: uuid('site_id').references(() => sites.id, { onDelete: 'set null' }),
+    buildingId: uuid('building_id').references(() => buildings.id, { onDelete: 'set null' }),
     title: varchar('title', { length: 255 }).notNull(),
     content: text('content').notNull(),
     priority: announcementPriorityEnum('priority').notNull().default('Medium'),

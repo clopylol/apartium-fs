@@ -1,4 +1,4 @@
-import { eq, and, or, desc, gte, lte, count, isNull, ilike, sql } from 'drizzle-orm';
+import { eq, and, or, desc, gte, lte, count, isNull, ilike, sql, inArray } from 'drizzle-orm';
 import { db } from './db/index.js';
 import type { IStorage } from './storage.js';
 import * as schema from 'apartium-shared';
@@ -1045,41 +1045,118 @@ export class DatabaseStorage implements IStorage {
             .orderBy(desc(schema.announcements.publishDate));
     }
 
-    async getAnnouncementsPaginated(page: number, limit: number): Promise<{
+    async getAnnouncementsPaginated(page: number, limit: number, userId?: string): Promise<{
         announcements: (Announcement & { authorName: string; authorEmail: string })[];
         total: number;
     }> {
         const offset = (page - 1) * limit;
 
+        // Build where conditions
+        let whereConditions = [isNull(schema.announcements.deletedAt)];
+
+        // Filter by user's authorized sites if userId provided
+        if (userId) {
+            const user = await this.getUserById(userId);
+            
+            // Admin can see all announcements
+            if (user?.role !== 'admin') {
+                // Get user's site assignments
+                const userSiteAssignments = await this.getUserSiteAssignments(userId);
+                const userSiteIds = userSiteAssignments.map(assignment => assignment.siteId);
+
+                if (userSiteIds.length > 0) {
+                    // Get buildings for user's sites
+                    const userBuildings = await db
+                        .select({ id: schema.buildings.id })
+                        .from(schema.buildings)
+                        .where(
+                            and(
+                                inArray(schema.buildings.siteId, userSiteIds),
+                                isNull(schema.buildings.deletedAt)
+                            )
+                        );
+
+                    const userBuildingIds = userBuildings.map(b => b.id);
+
+                    console.log(`[DEBUG] User ${userId} has ${userBuildingIds.length} buildings:`, userBuildingIds);
+                    console.log(`[DEBUG] User site IDs:`, userSiteIds);
+
+                    // Filter announcements: Show announcements for user's buildings OR user's sites
+                    // Kullanıcı sadece erişebileceği building'lerin veya site'lerin duyurularını görmeli
+                    // - Building-specific announcements: buildingId matches user's buildings
+                    // - Site-wide announcements: siteId matches user's sites
+                    const conditions: any[] = [];
+                    
+                    if (userBuildingIds.length > 0) {
+                        conditions.push(inArray(schema.announcements.buildingId, userBuildingIds));
+                    }
+                    
+                    // Check if siteId exists in schema before using it
+                    if (userSiteIds.length > 0 && schema.announcements.siteId) {
+                        conditions.push(inArray(schema.announcements.siteId, userSiteIds));
+                    }
+
+                    if (conditions.length > 0) {
+                        // Show announcements that match either building OR site
+                        whereConditions.push(or(...conditions));
+                    } else {
+                        // No buildings and no sites = show nothing (user has no access)
+                        whereConditions.push(sql`1 = 0`); // Always false condition
+                    }
+                } else {
+                    // User has no site assignments, only show their own announcements
+                    whereConditions.push(eq(schema.announcements.authorId, userId));
+                }
+            }
+        }
+
         // Get paginated announcements with author info
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/50ac2de9-6b44-4ca9-86c9-62829607e1e5',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'db-storage.ts:1097',message:'getAnnouncementsPaginated - checking schema.buildingId',data:{buildingIdExists:!!schema.announcements.buildingId,buildingIdType:typeof schema.announcements.buildingId,buildingIdConstructor:schema.announcements.buildingId?.constructor?.name,allColumns:Object.keys(schema.announcements)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
+        
+        // Build select object - check if siteId exists in schema
+        const selectObj: any = {
+            id: schema.announcements.id,
+            authorId: schema.announcements.authorId,
+            buildingId: schema.announcements.buildingId,
+            title: schema.announcements.title,
+            content: schema.announcements.content,
+            priority: schema.announcements.priority,
+            visibility: schema.announcements.visibility,
+            status: schema.announcements.status,
+            publishDate: schema.announcements.publishDate,
+            createdAt: schema.announcements.createdAt,
+            updatedAt: schema.announcements.updatedAt,
+            deletedAt: schema.announcements.deletedAt,
+            authorName: schema.users.name,
+            authorEmail: schema.users.email,
+        };
+        
+        // Add siteId if it exists in schema (it should after migration)
+        if (schema.announcements.siteId) {
+            selectObj.siteId = schema.announcements.siteId;
+        }
+        
+        // #region agent log
+        const safeSelectObj = Object.entries(selectObj).reduce((acc,[k,v])=>{acc[k]={exists:!!v,type:typeof v,isUndefined:v===undefined,isNull:v===null,constructor:v?.constructor?.name};return acc;},{});
+        fetch('http://127.0.0.1:7242/ingest/50ac2de9-6b44-4ca9-86c9-62829607e1e5',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'db-storage.ts:1115',message:'getAnnouncementsPaginated - select object before query',data:{selectKeys:Object.keys(selectObj),buildingIdExists:!!selectObj.buildingId,buildingIdUndefined:selectObj.buildingId===undefined,buildingIdNull:selectObj.buildingId===null,safeSelectObj},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+        // #endregion
+        
         const announcements = await db
-            .select({
-                id: schema.announcements.id,
-                authorId: schema.announcements.authorId,
-                title: schema.announcements.title,
-                content: schema.announcements.content,
-                priority: schema.announcements.priority,
-                visibility: schema.announcements.visibility,
-                status: schema.announcements.status,
-                publishDate: schema.announcements.publishDate,
-                createdAt: schema.announcements.createdAt,
-                updatedAt: schema.announcements.updatedAt,
-                deletedAt: schema.announcements.deletedAt,
-                authorName: schema.users.name,
-                authorEmail: schema.users.email,
-            })
+            .select(selectObj)
             .from(schema.announcements)
             .leftJoin(schema.users, eq(schema.announcements.authorId, schema.users.id))
-            .where(isNull(schema.announcements.deletedAt))
+            .where(and(...whereConditions))
             .orderBy(desc(schema.announcements.publishDate))
             .limit(limit)
             .offset(offset);
 
-        // Get total count
+        // Get total count with same filters
         const [{ count: totalCount }] = await db
             .select({ count: sql<number>`COUNT(*)::int` })
             .from(schema.announcements)
-            .where(isNull(schema.announcements.deletedAt));
+            .where(and(...whereConditions));
 
         return {
             announcements: announcements as (Announcement & { authorName: string; authorEmail: string })[],
@@ -1092,6 +1169,7 @@ export class DatabaseStorage implements IStorage {
             .select({
                 id: schema.announcements.id,
                 authorId: schema.announcements.authorId,
+                buildingId: schema.announcements.buildingId, // Include buildingId
                 title: schema.announcements.title,
                 content: schema.announcements.content,
                 priority: schema.announcements.priority,
@@ -1115,13 +1193,52 @@ export class DatabaseStorage implements IStorage {
         return announcement ? (announcement as Announcement & { authorName: string; authorEmail: string }) : null;
     }
 
-    async getAnnouncementStats(): Promise<{
+    async getAnnouncementStats(userId?: string): Promise<{
         totalCount: number;
         activeCount: number;
         scheduledCount: number;
         draftCount: number;
         highPriorityCount: number;
     }> {
+        // Build where conditions (same logic as getAnnouncementsPaginated)
+        let whereConditions = [isNull(schema.announcements.deletedAt)];
+
+        // Filter by user's authorized sites if userId provided
+        if (userId) {
+            const user = await this.getUserById(userId);
+            
+            // Admin can see all announcements
+            if (user?.role !== 'admin') {
+                // Get user's site assignments
+                const userSiteAssignments = await this.getUserSiteAssignments(userId);
+                const userSiteIds = userSiteAssignments.map(assignment => assignment.siteId);
+
+                if (userSiteIds.length > 0) {
+                    // Get buildings for user's sites
+                    const userBuildings = await db
+                        .select({ id: schema.buildings.id })
+                        .from(schema.buildings)
+                        .where(inArray(schema.buildings.siteId, userSiteIds));
+
+                    const userBuildingIds = userBuildings.map(b => b.id);
+
+                    // Filter announcements: ONLY show announcements for user's buildings
+                    // Kullanıcı sadece erişebileceği building'lerin duyurularını görmeli
+                    if (userBuildingIds.length > 0) {
+                        whereConditions.push(
+                            inArray(schema.announcements.buildingId, userBuildingIds)
+                        );
+                    } else {
+                        // No buildings = show nothing (user has no access to any buildings)
+                        whereConditions.push(sql`1 = 0`); // Always false condition
+                    }
+                } else {
+                    // User has no site assignments = show nothing
+                    whereConditions.push(sql`1 = 0`); // Always false condition
+                }
+            }
+        }
+
         const [stats] = await db
             .select({
                 totalCount: sql<number>`COUNT(*)::int`,
@@ -1131,16 +1248,60 @@ export class DatabaseStorage implements IStorage {
                 highPriorityCount: sql<number>`COUNT(CASE WHEN ${schema.announcements.priority} = 'High' AND ${schema.announcements.status} = 'Published' THEN 1 END)::int`,
             })
             .from(schema.announcements)
-            .where(isNull(schema.announcements.deletedAt));
+            .where(and(...whereConditions));
 
         return stats;
     }
 
     async createAnnouncement(announcement: InsertAnnouncement): Promise<Announcement> {
+        // Ensure buildingId and siteId are explicitly null (not undefined) if not provided
+        const insertData = {
+            ...announcement,
+            buildingId: announcement.buildingId ?? null,
+            siteId: announcement.siteId ?? null,
+        };
+        
+        // Debug log
+        console.log('[createAnnouncement] insertData:', JSON.stringify(insertData, null, 2));
+        console.log('[createAnnouncement] siteId value:', insertData.siteId);
+        console.log('[createAnnouncement] siteId type:', typeof insertData.siteId);
+        
+        // Explicitly return all columns including siteId
+        // Check if siteId exists in schema (it should after migration)
+        const returningObj: any = {
+            id: schema.announcements.id,
+            authorId: schema.announcements.authorId,
+            buildingId: schema.announcements.buildingId,
+            title: schema.announcements.title,
+            content: schema.announcements.content,
+            priority: schema.announcements.priority,
+            visibility: schema.announcements.visibility,
+            status: schema.announcements.status,
+            publishDate: schema.announcements.publishDate,
+            createdAt: schema.announcements.createdAt,
+            updatedAt: schema.announcements.updatedAt,
+            deletedAt: schema.announcements.deletedAt,
+        };
+        
+        // Add siteId if it exists in schema
+        if (schema.announcements.siteId) {
+            returningObj.siteId = schema.announcements.siteId;
+        }
+        
         const [newAnnouncement] = await db
             .insert(schema.announcements)
-            .values(announcement)
-            .returning();
+            .values(insertData)
+            .returning(returningObj);
+        
+        console.log('[createAnnouncement] returned announcement:', JSON.stringify(newAnnouncement, null, 2));
+        
+        // If siteId was in insertData but not in returned announcement, add it manually
+        // This happens when schema is not rebuilt after adding siteId column
+        if (insertData.siteId && !(newAnnouncement as any).siteId) {
+            (newAnnouncement as any).siteId = insertData.siteId;
+            console.log('[createAnnouncement] Manually added siteId to returned announcement:', insertData.siteId);
+        }
+        
         return newAnnouncement;
     }
 

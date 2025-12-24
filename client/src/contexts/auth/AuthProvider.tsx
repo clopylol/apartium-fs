@@ -42,7 +42,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         const response = await api.auth.login(email, password);
         if (response?.user) {
           setUser(response.user as AuthUser);
-          showSuccess("Giriş başarılı!");
+          showSuccess(`Hoş geldiniz, ${response.user.name}! 🎉`);
         } else {
           throw new Error("Giriş başarısız");
         }

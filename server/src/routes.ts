@@ -29,8 +29,7 @@ export function createRoutes(storage: IStorage): Router {
     const router = express.Router();
 
     // ==================== DASHBOARD STATS ====================
-    // TODO: Add auth back after implementing login page
-    router.get('/stats', async (req, res) => {
+    router.get('/stats', requireAuth, async (req, res) => {
         try {
             const stats = await storage.getDashboardStats();
             res.json(stats);
@@ -40,7 +39,7 @@ export function createRoutes(storage: IStorage): Router {
     });
 
     // GET /api/dashboard/recent-data
-    router.get('/dashboard/recent-data', async (req, res) => {
+    router.get('/dashboard/recent-data', requireAuth, async (req, res) => {
         try {
             const [payments, maintenance, bookings] = await Promise.all([
                 storage.getRecentPayments(5),
@@ -55,7 +54,7 @@ export function createRoutes(storage: IStorage): Router {
     });
 
     // GET /api/dashboard/monthly-income?year=2025
-    router.get('/dashboard/monthly-income', async (req, res) => {
+    router.get('/dashboard/monthly-income', requireAuth, async (req, res) => {
         try {
             const year = parseInt(req.query.year as string) || new Date().getFullYear();
             const data = await storage.getMonthlyIncome(year);
@@ -224,7 +223,7 @@ export function createRoutes(storage: IStorage): Router {
     });
 
     // GET /api/buildings/:id/full-data (Residents Page için tüm nested data)
-    router.get('/buildings/:id/full-data', async (req, res) => {
+    router.get('/buildings/:id/full-data', requireAuth, async (req, res) => {
         try {
             const data = await storage.getBuildingFullData(req.params.id);
             res.json(data);
@@ -247,7 +246,7 @@ export function createRoutes(storage: IStorage): Router {
 
     // GET /api/residents/:id
     // GET /api/residents/building-data/:buildingId (Residents Page için)
-    router.get('/residents/building-data/:buildingId', async (req, res) => {
+    router.get('/residents/building-data/:buildingId', requireAuth, async (req, res) => {
         try {
             const data = await storage.getBuildingFullData(req.params.buildingId);
             res.json(data);
@@ -411,10 +410,8 @@ export function createRoutes(storage: IStorage): Router {
     });
 
     // ==================== PAYMENT ROUTES ====================
-    // TODO: Add auth back after implementing login page
-
     // GET /api/payments?month=Ocak&year=2025
-    router.get('/payments', async (req, res) => {
+    router.get('/payments', requireAuth, async (req, res) => {
         try {
             const { month, year, page = '1', limit = '20', search, status } = req.query;
             
@@ -479,7 +476,7 @@ export function createRoutes(storage: IStorage): Router {
     });
 
     // POST /api/payments
-    router.post('/payments', async (req, res) => {
+    router.post('/payments', requireAuth, async (req, res) => {
         try {
             const validatedData = insertPaymentRecordSchema.parse(req.body);
             const payment = await storage.createPaymentRecord(validatedData);
@@ -490,7 +487,7 @@ export function createRoutes(storage: IStorage): Router {
         }
     });
 
-    router.patch('/payments/:id/status', async (req, res) => {
+    router.patch('/payments/:id/status', requireAuth, async (req, res) => {
         try {
             const { id } = req.params;
             const { status, paymentDate } = req.body;
@@ -524,7 +521,7 @@ export function createRoutes(storage: IStorage): Router {
     });
 
     // PATCH /api/payments/bulk-amount - Update amount for all payments in a period
-    router.patch('/payments/bulk-amount', async (req, res) => {
+    router.patch('/payments/bulk-amount', requireAuth, async (req, res) => {
         try {
             const { month, year, amount } = req.body;
 
@@ -557,7 +554,7 @@ export function createRoutes(storage: IStorage): Router {
         }
     });
 
-    router.delete('/payments/:id', async (req, res) => {
+    router.delete('/payments/:id', requireAuth, async (req, res) => {
         try {
             await storage.deletePaymentRecord(req.params.id);
             res.json({ message: 'Ödeme kaydı silindi' });
@@ -566,7 +563,7 @@ export function createRoutes(storage: IStorage): Router {
         }
     });
 
-    router.get('/residents/:id/payments', async (req, res) => {
+    router.get('/residents/:id/payments', requireAuth, async (req, res) => {
         try {
             const payments = await storage.getPaymentRecordsByResidentId(req.params.id);
             res.json({ payments });
@@ -576,9 +573,7 @@ export function createRoutes(storage: IStorage): Router {
     });
 
     // ==================== EXPENSE ROUTES ====================
-    // TODO: Add auth back after implementing login page
-
-    router.get('/expenses', async (req, res) => {
+    router.get('/expenses', requireAuth, async (req, res) => {
         try {
             const { month, year, page = '1', limit = '20', search, category } = req.query;
 
@@ -643,7 +638,7 @@ export function createRoutes(storage: IStorage): Router {
         }
     });
 
-    router.post('/expenses', async (req, res) => {
+    router.post('/expenses', requireAuth, async (req, res) => {
         try {
             console.log('Expense create request body:', req.body);
             
@@ -676,7 +671,7 @@ export function createRoutes(storage: IStorage): Router {
         }
     });
 
-    router.patch('/expenses/:id', async (req, res) => {
+    router.patch('/expenses/:id', requireAuth, async (req, res) => {
         try {
             // UUID validation
             const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -697,7 +692,7 @@ export function createRoutes(storage: IStorage): Router {
         }
     });
 
-    router.delete('/expenses/:id', async (req, res) => {
+    router.delete('/expenses/:id', requireAuth, async (req, res) => {
         try {
             // UUID validation
             const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -935,9 +930,10 @@ export function createRoutes(storage: IStorage): Router {
     // ==================== ANNOUNCEMENTS ====================
 
     // GET /api/announcements/stats
-    router.get('/announcements/stats', async (req, res) => {
+    router.get('/announcements/stats', requireAuth, async (req, res) => {
         try {
-            const stats = await storage.getAnnouncementStats();
+            const userId = (req.user as any)?.id;
+            const stats = await storage.getAnnouncementStats(userId);
             res.json(stats);
         } catch (error) {
             console.error('Announcement stats error:', error);
@@ -946,20 +942,31 @@ export function createRoutes(storage: IStorage): Router {
     });
 
     // GET /api/announcements?page=1&limit=10
-    router.get('/announcements', async (req, res) => {
+    router.get('/announcements', requireAuth, async (req, res) => {
         try {
             const page = parseInt(req.query.page as string) || 1;
             const limit = parseInt(req.query.limit as string) || 10;
+            const userId = (req.user as any)?.id; // Get authenticated user ID
             
-            const result = await storage.getAnnouncementsPaginated(page, limit);
+            if (!userId) {
+                return res.status(401).json({ error: 'Kullanıcı bilgisi bulunamadı' });
+            }
+            
+            // Filter announcements by user's authorized sites
+            const result = await storage.getAnnouncementsPaginated(page, limit, userId);
             res.json(result);
-        } catch (error) {
-            res.status(500).json({ error: 'Duyurular yüklenirken hata oluştu' });
+        } catch (error: any) {
+            console.error('Announcements fetch error:', error);
+            console.error('Error stack:', error.stack);
+            res.status(500).json({ 
+                error: 'Duyurular yüklenirken hata oluştu',
+                message: process.env.NODE_ENV === 'development' ? error.message : undefined
+            });
         }
     });
 
     // GET /api/announcements/:id
-    router.get('/announcements/:id', async (req, res) => {
+    router.get('/announcements/:id', requireAuth, async (req, res) => {
         try {
             const announcement = await storage.getAnnouncementById(req.params.id);
             if (!announcement) {
@@ -972,38 +979,220 @@ export function createRoutes(storage: IStorage): Router {
     });
 
     // POST /api/announcements
-    router.post('/announcements', async (req, res) => {
+    router.post('/announcements', requireAuth, async (req, res) => {
         try {
-            // Mock authorId - TODO: Replace with actual user from session
-            const MOCK_AUTHOR_ID = 'c52b03e1-83c2-42ca-b21d-583a227450ec';
+            // Get authorId from authenticated user
+            const authorId = (req.user as any)?.id;
+            if (!authorId) {
+                return res.status(401).json({ error: 'Kullanıcı bilgisi bulunamadı' });
+            }
+
+            // Get user to check role
+            const user = await storage.getUserById(authorId);
+            if (!user) {
+                return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
+            }
+
+            // Validate that either buildingId OR siteId is provided (not both, not neither)
+            const hasBuildingId = req.body.buildingId && req.body.buildingId !== "" && req.body.buildingId !== null;
+            const hasSiteId = req.body.siteId && req.body.siteId !== "" && req.body.siteId !== null;
+
+            if (!hasBuildingId && !hasSiteId) {
+                return res.status(400).json({ error: 'Bina veya Site seçilmelidir' });
+            }
+
+            if (hasBuildingId && hasSiteId) {
+                return res.status(400).json({ error: 'Hem bina hem site seçilemez. Ya bina ya da site seçilmelidir' });
+            }
+
+            // If buildingId is provided, verify user has access to that building's site
+            if (hasBuildingId) {
+                const building = await storage.getBuildingById(req.body.buildingId);
+                if (!building) {
+                    return res.status(400).json({ error: 'Geçersiz bina ID' });
+                }
+
+                // Admin can create announcements for any building
+                if (user.role !== 'admin') {
+                    // Check if user is assigned to the building's site
+                    const userSiteAssignments = await storage.getUserSiteAssignments(authorId);
+                    const hasAccess = userSiteAssignments.some(
+                        assignment => assignment.siteId === building.siteId
+                    );
+
+                    if (!hasAccess) {
+                        return res.status(403).json({ 
+                            error: 'Bu bina için yetkiniz bulunmamaktadır' 
+                        });
+                    }
+                }
+            }
+
+            // If siteId is provided, verify user has access to that site
+            if (hasSiteId) {
+                const site = await storage.getSiteById(req.body.siteId);
+                if (!site) {
+                    return res.status(400).json({ error: 'Geçersiz site ID' });
+                }
+
+                // Admin can create announcements for any site
+                if (user.role !== 'admin') {
+                    // Check if user is assigned to the site
+                    const userSiteAssignments = await storage.getUserSiteAssignments(authorId);
+                    const hasAccess = userSiteAssignments.some(
+                        assignment => assignment.siteId === req.body.siteId
+                    );
+
+                    if (!hasAccess) {
+                        return res.status(403).json({ 
+                            error: 'Bu site için yetkiniz bulunmamaktadır' 
+                        });
+                    }
+                }
+            }
             
             // Convert publishDate string to Date if provided
             const publishDate = req.body.publishDate ? new Date(req.body.publishDate) : null;
             
-            const validatedData = insertAnnouncementSchema.parse({
+            // Handle buildingId and siteId: empty string or undefined should be null
+            const buildingId = hasBuildingId ? req.body.buildingId : null;
+            const siteId = hasSiteId ? req.body.siteId : null;
+            
+            // Debug: Log the values before validation
+            console.log('[POST /announcements] Before validation - buildingId:', buildingId, 'siteId:', siteId);
+            console.log('[POST /announcements] req.body:', JSON.stringify(req.body, null, 2));
+            
+            // Prepare data for validation
+            // Convert null values to undefined for validation (schema expects undefined for optional fields)
+            const dataToValidate = {
                 ...req.body,
-                authorId: MOCK_AUTHOR_ID,
+                authorId,
                 publishDate,
-            });
-            const announcement = await storage.createAnnouncement(validatedData);
+                buildingId: buildingId || undefined, // Use undefined instead of null for validation
+                siteId: siteId || undefined, // Use undefined instead of null for validation
+            };
+            
+            console.log('[POST /announcements] dataToValidate:', JSON.stringify(dataToValidate, null, 2));
+            
+            // Parse with schema
+            const validatedData = insertAnnouncementSchema.parse(dataToValidate);
+            
+            console.log('[POST /announcements] validatedData:', JSON.stringify(validatedData, null, 2));
+            
+            // Ensure buildingId and siteId are explicitly null (not undefined) for database insert
+            // IMPORTANT: Use the original buildingId and siteId values from req.body, not from validatedData
+            // because validatedData might have undefined for optional fields
+            const finalData = {
+                ...validatedData,
+                buildingId: buildingId ?? null, // Use nullish coalescing to preserve null
+                siteId: siteId ?? null, // Use nullish coalescing to preserve null
+            };
+            
+            // Debug log
+            console.log('[POST /announcements] finalData:', JSON.stringify(finalData, null, 2));
+            
+            const announcement = await storage.createAnnouncement(finalData);
             res.status(201).json({ announcement });
         } catch (error: any) {
             console.error('Announcement creation error:', error);
+            console.error('Error stack:', error.stack);
             if (error.name === 'ZodError') {
                 console.error('Zod validation errors:', JSON.stringify(error.errors, null, 2));
+                console.error('Data that failed validation:', JSON.stringify(dataToValidate, null, 2));
                 return res.status(400).json({ error: 'Geçersiz veri', details: error.errors });
             }
-            res.status(500).json({ error: 'Duyuru oluşturulamadı', details: error.message });
+            res.status(500).json({ 
+                error: 'Duyuru oluşturulamadı', 
+                details: error.message,
+                stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+            });
         }
     });
 
     // PATCH /api/announcements/:id
-    router.patch('/announcements/:id', async (req, res) => {
+    router.patch('/announcements/:id', requireAuth, async (req, res) => {
         try {
+            // Get user to check role
+            const authorId = (req.user as any)?.id;
+            if (!authorId) {
+                return res.status(401).json({ error: 'Kullanıcı bilgisi bulunamadı' });
+            }
+
+            const user = await storage.getUserById(authorId);
+            if (!user) {
+                return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
+            }
+
             // Convert publishDate string to Date if provided
             const updateData = { ...req.body };
             if (updateData.publishDate) {
                 updateData.publishDate = new Date(updateData.publishDate);
+            }
+            
+            // Handle buildingId and siteId: empty string or undefined should be null
+            const hasBuildingId = updateData.buildingId !== undefined;
+            const hasSiteId = updateData.siteId !== undefined;
+
+            if (hasBuildingId) {
+                updateData.buildingId = updateData.buildingId && updateData.buildingId !== "" 
+                    ? updateData.buildingId 
+                    : null;
+            }
+
+            if (hasSiteId) {
+                updateData.siteId = updateData.siteId && updateData.siteId !== "" 
+                    ? updateData.siteId 
+                    : null;
+            }
+
+            // Validate that either buildingId OR siteId is set (not both)
+            const finalBuildingId = hasBuildingId ? updateData.buildingId : undefined;
+            const finalSiteId = hasSiteId ? updateData.siteId : undefined;
+
+            if (finalBuildingId !== undefined && finalSiteId !== undefined && finalBuildingId !== null && finalSiteId !== null) {
+                return res.status(400).json({ error: 'Hem bina hem site seçilemez. Ya bina ya da site seçilmelidir' });
+            }
+
+            // If buildingId is being set, verify user has access
+            if (finalBuildingId !== undefined && finalBuildingId !== null) {
+                const building = await storage.getBuildingById(finalBuildingId);
+                if (!building) {
+                    return res.status(400).json({ error: 'Geçersiz bina ID' });
+                }
+
+                if (user.role !== 'admin') {
+                    const userSiteAssignments = await storage.getUserSiteAssignments(authorId);
+                    const hasAccess = userSiteAssignments.some(
+                        assignment => assignment.siteId === building.siteId
+                    );
+
+                    if (!hasAccess) {
+                        return res.status(403).json({ 
+                            error: 'Bu bina için yetkiniz bulunmamaktadır' 
+                        });
+                    }
+                }
+            }
+
+            // If siteId is being set, verify user has access
+            if (finalSiteId !== undefined && finalSiteId !== null) {
+                const site = await storage.getSiteById(finalSiteId);
+                if (!site) {
+                    return res.status(400).json({ error: 'Geçersiz site ID' });
+                }
+
+                if (user.role !== 'admin') {
+                    const userSiteAssignments = await storage.getUserSiteAssignments(authorId);
+                    const hasAccess = userSiteAssignments.some(
+                        assignment => assignment.siteId === finalSiteId
+                    );
+
+                    if (!hasAccess) {
+                        return res.status(403).json({ 
+                            error: 'Bu site için yetkiniz bulunmamaktadır' 
+                        });
+                    }
+                }
             }
             
             const announcement = await storage.updateAnnouncement(req.params.id, updateData);
@@ -1015,7 +1204,7 @@ export function createRoutes(storage: IStorage): Router {
     });
 
     // DELETE /api/announcements/:id
-    router.delete('/announcements/:id', async (req, res) => {
+    router.delete('/announcements/:id', requireAuth, async (req, res) => {
         try {
             await storage.deleteAnnouncement(req.params.id);
             res.json({ message: 'Duyuru silindi' });
@@ -1134,8 +1323,8 @@ export function createRoutes(storage: IStorage): Router {
 
     // ==================== COMMUNITY & POLLS ====================
 
-    // GET /api/community/stats (no auth for now)
-    router.get('/community/stats', async (req, res) => {
+    // GET /api/community/stats
+    router.get('/community/stats', requireAuth, async (req, res) => {
         try {
             const stats = await storage.getCommunityStats();
             res.json(stats);
@@ -1145,8 +1334,8 @@ export function createRoutes(storage: IStorage): Router {
         }
     });
 
-    // GET /api/community/requests?page=1&limit=10 (no auth for now)
-    router.get('/community/requests', async (req, res) => {
+    // GET /api/community/requests?page=1&limit=10
+    router.get('/community/requests', requireAuth, async (req, res) => {
         try {
             // Import validation utilities
             const { sanitizeSearchQuery, validateEnum, validatePagination } = await import('./utils/validation.js');
@@ -1171,17 +1360,22 @@ export function createRoutes(storage: IStorage): Router {
         }
     });
 
-    // POST /api/community/requests (no auth for now)
-    router.post('/community/requests', async (req, res) => {
+    // POST /api/community/requests
+    router.post('/community/requests', requireAuth, async (req, res) => {
         try {
-            // Mock authorId - TODO: Replace with actual user from session
-            const MOCK_AUTHOR_ID = 'c52b03e1-83c2-42ca-b21d-583a227450ec';
-            const MOCK_UNIT_ID = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
+            // Get authorId from authenticated user
+            const authorId = (req.user as any)?.id;
+            if (!authorId) {
+                return res.status(401).json({ error: 'Kullanıcı bilgisi bulunamadı' });
+            }
+            
+            // unitId is required from request body or can be optional
+            const unitId = req.body.unitId || null;
             
             const validatedData = insertCommunityRequestSchema.parse({
                 ...req.body,
-                authorId: MOCK_AUTHOR_ID,
-                unitId: MOCK_UNIT_ID,
+                authorId,
+                unitId,
             });
             const request = await storage.createCommunityRequest(validatedData);
             res.status(201).json({ request });
@@ -1192,8 +1386,8 @@ export function createRoutes(storage: IStorage): Router {
         }
     });
 
-    // PATCH /api/community/requests/:id/type (no auth for now)
-    router.patch('/community/requests/:id/type', async (req, res) => {
+    // PATCH /api/community/requests/:id/type
+    router.patch('/community/requests/:id/type', requireAuth, async (req, res) => {
         try {
             const { type } = req.body;
             const request = await storage.updateCommunityRequestType(req.params.id, type);
@@ -1203,8 +1397,8 @@ export function createRoutes(storage: IStorage): Router {
         }
     });
 
-    // PATCH /api/community/requests/:id/status (no auth for now)
-    router.patch('/community/requests/:id/status', async (req, res) => {
+    // PATCH /api/community/requests/:id/status
+    router.patch('/community/requests/:id/status', requireAuth, async (req, res) => {
         try {
             const { status } = req.body;
             const request = await storage.updateCommunityRequestStatus(req.params.id, status);
@@ -1214,8 +1408,8 @@ export function createRoutes(storage: IStorage): Router {
         }
     });
 
-    // DELETE /api/community/requests/:id (no auth for now)
-    router.delete('/community/requests/:id', async (req, res) => {
+    // DELETE /api/community/requests/:id
+    router.delete('/community/requests/:id', requireAuth, async (req, res) => {
         try {
             await storage.deleteCommunityRequest(req.params.id);
             res.json({ message: 'Talep silindi' });
@@ -1224,8 +1418,8 @@ export function createRoutes(storage: IStorage): Router {
         }
     });
 
-    // GET /api/community/polls?page=1&limit=10 (no auth for now)
-    router.get('/community/polls', async (req, res) => {
+    // GET /api/community/polls?page=1&limit=10
+    router.get('/community/polls', requireAuth, async (req, res) => {
         try {
             // Import validation utilities
             const { sanitizeSearchQuery, validateEnum, validatePagination } = await import('./utils/validation.js');
@@ -1249,11 +1443,14 @@ export function createRoutes(storage: IStorage): Router {
         }
     });
 
-    // POST /api/community/polls (no auth for now)
-    router.post('/community/polls', async (req, res) => {
+    // POST /api/community/polls
+    router.post('/community/polls', requireAuth, async (req, res) => {
         try {
-            // Mock authorId - TODO: Replace with actual user from session
-            const MOCK_AUTHOR_ID = 'c52b03e1-83c2-42ca-b21d-583a227450ec';
+            // Get authorId from authenticated user
+            const authorId = (req.user as any)?.id;
+            if (!authorId) {
+                return res.status(401).json({ error: 'Kullanıcı bilgisi bulunamadı' });
+            }
             
             // Convert date strings to timestamps
             const startDate = req.body.startDate ? new Date(req.body.startDate) : new Date();
@@ -1261,7 +1458,7 @@ export function createRoutes(storage: IStorage): Router {
             
             const validatedData = insertPollSchema.parse({
                 ...req.body,
-                authorId: MOCK_AUTHOR_ID,
+                authorId,
                 startDate,
                 endDate,
             });
@@ -1274,8 +1471,8 @@ export function createRoutes(storage: IStorage): Router {
         }
     });
 
-    // PATCH /api/community/polls/:id/status (no auth for now)
-    router.patch('/community/polls/:id/status', async (req, res) => {
+    // PATCH /api/community/polls/:id/status
+    router.patch('/community/polls/:id/status', requireAuth, async (req, res) => {
         try {
             const { status } = req.body;
             const poll = await storage.updatePollStatus(req.params.id, status);
@@ -1285,8 +1482,8 @@ export function createRoutes(storage: IStorage): Router {
         }
     });
 
-    // DELETE /api/community/polls/:id (no auth for now)
-    router.delete('/community/polls/:id', async (req, res) => {
+    // DELETE /api/community/polls/:id
+    router.delete('/community/polls/:id', requireAuth, async (req, res) => {
         try {
             await storage.deletePoll(req.params.id);
             res.json({ message: 'Anket silindi' });
@@ -1295,8 +1492,8 @@ export function createRoutes(storage: IStorage): Router {
         }
     });
 
-    // POST /api/community/polls/:id/vote (no auth for now)
-    router.post('/community/polls/:id/vote', async (req, res) => {
+    // POST /api/community/polls/:id/vote
+    router.post('/community/polls/:id/vote', requireAuth, async (req, res) => {
         try {
             const { residentId, choice } = req.body;
             const hasVoted = await storage.hasResidentVotedInPoll(residentId, req.params.id);
@@ -1362,14 +1559,12 @@ export function createRoutes(storage: IStorage): Router {
     // ==================== SITES ROUTES ====================
 
     // GET /api/sites - Kullanıcının erişebileceği siteler
-    router.get('/sites', async (req, res) => {
+    router.get('/sites', requireAuth, async (req, res) => {
         try {
-            const userId = (req as any).user?.id;
+            const userId = (req.user as any)?.id;
             
             if (!userId) {
-                // Auth bypass için tüm siteleri döndür
-                const sites = await storage.getAllSites();
-                return res.json({ sites });
+                return res.status(401).json({ error: 'Kullanıcı bilgisi bulunamadı' });
             }
 
             const user = await storage.getUserById(userId);
@@ -1394,7 +1589,7 @@ export function createRoutes(storage: IStorage): Router {
     });
 
     // GET /api/sites/:id - Belirli bir site detayı
-    router.get('/sites/:id', async (req, res) => {
+    router.get('/sites/:id', requireAuth, async (req, res) => {
         try {
             const site = await storage.getSiteById(req.params.id);
             if (!site) {
@@ -1408,7 +1603,7 @@ export function createRoutes(storage: IStorage): Router {
     });
 
     // GET /api/sites/:id/buildings - Site'ın blokları
-    router.get('/sites/:id/buildings', async (req, res) => {
+    router.get('/sites/:id/buildings', requireAuth, async (req, res) => {
         try {
             const buildings = await storage.getBuildingsBySiteId(req.params.id);
             res.json({ buildings });
@@ -1419,7 +1614,7 @@ export function createRoutes(storage: IStorage): Router {
     });
 
     // POST /api/sites - Yeni site oluştur (Admin only)
-    router.post('/sites', async (req, res) => {
+    router.post('/sites', requireAuth, async (req, res) => {
         try {
             const site = await storage.createSite(req.body);
             res.status(201).json({ site });
@@ -1430,7 +1625,7 @@ export function createRoutes(storage: IStorage): Router {
     });
 
     // PUT /api/sites/:id - Site güncelle (Admin only)
-    router.put('/sites/:id', async (req, res) => {
+    router.put('/sites/:id', requireAuth, async (req, res) => {
         try {
             const site = await storage.updateSite(req.params.id, req.body);
             res.json({ site });
@@ -1441,7 +1636,7 @@ export function createRoutes(storage: IStorage): Router {
     });
 
     // DELETE /api/sites/:id - Site sil (Admin only)
-    router.delete('/sites/:id', async (req, res) => {
+    router.delete('/sites/:id', requireAuth, async (req, res) => {
         try {
             await storage.deleteSite(req.params.id);
             res.json({ success: true });
@@ -1452,7 +1647,7 @@ export function createRoutes(storage: IStorage): Router {
     });
 
     // POST /api/sites/:siteId/assign/:userId - Kullanıcıyı site'a ata (Admin only)
-    router.post('/sites/:siteId/assign/:userId', async (req, res) => {
+    router.post('/sites/:siteId/assign/:userId', requireAuth, async (req, res) => {
         try {
             const assignment = await storage.assignUserToSite(req.params.userId, req.params.siteId);
             res.status(201).json({ assignment });
@@ -1463,7 +1658,7 @@ export function createRoutes(storage: IStorage): Router {
     });
 
     // DELETE /api/sites/:siteId/unassign/:userId - Kullanıcının site atamasını kaldır (Admin only)
-    router.delete('/sites/:siteId/unassign/:userId', async (req, res) => {
+    router.delete('/sites/:siteId/unassign/:userId', requireAuth, async (req, res) => {
         try {
             await storage.unassignUserFromSite(req.params.userId, req.params.siteId);
             res.json({ success: true });

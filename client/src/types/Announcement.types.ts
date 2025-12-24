@@ -14,6 +14,8 @@ export interface AnnouncementFormData {
     visibility: string;
     status: 'Published' | 'Scheduled' | 'Draft';
     publishDate: string; // ISO string or YYYY-MM-DD
+    siteId?: string | null; // Optional site ID (for site-wide announcements)
+    buildingId?: string | null; // Optional building ID (for building-specific announcements)
 }
 
 // API Response types

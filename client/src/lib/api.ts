@@ -37,27 +37,38 @@ export async function apiClient<T = any>(
         config.body = JSON.stringify(data);
     }
 
+    try {
     const response = await fetch(`${API_BASE_URL}/api${endpoint}`, config);
 
     if (!response.ok) {
-        // 401 Unauthorized - Oturum geçersiz, logout yap
-        if (response.status === 401) {
-            // Auth endpoint'leri hariç (login, logout, me) - bunlar zaten auth işlemleri
-            if (!endpoint.startsWith('/auth/')) {
-                if (onUnauthorizedCallback) {
-                    onUnauthorizedCallback();
-                } else {
-                    // Fallback: window.location ile redirect
-                    window.location.href = '/login';
+            // 401 Unauthorized - Oturum geçersiz, logout yap
+            if (response.status === 401) {
+                // Auth endpoint'leri hariç (login, logout, me) - bunlar zaten auth işlemleri
+                if (!endpoint.startsWith('/auth/')) {
+                    if (onUnauthorizedCallback) {
+                        onUnauthorizedCallback();
+                    } else {
+                        // Fallback: window.location ile redirect
+                        window.location.href = '/login';
+                    }
                 }
             }
-        }
 
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || `API Error: ${response.status}`);
     }
 
     return await response.json();
+    } catch (error) {
+        // Network error veya fetch hatası
+        if (error instanceof TypeError && error.message === 'Failed to fetch') {
+            throw new Error(
+                `Sunucuya bağlanılamıyor. Lütfen backend sunucusunun çalıştığından emin olun. (${API_BASE_URL})`
+            );
+        }
+        // Diğer hataları olduğu gibi fırlat
+        throw error;
+    }
 }
 
 // API fonksiyonları
@@ -187,12 +198,12 @@ export const api = {
         create: (data: any) => 
             apiClient('/announcements', { 
                 method: 'POST', 
-                body: JSON.stringify(data) 
+                data 
             }),
         update: (id: string, data: any) => 
             apiClient(`/announcements/${id}`, { 
                 method: 'PATCH', 
-                body: JSON.stringify(data) 
+                data 
             }),
         delete: (id: string) => 
             apiClient(`/announcements/${id}`, { method: 'DELETE' }),

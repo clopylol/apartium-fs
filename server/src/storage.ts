@@ -157,12 +157,12 @@ export interface IStorage {
 
     // Announcements
     getAnnouncements(): Promise<Announcement[]>;
-    getAnnouncementsPaginated(page: number, limit: number): Promise<{
+    getAnnouncementsPaginated(page: number, limit: number, userId?: string): Promise<{
         announcements: (Announcement & { authorName: string; authorEmail: string })[];
         total: number;
     }>;
     getAnnouncementById(id: string): Promise<(Announcement & { authorName: string; authorEmail: string }) | null>;
-    getAnnouncementStats(): Promise<{
+    getAnnouncementStats(userId?: string): Promise<{
         totalCount: number;
         activeCount: number;
         scheduledCount: number;

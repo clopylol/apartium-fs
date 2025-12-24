@@ -36,6 +36,13 @@
       "when": 1735086000000,
       "tag": "0004_add_user_site_assignments",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1735090000000,
+      "tag": "0005_recreate_announcements_with_building_id",
+      "breakpoints": true
     }
   ]
 }
