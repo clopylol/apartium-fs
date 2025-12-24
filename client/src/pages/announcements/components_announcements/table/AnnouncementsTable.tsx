@@ -1,5 +1,5 @@
 import type { FC } from "react";
-import { Edit2, Trash2, MoreVertical, CheckCircle, Clock } from "lucide-react";
+import { Edit2, Trash2, MoreVertical, CheckCircle, Clock, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 
 import type { Announcement } from "@/types/Announcement.types";
 import { IconButton } from "@/components/shared/button";
@@ -15,6 +15,9 @@ interface AnnouncementsTableProps {
     onAddNew: () => void;
     totalAnnouncements: number;
     onClearFilters: () => void;
+    sortField: string | null;
+    sortDirection: "asc" | "desc";
+    onSort: (field: string) => void;
 }
 
 const getPriorityColor = (p: string): string => {
@@ -43,7 +46,19 @@ export const AnnouncementsTable: FC<AnnouncementsTableProps> = ({
     onAddNew,
     totalAnnouncements,
     onClearFilters,
+    sortField,
+    sortDirection,
+    onSort,
 }) => {
+    // Helper function to render sort icon
+    const renderSortIcon = (field: string) => {
+        if (sortField !== field) {
+            return <ArrowUpDown className="w-3 h-3 ml-1 opacity-50" />;
+        }
+        return sortDirection === "asc" 
+            ? <ArrowUp className="w-3 h-3 ml-1 text-ds-in-sky-400" />
+            : <ArrowDown className="w-3 h-3 ml-1 text-ds-in-sky-400" />;
+    };
     return (
         <div className="bg-ds-card-light dark:bg-ds-card-dark border border-ds-border-light dark:border-ds-border-dark rounded-2xl overflow-hidden shadow-xl">
             <div className="overflow-x-auto">
@@ -57,11 +72,51 @@ export const AnnouncementsTable: FC<AnnouncementsTableProps> = ({
                                 />
                             </th>
                             <th className="px-6 py-4">Başlık</th>
-                            <th className="px-6 py-4">Yazar</th>
-                            <th className="px-6 py-4">Öncelik</th>
-                            <th className="px-6 py-4">Görünürlük</th>
-                            <th className="px-6 py-4">Yayın Tarihi</th>
-                            <th className="px-6 py-4">Durum</th>
+                            <th 
+                                className="px-6 py-4 cursor-pointer hover:text-ds-primary-light dark:hover:text-ds-primary-dark transition-colors select-none"
+                                onClick={() => onSort("author")}
+                            >
+                                <div className="flex items-center">
+                                    Yazar
+                                    {renderSortIcon("author")}
+                                </div>
+                            </th>
+                            <th 
+                                className="px-6 py-4 cursor-pointer hover:text-ds-primary-light dark:hover:text-ds-primary-dark transition-colors select-none"
+                                onClick={() => onSort("priority")}
+                            >
+                                <div className="flex items-center">
+                                    Öncelik
+                                    {renderSortIcon("priority")}
+                                </div>
+                            </th>
+                            <th 
+                                className="px-6 py-4 cursor-pointer hover:text-ds-primary-light dark:hover:text-ds-primary-dark transition-colors select-none"
+                                onClick={() => onSort("visibility")}
+                            >
+                                <div className="flex items-center">
+                                    Görünürlük
+                                    {renderSortIcon("visibility")}
+                                </div>
+                            </th>
+                            <th 
+                                className="px-6 py-4 cursor-pointer hover:text-ds-primary-light dark:hover:text-ds-primary-dark transition-colors select-none"
+                                onClick={() => onSort("publishDate")}
+                            >
+                                <div className="flex items-center">
+                                    Yayın Tarihi
+                                    {renderSortIcon("publishDate")}
+                                </div>
+                            </th>
+                            <th 
+                                className="px-6 py-4 cursor-pointer hover:text-ds-primary-light dark:hover:text-ds-primary-dark transition-colors select-none"
+                                onClick={() => onSort("status")}
+                            >
+                                <div className="flex items-center">
+                                    Durum
+                                    {renderSortIcon("status")}
+                                </div>
+                            </th>
                             <th className="px-6 py-4 text-right">İşlemler</th>
                         </tr>
                     </thead>

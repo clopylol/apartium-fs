@@ -20,6 +20,10 @@ export const AnnouncementsPage = () => {
     const [filterStatus, setFilterStatus] = useState("All");
     const [filterPriority, setFilterPriority] = useState<AnnouncementPriority>("All");
 
+    // Sorting (client-side)
+    const [sortField, setSortField] = useState<string | null>(null);
+    const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+
     // Pagination (client-side)
     const [currentPage, setCurrentPage] = useState(1);
 
@@ -64,20 +68,73 @@ export const AnnouncementsPage = () => {
         title: "",
     });
 
-    // Reset to page 1 when filters change
+    // Reset to page 1 when filters or sorting change
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchTerm, filterStatus, filterPriority]);
+    }, [searchTerm, filterStatus, filterPriority, sortField, sortDirection]);
 
-    // Client-side filtering
+    // Client-side filtering and sorting
     const filteredAnnouncements = useMemo(() => {
-        return allAnnouncements.filter((ann) => {
+        let filtered = allAnnouncements.filter((ann) => {
             const matchesSearch = ann.title.toLowerCase().includes(searchTerm.toLowerCase());
             const matchesStatus = filterStatus === "All" || ann.status === filterStatus;
             const matchesPriority = filterPriority === "All" || ann.priority === filterPriority;
             return matchesSearch && matchesStatus && matchesPriority;
         });
-    }, [allAnnouncements, searchTerm, filterStatus, filterPriority]);
+
+        // Apply sorting
+        if (sortField) {
+            filtered = [...filtered].sort((a, b) => {
+                let aValue: any;
+                let bValue: any;
+
+                switch (sortField) {
+                    case "author":
+                        aValue = a.authorName.toLowerCase();
+                        bValue = b.authorName.toLowerCase();
+                        break;
+                    case "priority":
+                        const priorityOrder = { High: 3, Medium: 2, Low: 1 };
+                        aValue = priorityOrder[a.priority as keyof typeof priorityOrder] || 0;
+                        bValue = priorityOrder[b.priority as keyof typeof priorityOrder] || 0;
+                        break;
+                    case "visibility":
+                        aValue = a.visibility.toLowerCase();
+                        bValue = b.visibility.toLowerCase();
+                        break;
+                    case "publishDate":
+                        aValue = a.publishDate ? new Date(a.publishDate).getTime() : 0;
+                        bValue = b.publishDate ? new Date(b.publishDate).getTime() : 0;
+                        break;
+                    case "status":
+                        const statusOrder = { Published: 3, Scheduled: 2, Draft: 1 };
+                        aValue = statusOrder[a.status as keyof typeof statusOrder] || 0;
+                        bValue = statusOrder[b.status as keyof typeof statusOrder] || 0;
+                        break;
+                    default:
+                        return 0;
+                }
+
+                if (aValue < bValue) return sortDirection === "asc" ? -1 : 1;
+                if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
+                return 0;
+            });
+        }
+
+        return filtered;
+    }, [allAnnouncements, searchTerm, filterStatus, filterPriority, sortField, sortDirection]);
+
+    // Handle sort
+    const handleSort = (field: string): void => {
+        if (sortField === field) {
+            // Toggle direction if same field
+            setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+        } else {
+            // New field, default to asc
+            setSortField(field);
+            setSortDirection("asc");
+        }
+    };
 
     // Client-side pagination
     const paginatedAnnouncements = useMemo(() => {
@@ -256,6 +313,9 @@ export const AnnouncementsPage = () => {
                         onAddNew={handleOpenAdd}
                         totalAnnouncements={total}
                         onClearFilters={handleClearFilters}
+                        sortField={sortField}
+                        sortDirection={sortDirection}
+                        onSort={handleSort}
                     />
 
                     {!isLoading && (
