@@ -1,5 +1,5 @@
 import { X, Car, Trash2, PlusCircle } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import type { Resident, Building, ResidentVehicle } from "@/types/residents.types";
 import { ConfirmationModal } from "@/components/shared/modals";
@@ -9,6 +9,7 @@ import {
     getLicensePlateError,
 } from "@/utils/validation";
 import { showError } from "@/utils/toast";
+import { useVehicleBrands, useVehicleModels } from "@/hooks/residents/api";
 
 interface VehicleManagementModalProps {
     isOpen: boolean;
@@ -31,8 +32,10 @@ export function VehicleManagementModal({
     const { t } = useTranslation();
     const [vehicleForm, setVehicleForm] = useState({
         plate: "",
-        brand: "",
-        model: "",
+        brandId: "",
+        modelId: "",
+        customBrand: "",
+        customModel: "",
         color: "",
         fuelType: "Benzinli",
         parkingSpot: "",
@@ -47,50 +50,21 @@ export function VehicleManagementModal({
     
     const [plateError, setPlateError] = useState<string | null>(null);
     
-    // Vehicle brands and models
-    const vehicleBrands = [
-        "BMW", "Mercedes-Benz", "Audi", "Volkswagen", "Toyota", "Honda", 
-        "Ford", "Renault", "Peugeot", "Fiat", "Opel", "Hyundai", "Kia",
-        "Nissan", "Mazda", "Volvo", "Skoda", "Seat", "Citroen", "Dacia",
-        "Chevrolet", "Mitsubishi", "Suzuki", "Mini", "Jaguar", "Land Rover",
-        "Porsche", "Tesla", "Alfa Romeo", "Jeep", "Subaru", "Lexus", "Infiniti"
-    ];
+    // Fetch vehicle brands and models from API
+    const { data: brandsData, isLoading: loadingBrands } = useVehicleBrands();
+    const { data: modelsData, isLoading: loadingModels } = useVehicleModels(
+        vehicleForm.brandId || null
+    );
     
-    const vehicleModels: Record<string, string[]> = {
-        "BMW": ["1 Series", "2 Series", "3 Series", "4 Series", "5 Series", "6 Series", "7 Series", "X1", "X3", "X5", "X7", "iX", "i4"],
-        "Mercedes-Benz": ["A-Class", "B-Class", "C-Class", "E-Class", "S-Class", "GLA", "GLB", "GLC", "GLE", "GLS", "CLA", "CLS", "AMG GT"],
-        "Audi": ["A1", "A3", "A4", "A5", "A6", "A7", "A8", "Q3", "Q5", "Q7", "Q8", "e-tron", "TT", "R8"],
-        "Volkswagen": ["Polo", "Golf", "Passat", "Tiguan", "Touareg", "Jetta", "Arteon", "T-Cross", "T-Roc", "ID.3", "ID.4"],
-        "Toyota": ["Corolla", "Camry", "RAV4", "Highlander", "Prius", "Yaris", "C-HR", "Land Cruiser", "Hilux", "Auris"],
-        "Honda": ["Civic", "Accord", "CR-V", "HR-V", "Pilot", "Fit", "City", "BR-V"],
-        "Ford": ["Focus", "Fiesta", "Mondeo", "Kuga", "Edge", "Explorer", "Ranger", "Transit", "Mustang"],
-        "Renault": ["Clio", "Megane", "Fluence", "Captur", "Kadjar", "Talisman", "Koleos", "Duster", "Symbol", "Twingo"],
-        "Peugeot": ["208", "308", "508", "2008", "3008", "5008", "Partner", "Expert", "Rifter"],
-        "Fiat": ["500", "Punto", "Egea", "Tipo", "Doblo", "Panda", "Linea", "Palio", "Albea"],
-        "Opel": ["Corsa", "Astra", "Insignia", "Crossland", "Grandland", "Mokka", "Combo", "Vivaro"],
-        "Hyundai": ["i20", "i30", "Elantra", "Tucson", "Santa Fe", "Kona", "Accent", "Sonata", "Ioniq", "Palisade"],
-        "Kia": ["Rio", "Ceed", "Optima", "Sportage", "Sorento", "Stonic", "Picanto", "Cerato", "Niro", "EV6"],
-        "Nissan": ["Micra", "Sentra", "Altima", "Qashqai", "X-Trail", "Pathfinder", "Navara", "Juke", "Leaf"],
-        "Mazda": ["Mazda2", "Mazda3", "Mazda6", "CX-3", "CX-5", "CX-9", "MX-5"],
-        "Volvo": ["S60", "S90", "V40", "V60", "V90", "XC40", "XC60", "XC90"],
-        "Skoda": ["Octavia", "Superb", "Kamiq", "Karoq", "Kodiaq", "Fabia", "Scala", "Enyaq", "Enyaq iV"],
-        "Seat": ["Ibiza", "Leon", "Ateca", "Tarraco", "Arona", "Formentor", "Cupra"],
-        "Citroen": ["C3", "C4", "C5", "Berlingo", "Cactus", "C-Elysee", "Jumper"],
-        "Dacia": ["Sandero", "Logan", "Duster", "Lodgy", "Dokker", "Spring"],
-        "Chevrolet": ["Cruze", "Malibu", "Trax", "Equinox", "Tahoe", "Silverado", "Spark"],
-        "Mitsubishi": ["L200", "Outlander", "ASX", "Eclipse Cross", "Pajero", "Space Star"],
-        "Suzuki": ["Swift", "Vitara", "S-Cross", "Jimny", "SX4", "Grand Vitara", "Baleno"],
-        "Mini": ["Cooper", "Countryman", "Clubman", "Paceman", "Convertible"],
-        "Jaguar": ["XE", "XF", "XJ", "F-Pace", "E-Pace", "I-Pace"],
-        "Land Rover": ["Discovery", "Discovery Sport", "Range Rover", "Range Rover Sport", "Range Rover Evoque", "Defender"],
-        "Porsche": ["911", "Cayenne", "Macan", "Panamera", "Boxster", "Cayman", "Taycan"],
-        "Tesla": ["Model 3", "Model S", "Model X", "Model Y"],
-        "Alfa Romeo": ["Giulia", "Stelvio", "Tonale", "4C"],
-        "Jeep": ["Wrangler", "Grand Cherokee", "Cherokee", "Compass", "Renegade"],
-        "Subaru": ["Impreza", "Legacy", "Outback", "Forester", "XV"],
-        "Lexus": ["ES", "IS", "LS", "NX", "RX", "GX", "LX", "UX"],
-        "Infiniti": ["Q50", "Q60", "QX50", "QX60", "QX80"],
-    };
+    // Vehicle brands from API
+    const vehicleBrands = useMemo(() => {
+        return brandsData?.brands || [];
+    }, [brandsData]);
+    
+    // Vehicle models from API
+    const vehicleModels = useMemo(() => {
+        return modelsData?.models || [];
+    }, [modelsData]);
     
     const vehicleColors = [
         "Beyaz", "Siyah", "Gri", "Gümüş", "Kırmızı", "Mavi", "Yeşil",
@@ -143,20 +117,39 @@ export function VehicleManagementModal({
         // Clean plate before saving
         const cleanedPlate = cleanLicensePlate(vehicleForm.plate);
 
-        // Build model string: "Brand Model" or just "Model" if no brand
+        // Build model string for custom entries or backward compatibility
         let modelString = "";
-        if (vehicleForm.brand && vehicleForm.model) {
-            modelString = `${vehicleForm.brand} ${vehicleForm.model}`;
-        } else if (vehicleForm.model) {
-            modelString = vehicleForm.model;
-        } else if (vehicleForm.brand) {
-            modelString = vehicleForm.brand;
+        if (isCustomBrand && vehicleForm.customBrand) {
+            // Custom brand entered
+            if (isCustomModel && vehicleForm.customModel) {
+                modelString = `${vehicleForm.customBrand} ${vehicleForm.customModel}`;
+            } else {
+                modelString = vehicleForm.customBrand;
+            }
+        } else if (vehicleForm.brandId && vehicleForm.modelId) {
+            // Both brand and model selected from dropdown
+            const brand = vehicleBrands.find(b => b.id === vehicleForm.brandId);
+            const model = vehicleModels.find(m => m.id === vehicleForm.modelId);
+            if (brand && model) {
+                modelString = `${brand.name} ${model.name}`;
+            }
+        } else if (vehicleForm.brandId) {
+            // Only brand selected
+            const brand = vehicleBrands.find(b => b.id === vehicleForm.brandId);
+            if (brand) {
+                modelString = brand.name;
+            }
+        } else if (isCustomModel && vehicleForm.customModel) {
+            // Only custom model entered
+            modelString = vehicleForm.customModel;
         }
         
         const newVehicle: ResidentVehicle = {
             id: `vehicle-${Date.now()}`,
             plate: cleanedPlate,
             model: modelString,
+            brandId: isCustomBrand ? null : (vehicleForm.brandId || null),
+            modelId: isCustomModel ? null : (vehicleForm.modelId || null),
             color: vehicleForm.color || undefined,
             fuelType: vehicleForm.fuelType || "Benzinli",
             parkingSpot: vehicleForm.parkingSpot || undefined,
@@ -166,7 +159,7 @@ export function VehicleManagementModal({
         onUpdateResident(resident.id, updatedVehicles);
 
         // Reset form
-        setVehicleForm({ plate: "", brand: "", model: "", color: "", fuelType: "Benzinli", parkingSpot: "" });
+        setVehicleForm({ plate: "", brandId: "", modelId: "", customBrand: "", customModel: "", color: "", fuelType: "Benzinli", parkingSpot: "" });
         setDisplayPlate("");
         setPlateError(null);
         setIsCustomBrand(false);
@@ -298,21 +291,24 @@ export function VehicleManagementModal({
                                     {!isCustomBrand ? (
                                         <div className="flex gap-2">
                                             <select
-                                                value={vehicleForm.brand}
+                                                value={vehicleForm.brandId}
                                                 onChange={(e) => {
                                                     if (e.target.value === "__custom__") {
                                                         setIsCustomBrand(true);
-                                                        setVehicleForm({ ...vehicleForm, brand: "" });
+                                                        setVehicleForm({ ...vehicleForm, brandId: "", modelId: "" });
                                                     } else {
-                                                        setVehicleForm({ ...vehicleForm, brand: e.target.value });
+                                                        setVehicleForm({ ...vehicleForm, brandId: e.target.value, modelId: "" });
                                                     }
                                                 }}
-                                                className="flex-1 bg-[#151821] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[#3B82F6] transition-colors appearance-none cursor-pointer"
+                                                disabled={loadingBrands}
+                                                className="flex-1 bg-[#151821] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[#3B82F6] transition-colors appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
-                                                <option value="">Marka Seçin</option>
+                                                <option value="">
+                                                    {loadingBrands ? "Yükleniyor..." : "Marka Seçin"}
+                                                </option>
                                                 {vehicleBrands.map((brand) => (
-                                                    <option key={brand} value={brand}>
-                                                        {brand}
+                                                    <option key={brand.id} value={brand.id}>
+                                                        {brand.name}
                                                     </option>
                                                 ))}
                                                 <option value="__custom__">+ Özel Giriş</option>
@@ -322,8 +318,8 @@ export function VehicleManagementModal({
                                         <div className="flex gap-2">
                                             <input
                                                 type="text"
-                                                value={vehicleForm.brand}
-                                                onChange={(e) => setVehicleForm({ ...vehicleForm, brand: e.target.value })}
+                                                value={vehicleForm.customBrand}
+                                                onChange={(e) => setVehicleForm({ ...vehicleForm, customBrand: e.target.value })}
                                                 placeholder="Marka girin"
                                                 className="flex-1 bg-[#151821] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[#3B82F6] transition-colors placeholder-slate-500"
                                             />
@@ -331,7 +327,7 @@ export function VehicleManagementModal({
                                                 type="button"
                                                 onClick={() => {
                                                     setIsCustomBrand(false);
-                                                    setVehicleForm({ ...vehicleForm, brand: "" });
+                                                    setVehicleForm({ ...vehicleForm, customBrand: "" });
                                                 }}
                                                 className="px-3 py-2.5 bg-[#1A1D26] hover:bg-[#20242F] text-slate-400 rounded-xl text-xs font-bold transition-colors border border-white/5"
                                             >
@@ -349,31 +345,33 @@ export function VehicleManagementModal({
                                     {!isCustomModel ? (
                                         <div className="flex gap-2">
                                             <select
-                                                value={vehicleForm.model}
+                                                value={vehicleForm.modelId}
                                                 onChange={(e) => {
                                                     if (e.target.value === "__custom__") {
                                                         setIsCustomModel(true);
-                                                        setVehicleForm({ ...vehicleForm, model: "" });
+                                                        setVehicleForm({ ...vehicleForm, modelId: "" });
                                                     } else {
-                                                        setVehicleForm({ ...vehicleForm, model: e.target.value });
+                                                        setVehicleForm({ ...vehicleForm, modelId: e.target.value });
                                                     }
                                                 }}
-                                                disabled={!vehicleForm.brand}
+                                                disabled={!vehicleForm.brandId || loadingModels}
                                                 className="flex-1 bg-[#151821] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[#3B82F6] transition-colors appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
                                                 <option value="">
-                                                    {vehicleForm.brand
-                                                        ? vehicleModels[vehicleForm.brand]
-                                                            ? "Model Seçin"
-                                                            : "Model Seçin veya Özel Giriş"
-                                                        : "Önce marka seçin"}
+                                                    {!vehicleForm.brandId
+                                                        ? "Önce marka seçin"
+                                                        : loadingModels
+                                                        ? "Yükleniyor..."
+                                                        : vehicleModels.length > 0
+                                                        ? "Model Seçin"
+                                                        : "Model Seçin veya Özel Giriş"}
                                                 </option>
-                                                {vehicleForm.brand && vehicleModels[vehicleForm.brand]?.map((model) => (
-                                                    <option key={model} value={model}>
-                                                        {model}
+                                                {vehicleModels.map((model) => (
+                                                    <option key={model.id} value={model.id}>
+                                                        {model.name}
                                                     </option>
                                                 ))}
-                                                {vehicleForm.brand && (
+                                                {vehicleModels.length > 0 && (
                                                     <option value="__custom__">+ Özel Giriş</option>
                                                 )}
                                             </select>
@@ -382,8 +380,8 @@ export function VehicleManagementModal({
                                         <div className="flex gap-2">
                                             <input
                                                 type="text"
-                                                value={vehicleForm.model}
-                                                onChange={(e) => setVehicleForm({ ...vehicleForm, model: e.target.value })}
+                                                value={vehicleForm.customModel}
+                                                onChange={(e) => setVehicleForm({ ...vehicleForm, customModel: e.target.value })}
                                                 placeholder="Model girin"
                                                 className="flex-1 bg-[#151821] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[#3B82F6] transition-colors placeholder-slate-500"
                                             />
@@ -391,7 +389,7 @@ export function VehicleManagementModal({
                                                 type="button"
                                                 onClick={() => {
                                                     setIsCustomModel(false);
-                                                    setVehicleForm({ ...vehicleForm, model: "" });
+                                                    setVehicleForm({ ...vehicleForm, customModel: "" });
                                                 }}
                                                 className="px-3 py-2.5 bg-[#1A1D26] hover:bg-[#20242F] text-slate-400 rounded-xl text-xs font-bold transition-colors border border-white/5"
                                             >

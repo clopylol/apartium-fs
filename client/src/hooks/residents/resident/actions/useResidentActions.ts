@@ -1,6 +1,9 @@
 import type { Resident, ResidentVehicle } from "@/types/residents.types";
 import { useResidentMutations } from "@/hooks/residents/api";
-import { showError } from "@/utils/toast";
+import { showError, showSuccess } from "@/utils/toast";
+import { api } from "@/lib/api";
+import { useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 
 export interface ResidentActionsParams {
     buildingId: string | null;
@@ -50,6 +53,8 @@ export function useResidentActions(params: ResidentActionsParams): ResidentActio
 
     // ✅ Use API mutations
     const { createResident, updateResident, deleteResident } = useResidentMutations(buildingId);
+    const queryClient = useQueryClient();
+    const { t } = useTranslation();
 
     const handleOpenAddResident = (blockId?: string, unitId?: string) => {
         openAddResidentModal(blockId, unitId);
@@ -58,7 +63,7 @@ export function useResidentActions(params: ResidentActionsParams): ResidentActio
     const handleSaveResident = async (residentData: any) => {
         // Validate unitId before sending
         if (!residentData.unitId || residentData.unitId.trim() === "") {
-            showError("Lütfen bir daire seçin");
+            showError(t("residents.messages.unitRequired"));
             return;
         }
         
@@ -122,10 +127,65 @@ export function useResidentActions(params: ResidentActionsParams): ResidentActio
     };
 
     const handleUpdateResidentVehicles = async (residentId: string, vehicles: ResidentVehicle[]) => {
-        // TODO: Implement vehicle update API call
-        // For now, just close the modal
-        console.log('Update vehicles for resident:', residentId, vehicles);
-        closeVehicleManager();
+        try {
+            // Get current vehicles from backend to detect deletions
+            const currentVehiclesResponse = await api.residents.getVehiclesByResidentId(residentId);
+            const currentVehicles = currentVehiclesResponse.vehicles || [];
+            const currentVehicleIds = new Set(currentVehicles.map(v => v.id));
+            const newVehicleIds = new Set(vehicles.map(v => v.id).filter(id => !id.startsWith('vehicle-')));
+            
+            // Find vehicles to delete (exist in backend but not in new list)
+            const vehiclesToDelete = currentVehicles.filter(v => !newVehicleIds.has(v.id));
+            
+            // Delete removed vehicles
+            const deletePromises = vehiclesToDelete.map(vehicle => 
+                api.residents.deleteVehicle(vehicle.id)
+            );
+            
+            // Create or update vehicles
+            const vehiclePromises = vehicles.map(async (vehicle) => {
+                // Skip temporary IDs (frontend-generated) - these are new vehicles
+                if (vehicle.id.startsWith('vehicle-')) {
+                    // New vehicle - create it
+                    return api.residents.createVehicle({
+                        residentId,
+                        plate: vehicle.plate,
+                        brandId: vehicle.brandId || null,
+                        modelId: vehicle.modelId || null,
+                        model: vehicle.model || null,
+                        color: vehicle.color || null,
+                        fuelType: vehicle.fuelType || null,
+                        parkingSpotId: vehicle.parkingSpot || null,
+                    });
+                } else {
+                    // Existing vehicle - update it
+                    return api.residents.updateVehicle(vehicle.id, {
+                        plate: vehicle.plate,
+                        brandId: vehicle.brandId || null,
+                        modelId: vehicle.modelId || null,
+                        model: vehicle.model || null,
+                        color: vehicle.color || null,
+                        fuelType: vehicle.fuelType || null,
+                        parkingSpotId: vehicle.parkingSpot || null,
+                    });
+                }
+            });
+
+            // Execute all operations in parallel
+            await Promise.all([...deletePromises, ...vehiclePromises]);
+            
+            // Invalidate React Query cache to refresh data
+            if (buildingId) {
+                queryClient.invalidateQueries({ queryKey: ['residents', 'building-data', buildingId] });
+            }
+            queryClient.invalidateQueries({ queryKey: ['residents', residentId, 'vehicles'] });
+            
+            showSuccess("Araçlar başarıyla güncellendi");
+            closeVehicleManager();
+        } catch (error: any) {
+            console.error('Failed to update vehicles:', error);
+            showError(error?.message || "Araçlar güncellenirken hata oluştu");
+        }
     };
 
     return {

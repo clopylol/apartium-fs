@@ -11,6 +11,8 @@ import type {
     PaymentRecord, InsertPaymentRecord,
     ExpenseRecord, InsertExpenseRecord,
     Vehicle, InsertVehicle,
+    VehicleBrand, InsertVehicleBrand,
+    VehicleModel, InsertVehicleModel,
     ParkingSpot, InsertParkingSpot,
     GuestVisit, InsertGuestVisit,
     Facility, InsertFacility,
@@ -369,15 +371,28 @@ export class DatabaseStorage implements IStorage {
 
     // ==================== VEHICLES & PARKING ====================
     async getVehiclesByResidentId(residentId: string): Promise<Vehicle[]> {
-        return await db
-            .select()
+        const vehiclesWithBrands = await db
+            .select({
+                vehicle: schema.vehicles,
+                brand: schema.vehicleBrands,
+                model: schema.vehicleModels,
+            })
             .from(schema.vehicles)
+            .leftJoin(schema.vehicleBrands, eq(schema.vehicles.brandId, schema.vehicleBrands.id))
+            .leftJoin(schema.vehicleModels, eq(schema.vehicles.modelId, schema.vehicleModels.id))
             .where(
                 and(
                     eq(schema.vehicles.residentId, residentId),
                     isNull(schema.vehicles.deletedAt)
                 )
             );
+
+        // Return vehicles with brand/model info embedded (for backward compatibility)
+        return vehiclesWithBrands.map(({ vehicle, brand, model }) => ({
+            ...vehicle,
+            // Brand and model names are available in brand/model objects if needed
+            // but we return the vehicle as-is to maintain compatibility
+        })) as Vehicle[];
     }
 
     async createVehicle(vehicle: InsertVehicle): Promise<Vehicle> {
@@ -402,6 +417,29 @@ export class DatabaseStorage implements IStorage {
             .update(schema.vehicles)
             .set({ deletedAt: new Date() })
             .where(eq(schema.vehicles.id, id));
+    }
+
+    // ==================== VEHICLE BRANDS & MODELS ====================
+    
+    async getAllVehicleBrands(): Promise<VehicleBrand[]> {
+        return await db
+            .select()
+            .from(schema.vehicleBrands)
+            .where(isNull(schema.vehicleBrands.deletedAt))
+            .orderBy(schema.vehicleBrands.name);
+    }
+
+    async getVehicleModelsByBrandId(brandId: string): Promise<VehicleModel[]> {
+        return await db
+            .select()
+            .from(schema.vehicleModels)
+            .where(
+                and(
+                    eq(schema.vehicleModels.brandId, brandId),
+                    isNull(schema.vehicleModels.deletedAt)
+                )
+            )
+            .orderBy(schema.vehicleModels.name);
     }
 
     async getParkingSpotsByBuildingId(buildingId: string): Promise<ParkingSpot[]> {
@@ -1979,12 +2017,17 @@ export class DatabaseStorage implements IStorage {
         const building = await this.getBuildingById(buildingId);
         if (!building) throw new Error('Building not found');
 
-        // 2. Units + Residents + Vehicles (JOIN ile)
+        // 2. Site bilgisi (building.siteId üzerinden)
+        const site = building.siteId ? await this.getSiteById(building.siteId) : null;
+
+        // 3. Units + Residents + Vehicles (JOIN ile brand/model bilgileriyle)
         const unitsWithResidents = await db
             .select({
                 unit: schema.units,
                 resident: schema.residents,
                 vehicle: schema.vehicles,
+                brand: schema.vehicleBrands,
+                model: schema.vehicleModels,
             })
             .from(schema.units)
             .leftJoin(schema.residents, and(
@@ -1995,6 +2038,8 @@ export class DatabaseStorage implements IStorage {
                 eq(schema.vehicles.residentId, schema.residents.id),
                 isNull(schema.vehicles.deletedAt)
             ))
+            .leftJoin(schema.vehicleBrands, eq(schema.vehicles.brandId, schema.vehicleBrands.id))
+            .leftJoin(schema.vehicleModels, eq(schema.vehicles.modelId, schema.vehicleModels.id))
             .where(
                 and(
                     eq(schema.units.buildingId, buildingId),
@@ -2002,17 +2047,21 @@ export class DatabaseStorage implements IStorage {
                 )
             );
 
-        // 3. Parking Spots + Assigned Vehicles
+        // 4. Parking Spots + Assigned Vehicles (JOIN ile brand/model bilgileriyle)
         const parkingSpotsWithVehicles = await db
             .select({
                 spot: schema.parkingSpots,
                 vehicle: schema.vehicles,
+                brand: schema.vehicleBrands,
+                model: schema.vehicleModels,
             })
             .from(schema.parkingSpots)
             .leftJoin(schema.vehicles, and(
                 eq(schema.vehicles.parkingSpotId, schema.parkingSpots.id),
                 isNull(schema.vehicles.deletedAt)
             ))
+            .leftJoin(schema.vehicleBrands, eq(schema.vehicles.brandId, schema.vehicleBrands.id))
+            .leftJoin(schema.vehicleModels, eq(schema.vehicles.modelId, schema.vehicleModels.id))
             .where(
                 and(
                     eq(schema.parkingSpots.buildingId, buildingId),
@@ -2020,12 +2069,13 @@ export class DatabaseStorage implements IStorage {
                 )
             );
 
-        // 4. Data'yı nested structure'a dönüştür
+        // 5. Data'yı nested structure'a dönüştür
         const units = this.transformToNestedUnits(unitsWithResidents);
         const parkingSpots = this.transformToParkingSpots(parkingSpotsWithVehicles);
 
         return {
             building,
+            site,
             units,
             parkingSpots,
         };
@@ -2062,11 +2112,16 @@ export class DatabaseStorage implements IStorage {
                     unit.residents.push(resident);
                 }
                 
-                // Vehicle varsa ekle
+                // Vehicle varsa ekle (brand ve model bilgileriyle)
                 if (row.vehicle) {
                     const vehicleExists = resident.vehicles.some((v: any) => v.id === row.vehicle.id);
                     if (!vehicleExists) {
-                        resident.vehicles.push(row.vehicle);
+                        // Embed brand and model names into the vehicle object
+                        resident.vehicles.push({
+                            ...row.vehicle,
+                            brandName: row.brand?.name || null,
+                            modelName: row.model?.name || null,
+                        });
                     }
                 }
             }
@@ -2087,7 +2142,11 @@ export class DatabaseStorage implements IStorage {
             if (!spotsMap.has(spotId)) {
                 spotsMap.set(spotId, {
                     ...row.spot,
-                    assignedVehicle: row.vehicle || null,
+                    assignedVehicle: row.vehicle ? {
+                        ...row.vehicle,
+                        brandName: row.brand?.name || null,
+                        modelName: row.model?.name || null,
+                    } : null,
                 });
             }
         });

@@ -252,7 +252,11 @@ export function createRoutes(storage: IStorage): Router {
             res.json(data);
         } catch (error: any) {
             console.error('Building full data error:', error);
-            res.status(500).json({ error: error.message || 'Building data yüklenirken hata oluştu' });
+            console.error('Error stack:', error.stack);
+            res.status(500).json({ 
+                error: error.message || 'Building data yüklenirken hata oluştu',
+                details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+            });
         }
     });
 
@@ -323,9 +327,12 @@ export function createRoutes(storage: IStorage): Router {
     // DELETE /api/vehicles/:id
     router.patch('/vehicles/:id', requireAuth, async (req, res) => {
         try {
-            const vehicle = await storage.updateVehicle(req.params.id, req.body);
+            // Partial validation - sadece gönderilen field'ları validate et
+            const validatedData = insertVehicleSchema.partial().parse(req.body);
+            const vehicle = await storage.updateVehicle(req.params.id, validatedData);
             res.json({ vehicle });
-        } catch (error) {
+        } catch (error: any) {
+            if (error.name === 'ZodError') return res.status(400).json({ error: 'Geçersiz veri', details: error.errors });
             res.status(500).json({ error: 'Araç güncellenemedi' });
         }
     });
@@ -1922,6 +1929,30 @@ export function createRoutes(storage: IStorage): Router {
             res.json({ buildings });
         } catch (error) {
             res.status(500).json({ error: 'Bloklar yüklenirken hata oluştu' });
+        }
+    });
+
+    // ==================== VEHICLE BRANDS & MODELS ====================
+
+    // GET /api/vehicle-brands - Get all vehicle brands
+    router.get('/vehicle-brands', requireAuth, async (req, res) => {
+        try {
+            const brands = await storage.getAllVehicleBrands();
+            res.json({ brands });
+        } catch (error: any) {
+            console.error('Vehicle brands error:', error);
+            res.status(500).json({ error: error.message || 'Araç markaları yüklenirken hata oluştu' });
+        }
+    });
+
+    // GET /api/vehicle-brands/:brandId/models - Get models by brand ID
+    router.get('/vehicle-brands/:brandId/models', requireAuth, async (req, res) => {
+        try {
+            const models = await storage.getVehicleModelsByBrandId(req.params.brandId);
+            res.json({ models });
+        } catch (error: any) {
+            console.error('Vehicle models error:', error);
+            res.status(500).json({ error: error.message || 'Araç modelleri yüklenirken hata oluştu' });
         }
     });
 

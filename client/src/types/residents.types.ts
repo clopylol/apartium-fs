@@ -13,6 +13,8 @@ export interface ResidentVehicle {
     id: string;
     plate: string;
     model: string;
+    brandId?: string | null;
+    modelId?: string | null;
     color?: string;
     fuelType?: string;
     parkingSpot?: string;
@@ -58,6 +60,7 @@ export interface Building {
  */
 export interface BuildingDataResponse {
     building: Building;
+    site: Site | null;
     units: UnitWithResidents[];
     parkingSpots: ParkingSpotWithVehicle[];
 }
@@ -75,7 +78,11 @@ export interface Vehicle {
     residentId: string;
     parkingSpotId?: string | null;
     plate: string;
+    brandId?: string | null;
+    modelId?: string | null;
     model?: string | null;
+    color?: string | null;
+    fuelType?: string | null;
     createdAt: string;
     updatedAt: string;
     deletedAt?: string | null;

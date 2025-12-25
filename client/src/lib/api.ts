@@ -127,6 +127,13 @@ export const api = {
         delete: (id: string) => apiClient(`/buildings/${id}`, { method: 'DELETE' }),
     },
 
+    // Vehicle Brands & Models
+    vehicleBrands: {
+        getAll: () => apiClient('/vehicle-brands'),
+        getModelsByBrandId: (brandId: string) =>
+            apiClient(`/vehicle-brands/${brandId}/models`),
+    },
+
     // Residents
     residents: {
         // Full building data (JOIN ile)
@@ -142,6 +149,8 @@ export const api = {
             apiClient(`/residents/${id}`, { method: 'DELETE' }),
         
         // CRUD - Vehicles
+        getVehiclesByResidentId: (residentId: string) =>
+            apiClient(`/residents/${residentId}/vehicles`),
         createVehicle: (data: any) =>
             apiClient('/vehicles', { method: 'POST', data }),
         updateVehicle: (id: string, data: any) =>

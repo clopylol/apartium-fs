@@ -483,7 +483,10 @@
       "vehicleNoteTitle": "Araç Ekleme",
       "vehicleNoteDescription": "Sakini kaydettikten sonra listedeki \"Araç Yönetimi\" butonu ile birden fazla araç tanımlayabilirsiniz.",
       "owner": "Ev Sahibi",
-      "tenant": "Kiracı"
+      "tenant": "Kiracı",
+      "unitRequired": "Lütfen bir daire seçin",
+      "siteRequired": "Lütfen bir apartman seçin",
+      "buildingRequired": "Lütfen bir blok seçin"
     },
     "modals": {
       "addResident": {

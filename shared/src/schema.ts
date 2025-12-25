@@ -146,13 +146,36 @@ export const parkingSpots = pgTable('parking_spots', {
     deletedAt: timestamp('deleted_at', { withTimezone: true }),
 });
 
+// Vehicle Brands (Araç Markaları)
+export const vehicleBrands = pgTable('vehicle_brands', {
+    id: uuid('id').defaultRandom().primaryKey(),
+    name: varchar('name', { length: 100 }).notNull().unique(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
+});
+
+// Vehicle Models (Araç Modelleri)
+export const vehicleModels = pgTable('vehicle_models', {
+    id: uuid('id').defaultRandom().primaryKey(),
+    brandId: uuid('brand_id').notNull().references(() => vehicleBrands.id, { onDelete: 'cascade' }),
+    name: varchar('name', { length: 100 }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
+});
+
 // Vehicles (Araçlar)
 export const vehicles = pgTable('vehicles', {
     id: uuid('id').defaultRandom().primaryKey(),
     residentId: uuid('resident_id').notNull().references(() => residents.id, { onDelete: 'cascade' }),
     parkingSpotId: uuid('parking_spot_id').references(() => parkingSpots.id, { onDelete: 'set null' }),
     plate: varchar('plate', { length: 20 }).notNull().unique(),
+    brandId: uuid('brand_id').references(() => vehicleBrands.id, { onDelete: 'set null' }),
+    modelId: uuid('model_id').references(() => vehicleModels.id, { onDelete: 'set null' }),
     model: varchar('model', { length: 100 }),
+    color: varchar('color', { length: 50 }),
+    fuelType: varchar('fuel_type', { length: 20 }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
     deletedAt: timestamp('deleted_at', { withTimezone: true }),
@@ -475,6 +498,12 @@ export const insertResidentSchema = createInsertSchema(residents);
 export const selectResidentSchema = createSelectSchema(residents);
 
 // Vehicles & Parking
+export const insertVehicleBrandSchema = createInsertSchema(vehicleBrands);
+export const selectVehicleBrandSchema = createSelectSchema(vehicleBrands);
+
+export const insertVehicleModelSchema = createInsertSchema(vehicleModels);
+export const selectVehicleModelSchema = createSelectSchema(vehicleModels);
+
 export const insertParkingSpotSchema = createInsertSchema(parkingSpots);
 export const selectParkingSpotSchema = createSelectSchema(parkingSpots);
 
@@ -579,6 +608,12 @@ export type Resident = z.infer<typeof selectResidentSchema> & {};
 export type InsertResident = z.infer<typeof insertResidentSchema> & {};
 
 // Vehicles & Parking Types
+export type VehicleBrand = z.infer<typeof selectVehicleBrandSchema>;
+export type InsertVehicleBrand = z.infer<typeof insertVehicleBrandSchema>;
+
+export type VehicleModel = z.infer<typeof selectVehicleModelSchema>;
+export type InsertVehicleModel = z.infer<typeof insertVehicleModelSchema>;
+
 export type ParkingSpot = z.infer<typeof selectParkingSpotSchema>;
 export type InsertParkingSpot = z.infer<typeof insertParkingSpotSchema>;
 

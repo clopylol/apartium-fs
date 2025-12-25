@@ -484,7 +484,10 @@
       "vehicleNoteTitle": "Add Vehicle",
       "vehicleNoteDescription": "After saving the resident, you can add multiple vehicles using the \"Manage Vehicles\" button in the list.",
       "owner": "Owner",
-      "tenant": "Tenant"
+      "tenant": "Tenant",
+      "unitRequired": "Please select a unit",
+      "siteRequired": "Please select a site",
+      "buildingRequired": "Please select a building"
     },
     "modals": {
       "addResident": {

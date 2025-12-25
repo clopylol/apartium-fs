@@ -7,6 +7,8 @@ import type {
     PaymentRecord, InsertPaymentRecord,
     ExpenseRecord, InsertExpenseRecord,
     Vehicle, InsertVehicle,
+    VehicleBrand, InsertVehicleBrand,
+    VehicleModel, InsertVehicleModel,
     ParkingSpot, InsertParkingSpot,
     GuestVisit, InsertGuestVisit,
     Facility, InsertFacility,
@@ -77,6 +79,12 @@ export interface IStorage {
     getVehiclesByResidentId(residentId: string): Promise<Vehicle[]>;
     createVehicle(vehicle: InsertVehicle): Promise<Vehicle>;
     updateVehicle(id: string, vehicle: Partial<InsertVehicle>): Promise<Vehicle>;
+    deleteVehicle(id: string): Promise<void>;
+    
+    // Vehicle Brands & Models
+    getAllVehicleBrands(): Promise<VehicleBrand[]>;
+    getVehicleModelsByBrandId(brandId: string): Promise<VehicleModel[]>;
+    
     getParkingSpotsByBuildingId(buildingId: string): Promise<ParkingSpot[]>;
     createParkingSpot(spot: InsertParkingSpot): Promise<ParkingSpot>;
     updateParkingSpot(id: string, spot: Partial<InsertParkingSpot>): Promise<ParkingSpot>;
@@ -85,7 +93,6 @@ export interface IStorage {
     createGuestVisit(visit: InsertGuestVisit): Promise<GuestVisit>;
     updateGuestVisitStatus(id: string, status: string): Promise<GuestVisit>;
     deleteGuestVisit(id: string): Promise<void>;
-    deleteVehicle(id: string): Promise<void>;
 
     // Payment Records
     getPaymentRecordsByPeriod(month: string, year: number): Promise<PaymentRecord[]>;
