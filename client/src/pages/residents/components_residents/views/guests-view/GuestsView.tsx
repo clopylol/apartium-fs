@@ -1,11 +1,15 @@
-import type { GuestVisit } from "@/types/residents.types";
+import type { GuestVisit, Building } from "@/types/residents.types";
 import { GuestStats } from "../../guests/guest-stats";
 import { GuestFilters } from "../../guests/guest-filters";
 import { GuestTable } from "../../guests/guest-table";
 import { GuestRowSkeleton } from "../../guests/skeletons";
 import { StatCardSkeleton } from "../../resident/skeletons";
+import { BuildingTabs } from "../../resident/building-tabs";
 
 export interface GuestsViewProps {
+    buildings: Building[];
+    activeBlockId: string | null;
+    activeBlock: Building | null;
     guestStats: {
         active: number;
         pending: number;
@@ -17,9 +21,16 @@ export interface GuestsViewProps {
     filteredGuests: GuestVisit[];
     onGuestSelect: (guest: GuestVisit | null) => void;
     isLoading: boolean;
+    onBlockChange: (blockId: string) => void;
+    onAddBuilding: () => void;
+    onEditBuilding: () => void;
+    onDeleteBuilding: () => void;
 }
 
 export function GuestsView({
+    buildings,
+    activeBlockId,
+    activeBlock,
     guestStats,
     guestFilter,
     onFilterChange,
@@ -27,6 +38,10 @@ export function GuestsView({
     filteredGuests,
     onGuestSelect,
     isLoading,
+    onBlockChange,
+    onAddBuilding,
+    onEditBuilding,
+    onDeleteBuilding,
 }: GuestsViewProps) {
     if (isLoading) {
         return (
@@ -51,6 +66,18 @@ export function GuestsView({
 
     return (
         <div className="animate-in fade-in duration-300">
+            {/* Top Controls (Building Tabs) */}
+            <div className="flex flex-col md:flex-row justify-between items-end md:items-center gap-6 mb-8">
+                <BuildingTabs
+                    buildings={buildings}
+                    activeBlockId={activeBlockId}
+                    onBlockChange={onBlockChange}
+                    onAddBuilding={onAddBuilding}
+                    onEditBuilding={onEditBuilding}
+                    onDeleteBuilding={onDeleteBuilding}
+                />
+            </div>
+
             <GuestStats
                 active={guestStats.active}
                 pending={guestStats.pending}

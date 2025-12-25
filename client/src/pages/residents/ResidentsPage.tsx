@@ -167,6 +167,9 @@ export function ResidentsPage() {
                     {/* Guests View */}
                     {activeTab === "guests" && (
                         <GuestsView
+                            buildings={residentsState.buildings}
+                            activeBlockId={residentsState.activeBlockId}
+                            activeBlock={residentsState.activeBlock}
                             guestStats={guestState.guestStats}
                             guestFilter={guestState.guestFilter}
                             onFilterChange={guestState.setGuestFilter}
@@ -174,6 +177,10 @@ export function ResidentsPage() {
                             filteredGuests={guestState.filteredGuests}
                             onGuestSelect={modalState.setSelectedGuest}
                             isLoading={residentsState.loadingStates.guests}
+                            onBlockChange={residentsState.setActiveBlockId}
+                            onAddBuilding={buildingActions.handleOpenAddBuilding}
+                            onEditBuilding={buildingActions.handleOpenEditBuilding}
+                            onDeleteBuilding={buildingActions.handleOpenDeleteBuilding}
                         />
                     )}
                 </div>
