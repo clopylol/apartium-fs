@@ -141,6 +141,9 @@ export function ResidentsPage() {
                     {/* Parking View */}
                     {activeTab === "parking" && (
                         <ParkingView
+                            buildings={residentsState.buildings}
+                            activeBlockId={residentsState.activeBlockId}
+                            activeBlock={residentsState.activeBlock}
                             parkingGridData={parkingActions.parkingGridData}
                             activeParkingFloor={parkingState.activeParkingFloor}
                             availableFloors={parkingState.availableFloors}
@@ -154,6 +157,10 @@ export function ResidentsPage() {
                             isLoading={residentsState.loadingStates.parking}
                             parkingStats={parkingActions.parkingStats}
                             onAssignVehicle={(spot) => modalState.openAssignVehicleModal(spot)}
+                            onBlockChange={residentsState.setActiveBlockId}
+                            onAddBuilding={buildingActions.handleOpenAddBuilding}
+                            onEditBuilding={buildingActions.handleOpenEditBuilding}
+                            onDeleteBuilding={buildingActions.handleOpenDeleteBuilding}
                         />
                     )}
 

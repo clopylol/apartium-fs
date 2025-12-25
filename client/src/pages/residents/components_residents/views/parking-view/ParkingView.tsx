@@ -1,10 +1,14 @@
-import type { VehicleSearchItem } from "@/types/residents.types";
+import type { VehicleSearchItem, Building } from "@/types/residents.types";
 import { ParkingMap } from "../../parking/parking-map";
 import { VehicleSearchList } from "../../parking/vehicle-search-list";
 import { ParkingMapSkeleton } from "../../parking/skeletons";
 import { ParkingStats } from "../../parking/stats";
+import { BuildingTabs } from "../../resident/building-tabs";
 
 export interface ParkingViewProps {
+    buildings: Building[];
+    activeBlockId: string | null;
+    activeBlock: Building | null;
     parkingGridData: any[];
     activeParkingFloor: number;
     availableFloors: number[];
@@ -24,9 +28,16 @@ export interface ParkingViewProps {
         guestVehicles: number;
     };
     onAssignVehicle: (spot: any) => void;
+    onBlockChange: (blockId: string) => void;
+    onAddBuilding: () => void;
+    onEditBuilding: () => void;
+    onDeleteBuilding: () => void;
 }
 
 export function ParkingView({
+    buildings,
+    activeBlockId,
+    activeBlock,
     parkingGridData,
     activeParkingFloor,
     availableFloors,
@@ -40,6 +51,10 @@ export function ParkingView({
     isLoading,
     parkingStats,
     onAssignVehicle,
+    onBlockChange,
+    onAddBuilding,
+    onEditBuilding,
+    onDeleteBuilding,
 }: ParkingViewProps) {
     if (isLoading) {
         return (
@@ -63,6 +78,18 @@ export function ParkingView({
 
     return (
         <div className="space-y-6 animate-in fade-in duration-300">
+            {/* Top Controls (Building Tabs) */}
+            <div className="flex flex-col md:flex-row justify-between items-end md:items-center gap-6 mb-8">
+                <BuildingTabs
+                    buildings={buildings}
+                    activeBlockId={activeBlockId}
+                    onBlockChange={onBlockChange}
+                    onAddBuilding={onAddBuilding}
+                    onEditBuilding={onEditBuilding}
+                    onDeleteBuilding={onDeleteBuilding}
+                />
+            </div>
+
             {/* Stats Cards */}
             <ParkingStats
                 totalSpots={parkingStats.totalSpots}
