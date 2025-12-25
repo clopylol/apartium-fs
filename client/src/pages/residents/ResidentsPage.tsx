@@ -214,8 +214,10 @@ export function ResidentsPage() {
                 isOpen={modalState.showAddModal}
                 onClose={modalState.closeAddResidentModal}
                 onSave={residentActions.handleSaveResident}
+                sites={residentsState.sites}
                 buildings={residentsState.buildings}
                 activeBuildingData={residentsState.buildingData}
+                initialSiteId={residentsState.activeSiteId || undefined}
                 initialBlockId={modalState.addModalProps.blockId}
                 initialUnitId={modalState.addModalProps.unitId}
             />
@@ -275,6 +277,7 @@ export function ResidentsPage() {
                     resident={modalState.editingResident.resident}
                     blockId={modalState.editingResident.blockId}
                     unitId={modalState.editingResident.unitId}
+                    sites={residentsState.sites}
                     buildings={residentsState.buildings}
                 />
             )}

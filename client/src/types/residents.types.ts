@@ -13,6 +13,8 @@ export interface ResidentVehicle {
     id: string;
     plate: string;
     model: string;
+    color?: string;
+    fuelType?: string;
     parkingSpot?: string;
 }
 

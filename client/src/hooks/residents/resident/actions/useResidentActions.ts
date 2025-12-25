@@ -1,5 +1,6 @@
 import type { Resident, ResidentVehicle } from "@/types/residents.types";
 import { useResidentMutations } from "@/hooks/residents/api";
+import { showError } from "@/utils/toast";
 
 export interface ResidentActionsParams {
     buildingId: string | null;
@@ -55,16 +56,22 @@ export function useResidentActions(params: ResidentActionsParams): ResidentActio
     };
 
     const handleSaveResident = async (residentData: any) => {
+        // Validate unitId before sending
+        if (!residentData.unitId || residentData.unitId.trim() === "") {
+            showError("Lütfen bir daire seçin");
+            return;
+        }
+        
         try {
             await createResident.mutateAsync({
                 unitId: residentData.unitId,
-                            name: residentData.name,
-                            type: residentData.type,
-                            phone: residentData.phone,
+                name: residentData.name,
+                type: residentData.type,
+                phone: residentData.phone,
                 email: residentData.email || null,
-                            avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(residentData.name)}&background=random&color=fff`,
-        });
-        closeAddResidentModal();
+                avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(residentData.name)}&background=random&color=fff`,
+            });
+            closeAddResidentModal();
         } catch (error) {
             // Error handled by mutation
             console.error('Failed to create resident:', error);

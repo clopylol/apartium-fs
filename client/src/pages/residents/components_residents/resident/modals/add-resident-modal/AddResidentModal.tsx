@@ -1,14 +1,28 @@
-import { X, User, Phone, Mail, Building as BuildingIcon, Home, Car } from "lucide-react";
-import { useState, useEffect } from "react";
+import { X, User, Phone, Mail, Building as BuildingIcon, Home, Car, MapPin, Users, AlertCircle } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import type { Building } from "@/types/residents.types";
+import type { Building, Site, UnitWithResidents, ResidentWithVehicles } from "@/types/residents.types";
+import { showError } from "@/utils/toast";
+import { useBuildingData } from "@/hooks/residents/api";
+import {
+    formatPhoneNumber,
+    cleanPhoneNumber,
+    validateResidentForm,
+    getNameError,
+    getPhoneNumberError,
+    getEmailError,
+    truncateName,
+    type ResidentFormErrors,
+} from "@/utils/validation";
 
 interface AddResidentModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSave: (residentData: any) => void;
+    sites: Site[];
     buildings: Building[];
     activeBuildingData?: any; // Full building data with units
+    initialSiteId?: string;
     initialBlockId?: string;
     initialUnitId?: string;
 }
@@ -17,8 +31,10 @@ export function AddResidentModal({
     isOpen,
     onClose,
     onSave,
+    sites,
     buildings,
     activeBuildingData,
+    initialSiteId,
     initialBlockId,
     initialUnitId,
 }: AddResidentModalProps) {
@@ -28,35 +44,145 @@ export function AddResidentModal({
         type: "tenant" as "owner" | "tenant",
         phone: "",
         email: "",
-        blockId: initialBlockId || "",
+        siteId: initialSiteId || "",
+        buildingId: initialBlockId || "",
         unitId: initialUnitId || "",
     });
+    
+    // Form validation errors
+    const [formErrors, setFormErrors] = useState<ResidentFormErrors>({});
+    
+    // Display phone number (formatted)
+    const [displayPhone, setDisplayPhone] = useState("");
+
+    // Filter buildings by selected site
+    const availableBuildings = useMemo(() => {
+        if (!formData.siteId) return [];
+        return buildings.filter(b => b.siteId === formData.siteId);
+    }, [buildings, formData.siteId]);
+
+    // Fetch units for selected building
+    const { data: selectedBuildingData, isLoading: isLoadingUnits } = useBuildingData(formData.buildingId || null);
+
+    // Get units from selected building
+    const availableUnits = useMemo((): UnitWithResidents[] => {
+        if (!formData.buildingId) return [];
+        // First try to get from fetched building data
+        if (selectedBuildingData?.units) {
+            return selectedBuildingData.units;
+        }
+        // Fallback to activeBuildingData if it matches
+        if (activeBuildingData?.id === formData.buildingId && activeBuildingData?.units) {
+            return activeBuildingData.units;
+        }
+        // Last fallback: try to get from buildings array (usually empty)
+        const selectedBuilding = availableBuildings.find(b => b.id === formData.buildingId);
+        return (selectedBuilding?.units as UnitWithResidents[]) || [];
+    }, [selectedBuildingData, formData.buildingId, activeBuildingData, availableBuildings]);
+
+    // Get selected unit with residents info
+    const selectedUnit = useMemo((): UnitWithResidents | null => {
+        if (!formData.unitId) return null;
+        return availableUnits.find((u: UnitWithResidents) => u.id === formData.unitId) || null;
+    }, [availableUnits, formData.unitId]);
 
     // Update form data when initial props change
     useEffect(() => {
         if (isOpen) {
-            setFormData((prev) => ({
-                ...prev,
-                blockId: initialBlockId || prev.blockId || (buildings.length > 0 ? buildings[0].id : ""),
-                unitId: initialUnitId || prev.unitId || "",
-            }));
+            const defaultSiteId = initialSiteId || (sites.length > 0 ? sites[0].id : "");
+            const siteBuildings = defaultSiteId ? buildings.filter(b => b.siteId === defaultSiteId) : [];
+            const defaultBuildingId = initialBlockId || (siteBuildings.length > 0 ? siteBuildings[0].id : "");
+            
+            setFormData({
+                name: "",
+                type: "tenant" as "owner" | "tenant",
+                phone: "",
+                email: "",
+                siteId: defaultSiteId,
+                buildingId: defaultBuildingId,
+                unitId: initialUnitId || "",
+            });
+            setDisplayPhone("");
+            setFormErrors({});
         }
-    }, [isOpen, initialBlockId, initialUnitId, buildings]);
+    }, [isOpen, initialSiteId, initialBlockId, initialUnitId, sites, buildings]);
+
+    // Real-time validation
+    useEffect(() => {
+        const errors: ResidentFormErrors = {};
+        
+        const nameError = getNameError(formData.name);
+        if (nameError) errors.name = nameError;
+        
+        const phoneError = getPhoneNumberError(formData.phone);
+        if (phoneError) errors.phone = phoneError;
+        
+        const emailError = getEmailError(formData.email);
+        if (emailError) errors.email = emailError;
+        
+        setFormErrors(errors);
+    }, [formData.name, formData.phone, formData.email]);
 
     if (!isOpen) return null;
 
-    // Get units from activeBuildingData if available, otherwise fallback to basic logic
-    const availableUnits = activeBuildingData?.units || [];
-
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onSave(formData);
+        
+        // Validate all fields
+        const errors = validateResidentForm(formData);
+        
+        if (Object.keys(errors).length > 0) {
+            // Show first error
+            const firstError = Object.values(errors)[0];
+            if (firstError) {
+                showError(firstError);
+            }
+            setFormErrors(errors);
+            return;
+        }
+        
+        // Clean phone number before saving (remove formatting)
+        const cleanedPhone = cleanPhoneNumber(formData.phone);
+        
+        // Prepare data for save (with cleaned phone)
+        onSave({
+            ...formData,
+            phone: cleanedPhone,
+            name: formData.name.trim(),
+            email: formData.email.trim() || null,
+        });
         onClose();
+    };
+    
+    // Handle name change with max length
+    const handleNameChange = (value: string) => {
+        const truncated = truncateName(value, 100);
+        setFormData({ ...formData, name: truncated });
+    };
+    
+    // Handle phone change with formatting
+    const handlePhoneChange = (value: string) => {
+        // Remove all non-digits first
+        const digits = value.replace(/\D/g, "");
+        
+        // Limit to 10 digits
+        const limited = digits.slice(0, 10);
+        
+        // Update both display and form data
+        setDisplayPhone(formatPhoneNumber(limited));
+        setFormData({ ...formData, phone: limited });
+    };
+    
+    // Handle email change
+    const handleEmailChange = (value: string) => {
+        // Limit email length
+        const limited = value.slice(0, 255);
+        setFormData({ ...formData, email: limited });
     };
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="w-full max-w-md bg-[#0F111A] border border-white/10 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="w-full max-w-2xl bg-[#0F111A] border border-white/10 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-white/5">
                     <h2 className="text-lg font-bold text-white flex items-center gap-2">
@@ -73,21 +199,54 @@ export function AddResidentModal({
 
                 {/* Body */}
                 <form onSubmit={handleSubmit} className="p-6 space-y-5">
-                    {/* Block & Unit Selection */}
-                    <div className="grid grid-cols-2 gap-4">
+                    {/* Site, Building & Unit Selection */}
+                    <div className="grid grid-cols-3 gap-4">
+                        {/* Site (Apartman) */}
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">
-                                {t("residents.messages.blockLabel")}
+                                Apartman
+                            </label>
+                            <div className="relative">
+                                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                                <select
+                                    value={formData.siteId}
+                                    onChange={(e) => setFormData({ ...formData, siteId: e.target.value, buildingId: "", unitId: "" })}
+                                    disabled={!!initialUnitId}
+                                    className={`w-full bg-[#151821] border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none transition-colors appearance-none ${
+                                        initialUnitId
+                                            ? "opacity-50 cursor-not-allowed"
+                                            : "focus:border-[#3B82F6]"
+                                    }`}
+                                >
+                                    <option value="" disabled>Apartman Seçin</option>
+                                    {sites.map((s) => (
+                                        <option key={s.id} value={s.id}>
+                                            {s.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+                        
+                        {/* Building (Blok) */}
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">
+                                Blok
                             </label>
                             <div className="relative">
                                 <BuildingIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                                 <select
-                                    value={formData.blockId}
-                                    onChange={(e) => setFormData({ ...formData, blockId: e.target.value, unitId: "" })}
-                                    className="w-full bg-[#151821] border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#3B82F6] transition-colors appearance-none"
+                                    value={formData.buildingId}
+                                    onChange={(e) => setFormData({ ...formData, buildingId: e.target.value, unitId: "" })}
+                                    disabled={!formData.siteId || !!initialUnitId}
+                                    className={`w-full bg-[#151821] border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none transition-colors appearance-none ${
+                                        !formData.siteId || initialUnitId
+                                            ? "opacity-50 cursor-not-allowed"
+                                            : "focus:border-[#3B82F6]"
+                                    }`}
                                 >
-                                    <option value="" disabled>{t("residents.messages.blockSelect")}</option>
-                                    {buildings.map((b) => (
+                                    <option value="" disabled>Blok Seçin</option>
+                                    {availableBuildings.map((b) => (
                                         <option key={b.id} value={b.id}>
                                             {b.name}
                                         </option>
@@ -95,28 +254,60 @@ export function AddResidentModal({
                                 </select>
                             </div>
                         </div>
+                        
+                        {/* Unit (Daire) */}
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">
-                                {t("residents.messages.unitLabel")} {t("residents.messages.unitNumber").replace(":", "")}
+                                Daire
                             </label>
                             <div className="relative">
                                 <Home className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                                 <select
                                     value={formData.unitId}
                                     onChange={(e) => setFormData({ ...formData, unitId: e.target.value })}
-                                    className="w-full bg-[#151821] border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#3B82F6] transition-colors appearance-none"
-                                    disabled={!formData.blockId}
+                                    disabled={!formData.buildingId || isLoadingUnits || !!initialUnitId}
+                                    className={`w-full bg-[#151821] border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none transition-colors appearance-none ${
+                                        !formData.buildingId || isLoadingUnits || initialUnitId
+                                            ? "opacity-50 cursor-not-allowed"
+                                            : "focus:border-[#3B82F6]"
+                                    }`}
                                 >
-                                    <option value="" disabled>{t("residents.messages.unitSelect")}</option>
-                                    {availableUnits.map((u) => (
+                                    <option value="" disabled>
+                                        {isLoadingUnits ? "Yükleniyor..." : "Daire Seçin"}
+                                    </option>
+                                    {availableUnits.map((u: UnitWithResidents) => (
                                         <option key={u.id} value={u.id}>
-                                            {t("residents.messages.unitNumber")} {u.number}
+                                            {u.number}
                                         </option>
                                     ))}
                                 </select>
                             </div>
                         </div>
                     </div>
+
+                    {/* Selected Unit Residents Info */}
+                    {selectedUnit && selectedUnit.residents && selectedUnit.residents.length > 0 && (
+                        <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 flex gap-3 animate-in fade-in duration-200">
+                            <div className="p-2 rounded-lg bg-amber-500/20 h-fit">
+                                <AlertCircle className="w-4 h-4 text-amber-400" />
+                            </div>
+                            <div className="flex-1">
+                                <h4 className="text-xs font-bold text-amber-400 mb-1.5 flex items-center gap-2">
+                                    <Users className="w-3.5 h-3.5" />
+                                    Bu dairede mevcut sakinler:
+                                </h4>
+                                <div className="space-y-1">
+                                    {selectedUnit.residents.map((resident: ResidentWithVehicles) => (
+                                        <div key={resident.id} className="text-[11px] text-slate-300 flex items-center gap-2">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-amber-400"></div>
+                                            <span className="font-medium">{resident.name}</span>
+                                            <span className="text-slate-500">({resident.type === "owner" ? "Mal Sahibi" : "Kiracı"})</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Resident Type */}
                     <div className="space-y-1.5">
@@ -151,19 +342,32 @@ export function AddResidentModal({
 
                     {/* Name */}
                     <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">
-                            {t("residents.messages.fullName")}
-                        </label>
+                        <div className="flex items-center justify-between">
+                            <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">
+                                {t("residents.messages.fullName")}
+                            </label>
+                            <span className="text-[10px] text-slate-500">
+                                {formData.name.length}/100
+                            </span>
+                        </div>
                         <div className="relative">
                             <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                             <input
                                 type="text"
                                 placeholder={t("residents.messages.fullNamePlaceholder")}
                                 value={formData.name}
-                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                className="w-full bg-[#151821] border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#3B82F6] transition-colors"
+                                onChange={(e) => handleNameChange(e.target.value)}
+                                maxLength={100}
+                                className={`w-full bg-[#151821] border rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none transition-colors ${
+                                    formErrors.name
+                                        ? "border-red-500/50 focus:border-red-500"
+                                        : "border-white/10 focus:border-[#3B82F6]"
+                                }`}
                             />
                         </div>
+                        {formErrors.name && (
+                            <p className="text-[10px] text-red-400 mt-1">{formErrors.name}</p>
+                        )}
                     </div>
 
                     {/* Phone & Email */}
@@ -176,16 +380,24 @@ export function AddResidentModal({
                                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                                 <input
                                     type="text"
-                                    placeholder="5XX..."
-                                    value={formData.phone}
-                                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                    className="w-full bg-[#151821] border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#3B82F6] transition-colors"
+                                    placeholder="538-765-0525"
+                                    value={displayPhone}
+                                    onChange={(e) => handlePhoneChange(e.target.value)}
+                                    maxLength={12}
+                                    className={`w-full bg-[#151821] border rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none transition-colors ${
+                                        formErrors.phone
+                                            ? "border-red-500/50 focus:border-red-500"
+                                            : "border-white/10 focus:border-[#3B82F6]"
+                                    }`}
                                 />
                             </div>
+                            {formErrors.phone && (
+                                <p className="text-[10px] text-red-400 mt-1">{formErrors.phone}</p>
+                            )}
                         </div>
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">
-                                {t("residents.messages.email")}
+                                {t("residents.messages.email")} <span className="text-slate-500">(Opsiyonel)</span>
                             </label>
                             <div className="relative">
                                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
@@ -193,21 +405,29 @@ export function AddResidentModal({
                                     type="email"
                                     placeholder="ornek@email.com"
                                     value={formData.email}
-                                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                    className="w-full bg-[#151821] border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#3B82F6] transition-colors"
+                                    onChange={(e) => handleEmailChange(e.target.value)}
+                                    maxLength={255}
+                                    className={`w-full bg-[#151821] border rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none transition-colors ${
+                                        formErrors.email
+                                            ? "border-red-500/50 focus:border-red-500"
+                                            : "border-white/10 focus:border-[#3B82F6]"
+                                    }`}
                                 />
                             </div>
+                            {formErrors.email && (
+                                <p className="text-[10px] text-red-400 mt-1">{formErrors.email}</p>
+                            )}
                         </div>
                     </div>
 
                     {/* Vehicle Info Note */}
-                    <div className="bg-[#151821] rounded-xl p-4 border border-white/5 flex gap-3">
-                        <div className="p-2 rounded-lg bg-white/5 h-fit">
-                            <Car className="w-4 h-4 text-slate-400" />
+                    <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 flex gap-3">
+                        <div className="p-2 rounded-lg bg-blue-500/20 h-fit">
+                            <Car className="w-4 h-4 text-blue-400" />
                         </div>
                         <div>
-                            <h4 className="text-xs font-bold text-white mb-0.5">{t("residents.messages.vehicleNoteTitle")}</h4>
-                            <p className="text-[10px] text-slate-500 leading-relaxed">
+                            <h4 className="text-xs font-bold text-blue-400 mb-0.5">{t("residents.messages.vehicleNoteTitle")}</h4>
+                            <p className="text-[10px] text-blue-300/80 leading-relaxed">
                                 {t("residents.messages.vehicleNoteDescription")}
                             </p>
                         </div>
