@@ -157,6 +157,8 @@ export function ResidentsPage() {
                             isLoading={residentsState.loadingStates.parking}
                             parkingStats={parkingActions.parkingStats}
                             onAssignVehicle={(spot) => modalState.openAssignVehicleModal(spot)}
+                            onUnassignVehicle={parkingActions.handleUnassignVehicle}
+                            onDeleteVehicle={parkingActions.handleDeleteVehicle}
                             onBlockChange={residentsState.setActiveBlockId}
                             onAddBuilding={buildingActions.handleOpenAddBuilding}
                             onEditBuilding={buildingActions.handleOpenEditBuilding}
@@ -278,6 +280,7 @@ export function ResidentsPage() {
                     blockId={modalState.managingResident.blockId}
                     unitId={modalState.managingResident.unitId}
                     buildings={residentsState.buildings}
+                    activeBlock={residentsState.activeBlock}
                     onUpdateResident={residentActions.handleUpdateResidentVehicles}
                 />
             )}

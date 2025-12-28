@@ -1,10 +1,14 @@
-import { Home, Edit2, Trash2, Car, Plus, Key, MoreVertical } from "lucide-react";
+import { Home, Edit2, Trash2, Car, Plus, Key, MoreVertical, MapPin } from "lucide-react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { Unit, Resident } from "@/types/residents.types";
+import type { Unit, Resident, Building } from "@/types/residents.types";
+import { formatLicensePlateForDisplay } from "@/utils/validation";
+import { ResidentDetailModal } from "../modals/resident-detail-modal";
 
 interface ResidentCardProps {
     unit: Unit;
     blockId: string;
+    activeBlock?: Building | null;
     onEditResident: (resident: Resident, blockId: string, unitId: string) => void;
     onDeleteResident: (residentId: string, blockId: string, unitId: string) => void;
     onManageVehicles: (resident: Resident, blockId: string, unitId: string) => void;
@@ -14,12 +18,31 @@ interface ResidentCardProps {
 export function ResidentCard({
     unit,
     blockId,
+    activeBlock,
     onEditResident,
     onDeleteResident,
     onManageVehicles,
     onAddResident,
 }: ResidentCardProps) {
     const { t } = useTranslation();
+    const [showDetailModal, setShowDetailModal] = useState(false);
+    
+    // Helper function to get parking spot name from parkingSpotId
+    const getParkingSpotName = (parkingSpotId: string | null | undefined): string | null => {
+        if (!parkingSpotId || !activeBlock?.parkingSpots) return null;
+        const spot = activeBlock.parkingSpots.find(s => s.id === parkingSpotId);
+        return spot?.name || null;
+    };
+
+    const handleShowDetails = () => {
+        if (unit.residents.length > 0) {
+            setShowDetailModal(true);
+        }
+    };
+
+    const handleCloseDetailModal = () => {
+        setShowDetailModal(false);
+    };
     
     return (
         <div
@@ -101,17 +124,25 @@ export function ResidentCard({
                                 </div>
                                 {resident.vehicles.length > 0 && (
                                     <div className="pl-12 space-y-1">
-                                        {resident.vehicles.map((v) => (
-                                            <div
-                                                key={v.id}
-                                                className="text-[10px] bg-slate-950/50 text-slate-400 px-2 py-1 rounded border border-slate-800/50 flex items-center justify-between"
-                                            >
-                                                <span className="font-mono">{v.plate}</span>
-                                                {v.parkingSpot && (
-                                                    <span className="text-blue-400">{v.parkingSpot}</span>
-                                                )}
-                                            </div>
-                                        ))}
+                                        {resident.vehicles.map((v) => {
+                                            // Get parking spot name from parkingSpotId or use parkingSpot if available
+                                            const parkingSpotName = v.parkingSpot || getParkingSpotName(v.parkingSpotId);
+                                            
+                                            return (
+                                                <div
+                                                    key={v.id}
+                                                    className="text-[10px] bg-slate-950/50 text-slate-400 px-2 py-1 rounded border border-slate-800/50 flex items-center gap-2"
+                                                >
+                                                    <span className="font-mono flex-1">{formatLicensePlateForDisplay(v.plate)}</span>
+                                                    {parkingSpotName && (
+                                                        <span className="text-[9px] bg-blue-500/10 text-blue-400 px-1.5 py-0.5 rounded border border-blue-500/20 flex items-center gap-1 font-medium">
+                                                            <MapPin className="w-2.5 h-2.5" />
+                                                            {parkingSpotName}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 )}
                             </div>
@@ -127,9 +158,18 @@ export function ResidentCard({
 
             {/* Card Footer */}
             <div className="p-4 bg-slate-950/30 border-t border-slate-800/50 flex justify-between items-center opacity-60 group-hover:opacity-100 transition-opacity">
-                <button className="text-xs font-medium text-slate-400 hover:text-white transition-colors flex items-center gap-1">
-                    <MoreVertical className="w-3 h-3" /> {t("residents.actions.details")}
-                </button>
+                {unit.residents.length > 0 ? (
+                    <button
+                        onClick={handleShowDetails}
+                        className="text-xs font-medium text-slate-400 hover:text-white transition-colors flex items-center gap-1"
+                    >
+                        <MoreVertical className="w-3 h-3" /> {t("residents.actions.details")}
+                    </button>
+                ) : (
+                    <div className="text-xs font-medium text-slate-500 flex items-center gap-1">
+                        <MoreVertical className="w-3 h-3" /> {t("residents.actions.details")}
+                    </div>
+                )}
                 <button
                     onClick={() => onAddResident(blockId, unit.id)}
                     className="text-xs font-bold text-blue-500 hover:text-blue-400 transition-colors bg-blue-500/10 hover:bg-blue-500/20 px-3 py-1.5 rounded-lg flex items-center gap-1"
@@ -137,6 +177,22 @@ export function ResidentCard({
                     <Plus className="w-3 h-3" /> {t("residents.actions.addResident")}
                 </button>
             </div>
+
+            {/* Resident Detail Modal - Render outside card DOM tree */}
+            {showDetailModal && unit.residents.length > 0 && (
+                <ResidentDetailModal
+                    isOpen={showDetailModal}
+                    onClose={handleCloseDetailModal}
+                    residents={unit.residents}
+                    unit={unit}
+                    block={activeBlock || null}
+                    blockName={activeBlock?.name || ""}
+                    onEdit={(resident) => {
+                        handleCloseDetailModal();
+                        onEditResident(resident, blockId, unit.id);
+                    }}
+                />
+            )}
         </div>
     );
 }

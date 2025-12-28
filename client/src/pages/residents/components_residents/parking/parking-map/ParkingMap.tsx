@@ -1,6 +1,7 @@
 import { Car, Plus, Edit2, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { ParkingSpotDefinition } from "@/types/residents.types";
+import { formatLicensePlateForDisplay } from "@/utils/validation";
 
 interface ParkingMapProps {
     parkingGridData: Array<
@@ -15,6 +16,7 @@ interface ParkingMapProps {
     blockName: string;
     onManageFloors: () => void;
     onAssignResident: (spot: ParkingSpotDefinition) => void;
+    onUnassignVehicle?: (spotId: string) => void;
 }
 
 export function ParkingMap({
@@ -28,6 +30,7 @@ export function ParkingMap({
     blockName,
     onManageFloors,
     onAssignResident,
+    onUnassignVehicle,
 }: ParkingMapProps) {
     const { t } = useTranslation();
     const getFloorLabel = (floor: number) => {
@@ -119,12 +122,24 @@ export function ParkingMap({
                                 <>
                                     <Car className="w-8 h-8 text-blue-400 mb-2" />
                                     <div className="text-center w-full">
-                                        <div className="font-bold text-white text-sm bg-slate-900 rounded px-1.5 py-0.5 border border-slate-700 truncate">
-                                            {spot.occupant.plate}
+                                        <div className="font-bold text-white text-sm bg-slate-900 rounded px-1.5 py-0.5 border border-slate-700 truncate font-mono">
+                                            {formatLicensePlateForDisplay(spot.occupant.plate)}
                                         </div>
                                         <div className="text-[10px] text-slate-400 mt-1 truncate">{t("residents.parking.map.unit")} {spot.occupant.unitNumber}</div>
                                         <div className="text-[10px] text-slate-500 truncate">{spot.occupant.name}</div>
                                     </div>
+                                    {onUnassignVehicle && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onUnassignVehicle(spot.id);
+                                            }}
+                                            className="absolute bottom-2 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 bg-red-600/20 hover:bg-red-600/30 text-red-400 hover:text-red-300 rounded border border-red-500/30 hover:border-red-500/50"
+                                            title={t("residents.parking.map.unassignVehicle")}
+                                        >
+                                            <Trash2 className="w-3 h-3" />
+                                        </button>
+                                    )}
                                 </>
                             ) : (
                                 <button

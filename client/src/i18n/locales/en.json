@@ -507,6 +507,18 @@
         "cancel": "Cancel",
         "save": "Save"
       },
+      "addUnit": {
+        "title": "Add Unit",
+        "buildingLabel": "Building",
+        "numberLabel": "UNIT NUMBER",
+        "floorLabel": "FLOOR",
+        "numberPlaceholder": "e.g., 101",
+        "floorPlaceholder": "e.g., 1",
+        "cancel": "Cancel",
+        "save": "Save",
+        "duplicateError": "Unit {{number}} on floor {{floor}} already exists in this building.",
+        "duplicateWarning": "Unit {{number}} on floor {{floor}} already exists in this building."
+      },
       "editBuilding": {
         "title": "Edit Building",
         "label": "BUILDING NAME",
@@ -558,6 +570,14 @@
           "title": "Delete Vehicle Confirmation",
           "message": "Are you sure you want to delete vehicle with license plate {{plate}}? This action cannot be undone."
         }
+      },
+      "detail": {
+        "title": "Resident Details",
+        "contactInfo": "Contact Information",
+        "phone": "Phone",
+        "email": "Email",
+        "unitInfo": "Unit Information",
+        "editButton": "Edit"
       }
     },
     "table": {
@@ -576,7 +596,8 @@
       "typeUppercase": {
         "owner": "OWNER",
         "tenant": "TENANT"
-      }
+      },
+      "noRecords": "No records found."
     },
     "parking": {
       "floorManagement": {
@@ -632,6 +653,7 @@
         "manageFloors": "Manage Floors",
         "unit": "Unit",
         "assign": "Assign",
+        "unassignVehicle": "Unassign Vehicle",
         "noSpots": "No parking spots defined on this floor.",
         "addSpot": "Add Parking Spot",
         "floorLabels": {

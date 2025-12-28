@@ -1,0 +1,2 @@
+export { ResidentDetailModal } from "./ResidentDetailModal";
+

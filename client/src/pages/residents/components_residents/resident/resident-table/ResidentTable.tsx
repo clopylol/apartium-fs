@@ -1,6 +1,7 @@
 import { Home, Edit2, Trash2, Car, Plus, Key, Phone, Mail } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { Unit, Resident } from "@/types/residents.types";
+import { formatLicensePlateForDisplay } from "@/utils/validation";
 
 interface ResidentTableProps {
     units: Unit[];
@@ -152,7 +153,7 @@ export function ResidentTable({
                                                                 <div key={v.id} className="flex items-center gap-3">
                                                                     <div className="flex items-center gap-2 text-ds-secondary-light dark:text-ds-secondary-dark/80 font-mono text-[10px]">
                                                                         <Car className="w-3 h-3 text-ds-muted-light dark:text-ds-muted-dark/50" />{" "}
-                                                                        {v.plate}
+                                                                        {formatLicensePlateForDisplay(v.plate)}
                                                                     </div>
                                                                     {v.parkingSpot && (
                                                                         <div className="text-[9px] font-bold bg-[#1A1D26] text-ds-muted-light dark:text-ds-muted-dark px-1.5 py-0.5 rounded border border-white/10">

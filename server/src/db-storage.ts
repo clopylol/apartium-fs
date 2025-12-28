@@ -295,6 +295,24 @@ export class DatabaseStorage implements IStorage {
     }
 
     async createUnit(unit: InsertUnit): Promise<Unit> {
+        // Check if unit with same number and floor already exists in this building
+        const existingUnit = await db
+            .select()
+            .from(schema.units)
+            .where(
+                and(
+                    eq(schema.units.buildingId, unit.buildingId),
+                    eq(schema.units.number, unit.number),
+                    eq(schema.units.floor, unit.floor),
+                    isNull(schema.units.deletedAt)
+                )
+            )
+            .limit(1);
+
+        if (existingUnit.length > 0) {
+            throw new Error(`Bu blokta ${unit.floor}. katta ${unit.number} numaralı daire zaten mevcut.`);
+        }
+
         const [newUnit] = await db
             .insert(schema.units)
             .values(unit)
@@ -496,6 +514,15 @@ export class DatabaseStorage implements IStorage {
             .values(visit)
             .returning();
         return newVisit;
+    }
+
+    async updateGuestVisit(id: string, visit: Partial<InsertGuestVisit>): Promise<GuestVisit> {
+        const [updated] = await db
+            .update(schema.guestVisits)
+            .set({ ...visit, updatedAt: new Date() })
+            .where(eq(schema.guestVisits.id, id))
+            .returning();
+        return updated;
     }
 
     async updateGuestVisitStatus(id: string, status: string): Promise<GuestVisit> {

@@ -127,6 +127,16 @@ export const api = {
         delete: (id: string) => apiClient(`/buildings/${id}`, { method: 'DELETE' }),
     },
 
+    // Units
+    units: {
+        create: (data: { buildingId: string; number: string; floor: number }) =>
+            apiClient('/units', { method: 'POST', data: { ...data, status: 'empty' } }),
+        update: (id: string, data: any) =>
+            apiClient(`/units/${id}`, { method: 'PATCH', data }),
+        delete: (id: string) =>
+            apiClient(`/units/${id}`, { method: 'DELETE' }),
+    },
+
     // Vehicle Brands & Models
     vehicleBrands: {
         getAll: () => apiClient('/vehicle-brands'),

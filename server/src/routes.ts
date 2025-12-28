@@ -159,7 +159,11 @@ export function createRoutes(storage: IStorage): Router {
             res.status(201).json({ unit });
         } catch (error: any) {
             if (error.name === 'ZodError') return res.status(400).json({ error: 'Geçersiz veri', details: error.errors });
-            res.status(500).json({ error: 'Daire oluşturulamadı' });
+            // Check if it's a duplicate unit error
+            if (error.message && error.message.includes('zaten mevcut')) {
+                return res.status(409).json({ error: error.message });
+            }
+            res.status(500).json({ error: error.message || 'Daire oluşturulamadı' });
         }
     });
 
@@ -374,6 +378,17 @@ export function createRoutes(storage: IStorage): Router {
         } catch (error: any) {
             if (error.name === 'ZodError') return res.status(400).json({ error: 'Geçersiz veri', details: error.errors });
             res.status(500).json({ error: 'Ziyaret kaydı oluşturulamadı' });
+        }
+    });
+
+    router.patch('/guest-visits/:id', requireAuth, async (req, res) => {
+        try {
+            const validatedData = insertGuestVisitSchema.partial().parse(req.body);
+            const visit = await storage.updateGuestVisit(req.params.id, validatedData);
+            res.json({ visit });
+        } catch (error: any) {
+            if (error.name === 'ZodError') return res.status(400).json({ error: 'Geçersiz veri', details: error.errors });
+            res.status(500).json({ error: 'Ziyaret kaydı güncellenemedi' });
         }
     });
 

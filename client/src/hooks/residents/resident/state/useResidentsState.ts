@@ -95,11 +95,22 @@ export function useResidentsState(): ResidentsStateReturn {
         setCurrentPage(1);
     }, [activeBlockId, searchTerm]);
 
-    // Computed: Active Block
-    const activeBlock = useMemo(
-        () => buildings.find((b: Building) => b.id === activeBlockId),
-        [buildings, activeBlockId]
-    );
+    // Computed: Active Block (merge with buildingData to include parkingSpots and units)
+    const activeBlock = useMemo(() => {
+        const baseBuilding = buildings.find((b: Building) => b.id === activeBlockId);
+        if (!baseBuilding) return undefined;
+        
+        // Merge with buildingData to include parkingSpots and units
+        if (buildingData) {
+            return {
+                ...baseBuilding,
+                parkingSpots: buildingData.parkingSpots || [],
+                units: buildingData.units || [],
+            };
+        }
+        
+        return baseBuilding;
+    }, [buildings, activeBlockId, buildingData]);
 
     // Units from building data
     const units = buildingData?.units || [];

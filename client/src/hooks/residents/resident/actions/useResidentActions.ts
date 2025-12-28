@@ -155,7 +155,7 @@ export function useResidentActions(params: ResidentActionsParams): ResidentActio
                         model: vehicle.model || null,
                         color: vehicle.color || null,
                         fuelType: vehicle.fuelType || null,
-                        parkingSpotId: vehicle.parkingSpot || null,
+                        parkingSpotId: vehicle.parkingSpotId || null,
                     });
                 } else {
                     // Existing vehicle - update it
@@ -166,7 +166,7 @@ export function useResidentActions(params: ResidentActionsParams): ResidentActio
                         model: vehicle.model || null,
                         color: vehicle.color || null,
                         fuelType: vehicle.fuelType || null,
-                        parkingSpotId: vehicle.parkingSpot || null,
+                        parkingSpotId: vehicle.parkingSpotId || null,
                     });
                 }
             });

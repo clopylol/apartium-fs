@@ -28,6 +28,8 @@ export interface ParkingViewProps {
         guestVehicles: number;
     };
     onAssignVehicle: (spot: any) => void;
+    onUnassignVehicle?: (spotId: string) => void;
+    onDeleteVehicle?: (vehicleId: string, isGuest: boolean) => void;
     onBlockChange: (blockId: string) => void;
     onAddBuilding: () => void;
     onEditBuilding: () => void;
@@ -51,6 +53,8 @@ export function ParkingView({
     isLoading,
     parkingStats,
     onAssignVehicle,
+    onUnassignVehicle,
+    onDeleteVehicle,
     onBlockChange,
     onAddBuilding,
     onEditBuilding,
@@ -114,10 +118,11 @@ export function ParkingView({
                         blockName={blockName}
                         onManageFloors={onManageFloors}
                         onAssignResident={onAssignVehicle}
+                        onUnassignVehicle={onUnassignVehicle}
                     />
                 </div>
                 <div className="flex flex-col min-h-0">
-                    <VehicleSearchList vehicles={allVehicles} />
+                    <VehicleSearchList vehicles={allVehicles} onDeleteVehicle={onDeleteVehicle} />
                 </div>
             </div>
         </div>

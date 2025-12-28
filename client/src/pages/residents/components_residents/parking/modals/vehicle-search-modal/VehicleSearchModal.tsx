@@ -1,23 +1,38 @@
-import { X, Search, User, Phone, MapPin } from "lucide-react";
+import { X, Search, User, Phone, MapPin, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { VehicleSearchItem } from "@/types/residents.types";
 import { FilterChip } from "@/components/shared/inputs/filter-chip";
+import { ConfirmationModal } from "@/components/shared/modals";
+import { formatLicensePlateForDisplay } from "@/utils/validation";
 
 interface VehicleSearchModalProps {
     isOpen: boolean;
     onClose: () => void;
     vehicles: VehicleSearchItem[];
+    onDeleteVehicle?: (vehicleId: string, isGuest: boolean) => void;
 }
 
 export function VehicleSearchModal({
     isOpen,
     onClose,
     vehicles,
+    onDeleteVehicle,
 }: VehicleSearchModalProps) {
     const { t } = useTranslation();
     const [searchTerm, setSearchTerm] = useState("");
     const [vehicleFilter, setVehicleFilter] = useState<"all" | "resident" | "guest">("all");
+    const [deleteConfirm, setDeleteConfirm] = useState<{
+        isOpen: boolean;
+        vehicleId: string;
+        plate: string;
+        isGuest: boolean;
+    }>({
+        isOpen: false,
+        vehicleId: "",
+        plate: "",
+        isGuest: false,
+    });
 
     if (!isOpen) return null;
 
@@ -125,10 +140,28 @@ export function VehicleSearchModal({
                                                     : ""
                                                 }`}
                                         >
+                                            {/* Delete Button */}
+                                            {onDeleteVehicle && (
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setDeleteConfirm({
+                                                            isOpen: true,
+                                                            vehicleId: vehicle.id,
+                                                            plate: vehicle.plate,
+                                                            isGuest: vehicle.isGuest,
+                                                        });
+                                                    }}
+                                                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 bg-red-600/20 hover:bg-red-600/30 text-red-400 hover:text-red-300 rounded border border-red-500/30 hover:border-red-500/50 z-10"
+                                                    title={t("residents.modals.vehicleManagement.actions.deleteVehicle")}
+                                                >
+                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                </button>
+                                            )}
                                             <div className="flex flex-col gap-2 p-3">
                                                 <div className="flex items-center gap-2 flex-wrap">
                                                     <div className="font-bold text-white font-mono px-2 py-1 rounded border shadow-sm text-xs bg-slate-900 border-slate-700">
-                                                        {vehicle.plate}
+                                                        {formatLicensePlateForDisplay(vehicle.plate)}
                                                     </div>
                                                     <span
                                                         className={`text-[10px] font-bold px-2 py-0.5 rounded ${
@@ -179,6 +212,33 @@ export function VehicleSearchModal({
                     </div>
                 </div>
             </div>
+
+            {/* Delete Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={deleteConfirm.isOpen}
+                onClose={() => setDeleteConfirm({ isOpen: false, vehicleId: "", plate: "", isGuest: false })}
+                onConfirm={async () => {
+                    if (onDeleteVehicle) {
+                        try {
+                            await onDeleteVehicle(deleteConfirm.vehicleId, deleteConfirm.isGuest);
+                            // Wait a bit for cache to update before closing modal
+                            await new Promise(resolve => setTimeout(resolve, 300));
+                        } catch (error) {
+                            // Error already handled in handleDeleteVehicle
+                        }
+                    }
+                    setDeleteConfirm({ isOpen: false, vehicleId: "", plate: "", isGuest: false });
+                }}
+                title={t("residents.modals.vehicleManagement.deleteConfirm.title")}
+                message={
+                    <p>
+                        {t("residents.modals.vehicleManagement.deleteConfirm.message", {
+                            plate: formatLicensePlateForDisplay(deleteConfirm.plate),
+                        })}
+                    </p>
+                }
+                variant="danger"
+            />
         </div>
     );
 }

@@ -91,6 +91,7 @@ export interface IStorage {
     deleteParkingSpot(id: string): Promise<void>;
     getGuestVisitsByUnitId(unitId: string): Promise<GuestVisit[]>;
     createGuestVisit(visit: InsertGuestVisit): Promise<GuestVisit>;
+    updateGuestVisit(id: string, visit: Partial<InsertGuestVisit>): Promise<GuestVisit>;
     updateGuestVisitStatus(id: string, status: string): Promise<GuestVisit>;
     deleteGuestVisit(id: string): Promise<void>;
 

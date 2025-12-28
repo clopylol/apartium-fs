@@ -1,5 +1,6 @@
 import type { Building, Resident } from "@/types/residents.types";
 import { Plus, LayoutGrid, List } from "lucide-react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { BuildingTabs } from "../../resident/building-tabs";
 import { ResidentCard } from "../../resident/resident-card";
@@ -7,6 +8,8 @@ import { Pagination } from "@/components/shared/pagination";
 import { ResidentCardSkeleton, ResidentRowSkeleton } from "../../resident/skeletons";
 import { ResidentsListView } from "./ResidentsListView";
 import { ITEMS_PER_PAGE } from "@/constants/residents.constants";
+import { AddUnitModal } from "../../resident/modals/add-unit-modal";
+import { useCreateUnit } from "@/hooks/residents/api";
 
 export interface ResidentsViewProps {
     // Data
@@ -59,6 +62,28 @@ export function ResidentsView({
     onManageVehicles,
 }: ResidentsViewProps) {
     const { t } = useTranslation();
+    const [showAddUnitModal, setShowAddUnitModal] = useState(false);
+    const createUnit = useCreateUnit(activeBlockId || null);
+
+    const handleOpenAddUnit = () => {
+        if (activeBlockId) {
+            setShowAddUnitModal(true);
+        }
+    };
+
+    const handleCloseAddUnitModal = () => {
+        setShowAddUnitModal(false);
+    };
+
+    const handleSaveUnit = async (buildingId: string, number: string, floor: number) => {
+        try {
+            await createUnit.mutateAsync({ buildingId, number, floor });
+            setShowAddUnitModal(false);
+        } catch (error) {
+            // Error handled by mutation
+            console.error('Failed to create unit:', error);
+        }
+    };
     
     return (
         <>
@@ -166,6 +191,7 @@ export function ResidentsView({
                                     key={unit.id}
                                     unit={unit}
                                     blockId={activeBlockId}
+                                    activeBlock={activeBlock}
                                     onEditResident={onEditResident}
                                     onDeleteResident={(residentId, blockId, unitId) => {
                                         const resident = unit.residents.find((r) => r.id === residentId);
@@ -177,7 +203,7 @@ export function ResidentsView({
                             ))}
                             {activeBlock && (
                                 <button
-                                    onClick={() => console.log("Add unit")}
+                                    onClick={handleOpenAddUnit}
                                     className="rounded-2xl border-2 border-dashed border-slate-800 flex flex-col items-center justify-center gap-4 min-h-[300px] hover:bg-slate-900/40 hover:border-slate-700 transition-all group"
                                 >
                                     <div className="w-16 h-16 rounded-full bg-slate-900 flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -196,6 +222,7 @@ export function ResidentsView({
                         <ResidentsListView
                             paginatedUnits={paginatedUnits}
                             activeBlockId={activeBlockId}
+                            activeBlock={activeBlock}
                             onAddResident={onAddResident}
                             onEditResident={onEditResident}
                             onDeleteResident={onDeleteResident}
@@ -211,6 +238,17 @@ export function ResidentsView({
                         onPageChange={onPageChange}
                     />
                 </>
+            )}
+
+            {/* Add Unit Modal */}
+            {activeBlockId && (
+                <AddUnitModal
+                    isOpen={showAddUnitModal}
+                    onClose={handleCloseAddUnitModal}
+                    onSave={handleSaveUnit}
+                    buildingId={activeBlockId}
+                    buildingName={activeBlock?.name}
+                />
             )}
         </>
     );

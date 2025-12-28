@@ -9,7 +9,7 @@ import {
     getLicensePlateError,
 } from "@/utils/validation";
 import { showError } from "@/utils/toast";
-import { useVehicleBrands, useVehicleModels } from "@/hooks/residents/api";
+import { useVehicleBrands, useVehicleModels, useBuildingData } from "@/hooks/residents/api";
 
 interface VehicleManagementModalProps {
     isOpen: boolean;
@@ -18,6 +18,7 @@ interface VehicleManagementModalProps {
     blockId: string;
     unitId: string;
     buildings: Building[];
+    activeBlock?: Building | null;
     onUpdateResident: (residentId: string, vehicles: ResidentVehicle[]) => void;
 }
 
@@ -27,6 +28,7 @@ export function VehicleManagementModal({
     resident,
     blockId,
     buildings,
+    activeBlock,
     onUpdateResident,
 }: VehicleManagementModalProps) {
     const { t } = useTranslation();
@@ -39,6 +41,7 @@ export function VehicleManagementModal({
         color: "",
         fuelType: "Benzinli",
         parkingSpot: "",
+        parkingSpotId: "",
     });
     
     // Display plate (with spaces) - separate from actual value
@@ -50,16 +53,26 @@ export function VehicleManagementModal({
     
     const [plateError, setPlateError] = useState<string | null>(null);
     
-    // Fetch vehicle brands and models from API
-    const { data: brandsData, isLoading: loadingBrands } = useVehicleBrands();
+    // Fetch vehicle brands and models from API (hooks must be called before any conditional returns)
+    const { data: brandsData, isLoading: loadingBrands, error: brandsError } = useVehicleBrands();
     const { data: modelsData, isLoading: loadingModels } = useVehicleModels(
         vehicleForm.brandId || null
     );
+    // Fetch building data for the blockId to get parkingSpots
+    const { data: buildingData } = useBuildingData(blockId);
     
     // Vehicle brands from API
     const vehicleBrands = useMemo(() => {
-        return brandsData?.brands || [];
-    }, [brandsData]);
+        // Handle both possible API response formats: { brands: [...] } or direct array
+        if (!brandsData) {
+            if (brandsError) {
+                console.error('Vehicle brands error:', brandsError);
+            }
+            return [];
+        }
+        if (Array.isArray(brandsData)) return brandsData;
+        return brandsData.brands || [];
+    }, [brandsData, brandsError]);
     
     // Vehicle models from API
     const vehicleModels = useMemo(() => {
@@ -100,10 +113,17 @@ export function VehicleManagementModal({
         }
     }, [vehicleForm.plate]);
 
+    // Conditional return AFTER all hooks
     if (!isOpen) return null;
 
     // Safe access with null checks
-    const currentBlock = buildings?.find((b) => b.id === blockId);
+    // Find the block that matches blockId, prioritize buildingData (has parkingSpots), then activeBlock, then buildings array
+    const baseBlock = buildings?.find((b) => b.id === blockId);
+    const currentBlock = buildingData && baseBlock ? {
+        ...baseBlock,
+        parkingSpots: buildingData.parkingSpots || [],
+        units: buildingData.units || [],
+    } : (activeBlock && activeBlock.id === blockId) ? activeBlock : (baseBlock || activeBlock);
 
     const handleAddVehicle = () => {
         // Validate plate
@@ -153,13 +173,14 @@ export function VehicleManagementModal({
             color: vehicleForm.color || undefined,
             fuelType: vehicleForm.fuelType || "Benzinli",
             parkingSpot: vehicleForm.parkingSpot || undefined,
+            parkingSpotId: vehicleForm.parkingSpotId || undefined,
         };
 
         const updatedVehicles = [...(resident.vehicles || []), newVehicle];
         onUpdateResident(resident.id, updatedVehicles);
 
         // Reset form
-        setVehicleForm({ plate: "", brandId: "", modelId: "", customBrand: "", customModel: "", color: "", fuelType: "Benzinli", parkingSpot: "" });
+        setVehicleForm({ plate: "", brandId: "", modelId: "", customBrand: "", customModel: "", color: "", fuelType: "Benzinli", parkingSpot: "", parkingSpotId: "" });
         setDisplayPlate("");
         setPlateError(null);
         setIsCustomBrand(false);
@@ -295,18 +316,20 @@ export function VehicleManagementModal({
                                                 onChange={(e) => {
                                                     if (e.target.value === "__custom__") {
                                                         setIsCustomBrand(true);
-                                                        setVehicleForm({ ...vehicleForm, brandId: "", modelId: "" });
+                                                        setIsCustomModel(true); // Marka özel seçildiğinde model de manuel girişe geç
+                                                        setVehicleForm({ ...vehicleForm, brandId: "", modelId: "", customModel: "" });
                                                     } else {
-                                                        setVehicleForm({ ...vehicleForm, brandId: e.target.value, modelId: "" });
+                                                        setIsCustomModel(false); // Normal marka seçildiğinde model dropdown'a dön
+                                                        setVehicleForm({ ...vehicleForm, brandId: e.target.value, modelId: "", customModel: "" });
                                                     }
                                                 }}
                                                 disabled={loadingBrands}
                                                 className="flex-1 bg-[#151821] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[#3B82F6] transition-colors appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
                                                 <option value="">
-                                                    {loadingBrands ? "Yükleniyor..." : "Marka Seçin"}
+                                                    {loadingBrands ? "Yükleniyor..." : brandsError ? "Hata - Tekrar deneyin" : vehicleBrands.length === 0 ? "Marka bulunamadı" : "Marka Seçin"}
                                                 </option>
-                                                {vehicleBrands.map((brand) => (
+                                                {vehicleBrands.length > 0 && vehicleBrands.map((brand) => (
                                                     <option key={brand.id} value={brand.id}>
                                                         {brand.name}
                                                     </option>
@@ -327,7 +350,8 @@ export function VehicleManagementModal({
                                                 type="button"
                                                 onClick={() => {
                                                     setIsCustomBrand(false);
-                                                    setVehicleForm({ ...vehicleForm, customBrand: "" });
+                                                    setIsCustomModel(false); // Liste'ye dönünce model de dropdown'a dön
+                                                    setVehicleForm({ ...vehicleForm, customBrand: "", customModel: "" });
                                                 }}
                                                 className="px-3 py-2.5 bg-[#1A1D26] hover:bg-[#20242F] text-slate-400 rounded-xl text-xs font-bold transition-colors border border-white/5"
                                             >
@@ -354,11 +378,13 @@ export function VehicleManagementModal({
                                                         setVehicleForm({ ...vehicleForm, modelId: e.target.value });
                                                     }
                                                 }}
-                                                disabled={!vehicleForm.brandId || loadingModels}
+                                                disabled={(!vehicleForm.brandId && !isCustomBrand) || loadingModels}
                                                 className="flex-1 bg-[#151821] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[#3B82F6] transition-colors appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
                                                 <option value="">
-                                                    {!vehicleForm.brandId
+                                                    {isCustomBrand
+                                                        ? "Model girin (manuel)"
+                                                        : !vehicleForm.brandId
                                                         ? "Önce marka seçin"
                                                         : loadingModels
                                                         ? "Yükleniyor..."
@@ -366,12 +392,12 @@ export function VehicleManagementModal({
                                                         ? "Model Seçin"
                                                         : "Model Seçin veya Özel Giriş"}
                                                 </option>
-                                                {vehicleModels.map((model) => (
+                                                {!isCustomBrand && vehicleModels.map((model) => (
                                                     <option key={model.id} value={model.id}>
                                                         {model.name}
                                                     </option>
                                                 ))}
-                                                {vehicleModels.length > 0 && (
+                                                {!isCustomBrand && vehicleModels.length > 0 && (
                                                     <option value="__custom__">+ Özel Giriş</option>
                                                 )}
                                             </select>
@@ -446,26 +472,30 @@ export function VehicleManagementModal({
                                     {t("residents.modals.vehicleManagement.labels.parkingSpot")}
                                 </label>
                                 <select
-                                    value={vehicleForm.parkingSpot}
-                                    onChange={(e) =>
-                                        setVehicleForm({ ...vehicleForm, parkingSpot: e.target.value })
-                                    }
+                                    value={vehicleForm.parkingSpotId}
+                                    onChange={(e) => {
+                                        const selectedSpot = currentBlock?.parkingSpots?.find(s => s.id === e.target.value);
+                                        setVehicleForm({ 
+                                            ...vehicleForm, 
+                                            parkingSpotId: e.target.value,
+                                            parkingSpot: selectedSpot?.name || ""
+                                        });
+                                    }}
                                     className="w-full bg-[#151821] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[#3B82F6] transition-colors appearance-none cursor-pointer"
                                 >
                                     <option value="">{t("residents.modals.vehicleManagement.placeholders.parkingSpot")}</option>
                                     {currentBlock?.parkingSpots?.map((spot) => {
-                                        const allVehicles = (buildings
-                                            ?.flatMap((b) =>
-                                                b.units?.flatMap((u) =>
-                                                    u.residents?.flatMap((r) => (r.vehicles || []) as ResidentVehicle[]) || []
-                                                ) || []
-                                            ) || []) as ResidentVehicle[];
-                                        const isTaken = allVehicles.some((v) => v.parkingSpot === spot.name);
+                                        // Check if spot is taken by any vehicle in activeBlock
+                                        const isTaken = currentBlock?.units?.some((unit) =>
+                                            unit.residents?.some((r) =>
+                                                r.vehicles?.some((v) => v.parkingSpotId === spot.id || v.parkingSpot === spot.name)
+                                            )
+                                        ) || false;
 
                                         return (
                                             <option
                                                 key={spot.id}
-                                                value={spot.name}
+                                                value={spot.id}
                                                 disabled={isTaken}
                                                 className={isTaken ? "text-red-500" : ""}
                                             >

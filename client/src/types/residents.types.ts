@@ -18,6 +18,7 @@ export interface ResidentVehicle {
     color?: string;
     fuelType?: string;
     parkingSpot?: string;
+    parkingSpotId?: string | null;
 }
 
 export interface Resident {
@@ -42,6 +43,7 @@ export interface ParkingSpotDefinition {
     id: string;
     name: string;
     floor: number;
+    assignedVehicle?: Vehicle | null;
 }
 
 export interface Building {
@@ -111,6 +113,7 @@ export interface GuestVisit {
     exitTime?: Date | null;  // ✅ Date object (parsed from ISO string)
     note?: string;
     parkingSpot?: string;
+    parkingSpotId?: string | null;
 }
 
 /**

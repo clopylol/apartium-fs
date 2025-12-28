@@ -1,10 +1,14 @@
-import type { Building, Resident } from "@/types/residents.types";
+import type { Building, Resident, Unit } from "@/types/residents.types";
 import { Car, Phone, Mail, Key, Edit2, Trash2, Plus, Home } from "lucide-react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { formatLicensePlateForDisplay } from "@/utils/validation";
+import { ResidentDetailModal } from "../../resident/modals/resident-detail-modal";
 
 export interface ResidentsListViewProps {
     paginatedUnits: Building["units"];
     activeBlockId: string;
+    activeBlock?: Building | null;
     onAddResident: (blockId?: string, unitId?: string) => void;
     onEditResident: (resident: Resident, blockId: string, unitId: string) => void;
     onDeleteResident: (residentId: string, residentName: string, blockId: string, unitId: string) => void;
@@ -14,12 +18,27 @@ export interface ResidentsListViewProps {
 export function ResidentsListView({
     paginatedUnits,
     activeBlockId,
+    activeBlock,
     onAddResident,
     onEditResident,
     onDeleteResident,
     onManageVehicles,
 }: ResidentsListViewProps) {
     const { t } = useTranslation();
+    const [showDetailModal, setShowDetailModal] = useState(false);
+    const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
+
+    const handleShowDetails = (unit: Unit) => {
+        if (unit.residents.length > 0) {
+            setSelectedUnit(unit);
+            setShowDetailModal(true);
+        }
+    };
+
+    const handleCloseDetailModal = () => {
+        setShowDetailModal(false);
+        setSelectedUnit(null);
+    };
     
     return (
         <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl animate-in fade-in duration-300">
@@ -27,12 +46,12 @@ export function ResidentsListView({
                 <table className="w-full text-left">
                     <thead>
                         <tr className="border-b border-slate-800 bg-slate-950/50 text-xs uppercase text-slate-500 font-semibold tracking-wider">
-                            <th className="px-6 py-4 w-24">{t("residents.table.columns.unit")}</th>
-                            <th className="px-6 py-4 w-24">{t("residents.table.columns.status")}</th>
-                            <th className="px-6 py-4">{t("residents.table.columns.residents")}</th>
-                            <th className="px-6 py-4">{t("residents.table.columns.contact")}</th>
-                            <th className="px-6 py-4">{t("residents.table.columns.vehicles")}</th>
-                            <th className="px-6 py-4 text-right">{t("residents.table.columns.actions")}</th>
+                            <th className="px-6 py-4 w-24">{t("residents.table.columnsUppercase.unit")}</th>
+                            <th className="px-6 py-4 w-24">{t("residents.table.columnsUppercase.status")}</th>
+                            <th className="px-6 py-4">{t("residents.table.columnsUppercase.residents")}</th>
+                            <th className="px-6 py-4">{t("residents.table.columnsUppercase.contact")}</th>
+                            <th className="px-6 py-4">{t("residents.table.columnsUppercase.vehicles")}</th>
+                            <th className="px-6 py-4 text-right">{t("residents.table.columnsUppercase.actions")}</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800/50">
@@ -66,48 +85,22 @@ export function ResidentsListView({
                                                 {unit.residents.map((r) => (
                                                     <div
                                                         key={r.id}
-                                                        className="flex items-center justify-between gap-4 group/item"
+                                                        onClick={() => handleShowDetails(unit)}
+                                                        className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
                                                     >
-                                                        <div className="flex items-center gap-3">
-                                                            <img
-                                                                src={r.avatar}
-                                                                className="w-8 h-8 rounded-full border border-slate-700 object-cover"
-                                                                alt=""
-                                                            />
-                                                            <div>
-                                                                <div className="text-sm font-medium text-slate-200">{r.name}</div>
-                                                                <div
-                                                                    className={`text-[10px] uppercase font-bold ${r.type === "owner" ? "text-blue-400" : "text-purple-400"
-                                                                        }`}
-                                                                >
-                                                                    {r.type === "owner" ? t("residents.status.owner") : t("residents.status.tenant")}
-                                                                </div>
+                                                        <img
+                                                            src={r.avatar}
+                                                            className="w-8 h-8 rounded-full border border-slate-700 object-cover"
+                                                            alt=""
+                                                        />
+                                                        <div>
+                                                            <div className="text-sm font-medium text-slate-200">{r.name}</div>
+                                                            <div
+                                                                className={`text-[10px] uppercase font-bold ${r.type === "owner" ? "text-blue-400" : "text-purple-400"
+                                                                    }`}
+                                                            >
+                                                                {r.type === "owner" ? t("residents.status.owner") : t("residents.status.tenant")}
                                                             </div>
-                                                        </div>
-                                                        <div className="flex gap-1">
-                                                            <button
-                                                                onClick={() => onManageVehicles(r, activeBlockId, unit.id)}
-                                                                className="p-1 hover:bg-slate-700 rounded text-slate-400 hover:text-blue-400"
-                                                                title={t("residents.actions.manageVehicles")}
-                                                            >
-                                                                <Car className="w-3 h-3" />
-                                                            </button>
-                                                            <button
-                                                                onClick={() => onEditResident(r, activeBlockId, unit.id)}
-                                                                className="p-1 hover:bg-slate-700 rounded text-slate-400 hover:text-white"
-                                                                title={t("residents.actions.edit")}
-                                                            >
-                                                                <Edit2 className="w-3 h-3" />
-                                                            </button>
-                                                            <button
-                                                                onClick={() => {
-                                                                    onDeleteResident(r.id, r.name, activeBlockId, unit.id);
-                                                                }}
-                                                                className="p-1 hover:bg-slate-700 rounded text-slate-400 hover:text-red-400"
-                                                                title={t("residents.actions.delete")}
-                                                            >
-                                                                <Trash2 className="w-3 h-3" />
-                                                            </button>
                                                         </div>
                                                     </div>
                                                 ))}
@@ -149,7 +142,7 @@ export function ResidentsListView({
                                                             {r.vehicles.map((v) => (
                                                                 <div key={v.id}>
                                                                     <div className="flex items-center gap-2 text-slate-300 font-mono text-xs">
-                                                                        <Car className="w-3 h-3 text-slate-500" /> {v.plate}
+                                                                        <Car className="w-3 h-3 text-slate-500" /> {formatLicensePlateForDisplay(v.plate)}
                                                                     </div>
                                                                     {v.parkingSpot && (
                                                                         <div className="text-[10px] bg-slate-800 text-blue-300 px-1.5 py-0.5 rounded w-fit mt-0.5 border border-slate-700 ml-5">
@@ -171,27 +164,41 @@ export function ResidentsListView({
 
                                     {/* Actions */}
                                     <td className="px-6 py-4 align-top text-right">
-                                        <div className="flex flex-col gap-2 items-end opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <div className="flex flex-col gap-2 items-end">
+                                            {unit.residents.map((r) => (
+                                                <div key={r.id} className="flex gap-1">
+                                                    <button
+                                                        onClick={() => onManageVehicles(r, activeBlockId, unit.id)}
+                                                        className="p-1.5 hover:bg-slate-800 text-slate-400 hover:text-blue-400 rounded transition-colors"
+                                                        title={t("residents.actions.manageVehicles")}
+                                                    >
+                                                        <Car className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => onEditResident(r, activeBlockId, unit.id)}
+                                                        className="p-1.5 hover:bg-slate-800 text-slate-400 hover:text-white rounded transition-colors"
+                                                        title={t("residents.actions.edit")}
+                                                    >
+                                                        <Edit2 className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => {
+                                                            onDeleteResident(r.id, r.name, activeBlockId, unit.id);
+                                                        }}
+                                                        className="p-1.5 hover:bg-slate-800 text-slate-400 hover:text-red-400 rounded transition-colors"
+                                                        title={t("residents.actions.delete")}
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            ))}
                                             <button
                                                 onClick={() => onAddResident(activeBlockId, unit.id)}
-                                                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600/10 hover:bg-blue-600/20 text-blue-500 hover:text-blue-400 rounded-lg text-xs font-bold transition-colors"
+                                                className="p-1.5 hover:bg-slate-800 text-slate-400 hover:text-blue-400 rounded transition-colors"
+                                                title={t("residents.actions.addResident")}
                                             >
-                                                <Plus className="w-3 h-3" /> {t("residents.actions.addResident")}
+                                                <Plus className="w-4 h-4" />
                                             </button>
-                                            <div className="flex gap-1">
-                                                <button
-                                                    onClick={() => console.log("Edit unit")}
-                                                    className="p-1.5 hover:bg-slate-800 text-slate-400 hover:text-white rounded transition-colors"
-                                                >
-                                                    <Edit2 className="w-4 h-4" />
-                                                </button>
-                                                <button
-                                                    onClick={() => console.log("Delete unit")}
-                                                    className="p-1.5 hover:bg-slate-800 text-slate-400 hover:text-red-400 rounded transition-colors"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
-                                            </div>
                                         </div>
                                     </td>
                                 </tr>
@@ -207,6 +214,22 @@ export function ResidentsListView({
                     </tbody>
                 </table>
             </div>
+
+            {/* Resident Detail Modal */}
+            {showDetailModal && selectedUnit && selectedUnit.residents.length > 0 && (
+                <ResidentDetailModal
+                    isOpen={showDetailModal}
+                    onClose={handleCloseDetailModal}
+                    residents={selectedUnit.residents}
+                    unit={selectedUnit}
+                    block={activeBlock || null}
+                    blockName={activeBlock?.name || ""}
+                    onEdit={(resident) => {
+                        handleCloseDetailModal();
+                        onEditResident(resident, activeBlockId, selectedUnit.id);
+                    }}
+                />
+            )}
         </div>
     );
 }

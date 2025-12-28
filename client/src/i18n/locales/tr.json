@@ -506,6 +506,18 @@
         "cancel": "İptal",
         "save": "Kaydet"
       },
+      "addUnit": {
+        "title": "Daire Ekle",
+        "buildingLabel": "Blok",
+        "numberLabel": "DAİRE NUMARASI",
+        "floorLabel": "KAT",
+        "numberPlaceholder": "örn: 101",
+        "floorPlaceholder": "örn: 1",
+        "cancel": "İptal",
+        "save": "Kaydet",
+        "duplicateError": "Bu blokta {{floor}}. katta {{number}} numaralı daire zaten mevcut.",
+        "duplicateWarning": "Bu blokta {{floor}}. katta {{number}} numaralı daire zaten mevcut."
+      },
       "editBuilding": {
         "title": "Bloğu Düzenle",
         "label": "BLOK ADI",
@@ -557,6 +569,14 @@
           "title": "Araç Silme Onayı",
           "message": "{{plate}} plakalı aracı silmek istediğinize emin misiniz? Bu işlem geri alınamaz."
         }
+      },
+      "detail": {
+        "title": "Sakin Detayları",
+        "contactInfo": "İletişim Bilgileri",
+        "phone": "Telefon",
+        "email": "E-posta",
+        "unitInfo": "Daire Bilgileri",
+        "editButton": "Düzenle"
       }
     },
     "table": {
@@ -575,7 +595,8 @@
       "typeUppercase": {
         "owner": "EV SAHİBİ",
         "tenant": "KİRACI"
-      }
+      },
+      "noRecords": "Kayıt bulunamadı."
     },
     "parking": {
       "floorManagement": {
@@ -631,6 +652,7 @@
         "manageFloors": "Katları Düzenle",
         "unit": "Daire",
         "assign": "Atama",
+        "unassignVehicle": "Araç Atamasını Kaldır",
         "noSpots": "Bu katta tanımlı park yeri yok.",
         "addSpot": "Park Yeri Ekle",
         "floorLabels": {
