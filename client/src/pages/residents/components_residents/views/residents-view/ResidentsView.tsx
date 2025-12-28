@@ -1,7 +1,8 @@
-import type { Building, Resident } from "@/types/residents.types";
-import { Plus, LayoutGrid, List } from "lucide-react";
-import { useState } from "react";
+import type { Building, Resident, UnitWithResidents } from "@/types/residents.types";
+import { Plus, LayoutGrid, List, Home, FilterX } from "lucide-react";
+import { useState, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { showError } from "@/utils/toast";
 import { BuildingTabs } from "../../resident/building-tabs";
 import { ResidentCard } from "../../resident/resident-card";
 import { Pagination } from "@/components/shared/pagination";
@@ -17,8 +18,8 @@ export interface ResidentsViewProps {
     buildings: Building[];
     activeBlockId: string | null;
     activeBlock: Building | undefined;
-    paginatedUnits: any[]; // UnitWithResidents[]
-    filteredUnits: any[]; // UnitWithResidents[]
+    paginatedUnits: UnitWithResidents[];
+    filteredUnits: UnitWithResidents[];
     currentPage: number;
     stats: {
         total: number;
@@ -38,6 +39,8 @@ export interface ResidentsViewProps {
     floorFilter: "all" | number;
     onFloorChange: (value: "all" | number) => void;
     availableFloors: number[];
+    debouncedSearchTerm: string;
+    onClearFilters?: () => void;
 
     // Handlers
     onBlockChange: (id: string) => void;
@@ -71,6 +74,8 @@ export function ResidentsView({
     floorFilter,
     onFloorChange,
     availableFloors,
+    debouncedSearchTerm,
+    onClearFilters,
     onBlockChange,
     onAddBuilding,
     onEditBuilding,
@@ -86,25 +91,34 @@ export function ResidentsView({
     const [showAddUnitModal, setShowAddUnitModal] = useState(false);
     const createUnit = useCreateUnit(activeBlockId || null);
 
-    const handleOpenAddUnit = () => {
+    const handleOpenAddUnit = useCallback(() => {
         if (activeBlockId) {
             setShowAddUnitModal(true);
         }
-    };
+    }, [activeBlockId]);
 
-    const handleCloseAddUnitModal = () => {
+    const handleCloseAddUnitModal = useCallback(() => {
         setShowAddUnitModal(false);
-    };
+    }, []);
 
-    const handleSaveUnit = async (buildingId: string, number: string, floor: number) => {
+    const handleSaveUnit = useCallback(async (buildingId: string, number: string, floor: number) => {
         try {
             await createUnit.mutateAsync({ buildingId, number, floor });
             setShowAddUnitModal(false);
         } catch (error) {
-            // Error handled by mutation
+            showError(t("residents.errors.failedToCreateUnit") || "Daire oluşturulamadı");
             console.error('Failed to create unit:', error);
         }
-    };
+    }, [createUnit, t]);
+
+    // Check if any filter is active
+    const isFiltered = useMemo(() => {
+        return typeFilter !== "all" || 
+            unitStatusFilter !== "all" || 
+            vehicleFilter !== "all" || 
+            floorFilter !== "all" ||
+            (debouncedSearchTerm && debouncedSearchTerm.length > 0);
+    }, [typeFilter, unitStatusFilter, vehicleFilter, floorFilter, debouncedSearchTerm]);
     
     return (
         <>
@@ -172,7 +186,7 @@ export function ResidentsView({
 
             {/* Filters */}
             {activeBlock && (
-                <div className="mb-6">
+                <div className={`mb-6 ${isLoading ? "opacity-50 pointer-events-none" : ""}`}>
                     <ResidentFilters
                         typeFilter={typeFilter}
                         onTypeChange={onTypeChange}
@@ -183,6 +197,7 @@ export function ResidentsView({
                         floorFilter={floorFilter}
                         onFloorChange={onFloorChange}
                         availableFloors={availableFloors}
+                        onClearFilters={onClearFilters}
                     />
                 </div>
             )}
@@ -192,7 +207,7 @@ export function ResidentsView({
                 <>
                     {residentViewMode === "grid" ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                            {Array.from({ length: 8 }).map((_, i) => (
+                            {Array.from({ length: Math.min(ITEMS_PER_PAGE, 8) }).map((_, i) => (
                                 <ResidentCardSkeleton key={i} />
                             ))}
                         </div>
@@ -211,7 +226,7 @@ export function ResidentsView({
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-ds-border-light/50 dark:divide-ds-border-dark/50">
-                                        {Array.from({ length: 5 }).map((_, i) => (
+                                        {Array.from({ length: Math.min(ITEMS_PER_PAGE, 5) }).map((_, i) => (
                                             <ResidentRowSkeleton key={i} />
                                         ))}
                                     </tbody>
@@ -222,9 +237,44 @@ export function ResidentsView({
                 </>
             ) : (
                 <>
-                    {residentViewMode === "grid" ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-in fade-in duration-300">
-                            {paginatedUnits.map((unit) => (
+                    {filteredUnits.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-16 animate-in fade-in duration-300">
+                            {isFiltered ? (
+                                <>
+                                    <FilterX className="w-16 h-16 text-slate-600 mb-4 opacity-50" />
+                                    <h3 className="text-xl font-bold text-slate-300 mb-2">
+                                        {t("residents.emptyState.noFilterResults")}
+                                    </h3>
+                                    <p className="text-slate-500 mb-6 text-center max-w-md">
+                                        {t("residents.emptyState.noFilterResultsDescription")}
+                                    </p>
+                                    {onClearFilters && (
+                                        <button
+                                            onClick={onClearFilters}
+                                            className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-medium transition-colors"
+                                        >
+                                            <FilterX className="w-4 h-4" />
+                                            {t("residents.emptyState.clearFilters")}
+                                        </button>
+                                    )}
+                                </>
+                            ) : (
+                                <>
+                                    <Home className="w-16 h-16 text-slate-600 mb-4 opacity-50" />
+                                    <h3 className="text-xl font-bold text-slate-300 mb-2">
+                                        {t("residents.emptyState.noResults")}
+                                    </h3>
+                                    <p className="text-slate-500 text-center max-w-md">
+                                        {t("residents.emptyState.noResultsDescription")}
+                                    </p>
+                                </>
+                            )}
+                        </div>
+                    ) : (
+                        <>
+                            {residentViewMode === "grid" ? (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-in fade-in duration-300">
+                                    {paginatedUnits.map((unit) => (
                                 <ResidentCard
                                     key={unit.id}
                                     unit={unit}
@@ -256,25 +306,29 @@ export function ResidentsView({
                                 </button>
                             )}
                         </div>
-                    ) : (
-                        <ResidentsListView
-                            paginatedUnits={paginatedUnits}
-                            activeBlockId={activeBlockId}
-                            activeBlock={activeBlock}
-                            onAddResident={onAddResident}
-                            onEditResident={onEditResident}
-                            onDeleteResident={onDeleteResident}
-                            onManageVehicles={onManageVehicles}
-                        />
-                    )}
+                            ) : (
+                                <ResidentsListView
+                                    paginatedUnits={paginatedUnits}
+                                    activeBlockId={activeBlockId}
+                                    activeBlock={activeBlock}
+                                    onAddResident={onAddResident}
+                                    onEditResident={onEditResident}
+                                    onDeleteResident={onDeleteResident}
+                                    onManageVehicles={onManageVehicles}
+                                />
+                            )}
 
-                    {/* Pagination Controls */}
-                    <Pagination
-                        totalItems={filteredUnits.length}
-                        itemsPerPage={ITEMS_PER_PAGE}
-                        currentPage={currentPage}
-                        onPageChange={onPageChange}
-                    />
+                            {/* Pagination Controls */}
+                            {filteredUnits.length > 0 && (
+                                <Pagination
+                                    totalItems={filteredUnits.length}
+                                    itemsPerPage={ITEMS_PER_PAGE}
+                                    currentPage={currentPage}
+                                    onPageChange={onPageChange}
+                                />
+                            )}
+                        </>
+                    )}
                 </>
             )}
 

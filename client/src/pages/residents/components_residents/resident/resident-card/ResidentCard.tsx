@@ -1,5 +1,5 @@
 import { Home, Edit2, Trash2, Car, Plus, Key, MoreVertical, MapPin } from "lucide-react";
-import { useState } from "react";
+import { useState, useCallback, useMemo, memo } from "react";
 import { useTranslation } from "react-i18next";
 import type { Unit, Resident, Building } from "@/types/residents.types";
 import { formatLicensePlateForDisplay } from "@/utils/validation";
@@ -15,7 +15,7 @@ interface ResidentCardProps {
     onAddResident: (blockId: string, unitId: string) => void;
 }
 
-export function ResidentCard({
+export const ResidentCard = memo(function ResidentCard({
     unit,
     blockId,
     activeBlock,
@@ -27,22 +27,22 @@ export function ResidentCard({
     const { t } = useTranslation();
     const [showDetailModal, setShowDetailModal] = useState(false);
     
-    // Helper function to get parking spot name from parkingSpotId
-    const getParkingSpotName = (parkingSpotId: string | null | undefined): string | null => {
+    // Helper function to get parking spot name from parkingSpotId (memoized)
+    const getParkingSpotName = useCallback((parkingSpotId: string | null | undefined): string | null => {
         if (!parkingSpotId || !activeBlock?.parkingSpots) return null;
         const spot = activeBlock.parkingSpots.find(s => s.id === parkingSpotId);
         return spot?.name || null;
-    };
+    }, [activeBlock?.parkingSpots]);
 
-    const handleShowDetails = () => {
+    const handleShowDetails = useCallback(() => {
         if (unit.residents.length > 0) {
             setShowDetailModal(true);
         }
-    };
+    }, [unit.residents.length]);
 
-    const handleCloseDetailModal = () => {
+    const handleCloseDetailModal = useCallback(() => {
         setShowDetailModal(false);
-    };
+    }, []);
     
     return (
         <div
@@ -82,6 +82,8 @@ export function ResidentCard({
                                         <img
                                             src={resident.avatar}
                                             alt={resident.name}
+                                            loading="lazy"
+                                            decoding="async"
                                             className="w-10 h-10 rounded-full border-2 border-slate-800 object-cover"
                                         />
                                         <div>
@@ -103,12 +105,14 @@ export function ResidentCard({
                                             onClick={() => onManageVehicles(resident, blockId, unit.id)}
                                             className="p-1.5 text-slate-500 hover:text-blue-400 hover:bg-slate-800 rounded"
                                             title={t("residents.actions.manageVehiclesTooltip")}
+                                            aria-label={t("residents.actions.manageVehicles")}
                                         >
                                             <Car className="w-3 h-3" />
                                         </button>
                                         <button
                                             onClick={() => onEditResident(resident, blockId, unit.id)}
                                             className="p-1.5 text-slate-500 hover:text-white hover:bg-slate-800 rounded"
+                                            aria-label={t("residents.actions.edit")}
                                         >
                                             <Edit2 className="w-3 h-3" />
                                         </button>
@@ -117,6 +121,7 @@ export function ResidentCard({
                                                 onDeleteResident(resident.id, blockId, unit.id)
                                             }
                                             className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-slate-800 rounded"
+                                            aria-label={t("residents.actions.delete")}
                                         >
                                             <Trash2 className="w-3 h-3" />
                                         </button>
@@ -195,4 +200,4 @@ export function ResidentCard({
             )}
         </div>
     );
-}
+});

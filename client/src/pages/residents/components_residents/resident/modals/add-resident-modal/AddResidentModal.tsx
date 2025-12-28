@@ -1,7 +1,7 @@
 import { X, User, Phone, Mail, Building as BuildingIcon, Home, Car, MapPin, Users, AlertCircle } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import type { Building, Site, UnitWithResidents, ResidentWithVehicles } from "@/types/residents.types";
+import type { Building, Site, UnitWithResidents, ResidentWithVehicles, CreateResidentData, BuildingDataResponse } from "@/types/residents.types";
 import { showError } from "@/utils/toast";
 import { useBuildingData } from "@/hooks/residents/api";
 import {
@@ -18,10 +18,10 @@ import {
 interface AddResidentModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSave: (residentData: any) => void;
+    onSave: (residentData: CreateResidentData) => void;
     sites: Site[];
     buildings: Building[];
-    activeBuildingData?: any; // Full building data with units
+    activeBuildingData?: BuildingDataResponse; // Full building data with units
     initialSiteId?: string;
     initialBlockId?: string;
     initialUnitId?: string;

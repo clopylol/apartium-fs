@@ -170,3 +170,13 @@ export interface VehicleSearchItem {
     source?: string | null;
     status?: "pending" | "active" | "completed";
 }
+
+export interface CreateResidentData {
+    name: string;
+    type: "owner" | "tenant";
+    phone: string;
+    email?: string | null;
+    siteId: string;
+    buildingId: string;
+    unitId: string;
+}

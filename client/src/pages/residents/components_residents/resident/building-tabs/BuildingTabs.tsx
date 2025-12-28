@@ -51,12 +51,14 @@ export function BuildingTabs({
                     <button
                         onClick={onEditBuilding}
                         className="p-2 text-ds-muted-light dark:text-ds-muted-dark hover:text-ds-in-teal-light dark:hover:text-ds-in-teal-dark hover:bg-ds-card-light dark:hover:bg-ds-card-dark rounded-lg transition-colors"
+                        aria-label={t("residents.actions.editBuilding")}
                     >
                         <Edit2 className="w-4 h-4" />
                     </button>
                     <button
                         onClick={onDeleteBuilding}
                         className="p-2 text-ds-muted-light dark:text-ds-muted-dark hover:text-ds-destructive-light dark:hover:text-ds-destructive-dark hover:bg-ds-card-light dark:hover:bg-ds-card-dark rounded-lg transition-colors"
+                        aria-label={t("residents.actions.deleteBuilding")}
                     >
                         <Trash2 className="w-4 h-4" />
                     </button>

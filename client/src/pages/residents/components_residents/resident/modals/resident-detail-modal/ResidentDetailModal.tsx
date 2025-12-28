@@ -86,6 +86,9 @@ export function ResidentDetailModal({
                                             ? "border-blue-500 text-white"
                                             : "border-transparent text-slate-400 hover:text-white hover:border-slate-600"
                                     }`}
+                                    aria-label={t("residents.modals.detail.tabLabel", { name: resident.name, index: index + 1 })}
+                                    aria-selected={index === selectedResidentIndex}
+                                    role="tab"
                                 >
                                     <img
                                         src={resident.avatar}

@@ -1,4 +1,5 @@
 import type { FC, InputHTMLAttributes } from "react";
+import { forwardRef } from "react";
 import { Search, AlertCircle } from "lucide-react";
 
 interface SearchInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "onChange"> {
@@ -10,15 +11,19 @@ interface SearchInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "
     showMinLengthWarning?: boolean;
 }
 
-export const SearchInput: FC<SearchInputProps> = ({
-    value,
-    onChange,
-    placeholder,
-    className = "",
-    minLength = 3,
-    showMinLengthWarning = true,
-    ...props
-}) => {
+export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
+    function SearchInput(
+        {
+            value,
+            onChange,
+            placeholder,
+            className = "",
+            minLength = 3,
+            showMinLengthWarning = true,
+            ...props
+        },
+        ref
+    ) {
     const hasValue = value.trim().length > 0;
     const isBelowMinLength = hasValue && value.trim().length < minLength;
 
@@ -26,6 +31,7 @@ export const SearchInput: FC<SearchInputProps> = ({
         <div className={`relative ${className}`}>
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ds-muted-light dark:text-ds-muted-dark" />
             <input
+                ref={ref}
                 type="text"
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
@@ -45,5 +51,5 @@ export const SearchInput: FC<SearchInputProps> = ({
             )}
         </div>
     );
-};
+});
 

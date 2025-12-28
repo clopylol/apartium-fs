@@ -10,6 +10,7 @@ import {
 } from "@/utils/validation";
 import { showError } from "@/utils/toast";
 import { useVehicleBrands, useVehicleModels, useBuildingData } from "@/hooks/residents/api";
+import { SearchableSelect } from "@/components/shared/inputs/searchable-select";
 
 interface VehicleManagementModalProps {
     isOpen: boolean;
@@ -213,8 +214,8 @@ export function VehicleManagementModal({
     return (
         <>
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-                <div className="w-full max-w-2xl bg-[#0F111A] border border-white/10 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 relative z-50">
-                    <div className="p-6 border-b border-white/5 flex justify-between items-center bg-[#0F111A]">
+                <div className="w-full max-w-2xl max-h-[90vh] bg-[#0F111A] border border-white/10 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 relative z-50 flex flex-col">
+                    <div className="p-6 border-b border-white/5 flex justify-between items-center bg-[#0F111A] shrink-0">
                         <div>
                             <h2 className="text-lg font-bold text-white flex items-center gap-2">
                                 <Car className="w-5 h-5 text-[#3B82F6]" />
@@ -230,7 +231,7 @@ export function VehicleManagementModal({
                         </button>
                     </div>
 
-                    <div className="p-6 space-y-6">
+                    <div className="p-6 space-y-6 overflow-y-auto flex-1 custom-scrollbar min-h-0">
                         {/* List of existing vehicles */}
                         <div>
                             <h3 className="text-sm font-bold text-white mb-3">{t("residents.modals.vehicleManagement.registeredVehicles")}</h3>
@@ -311,31 +312,38 @@ export function VehicleManagementModal({
                                     </label>
                                     {!isCustomBrand ? (
                                         <div className="flex gap-2">
-                                            <select
-                                                value={vehicleForm.brandId}
-                                                onChange={(e) => {
-                                                    if (e.target.value === "__custom__") {
-                                                        setIsCustomBrand(true);
-                                                        setIsCustomModel(true); // Marka özel seçildiğinde model de manuel girişe geç
-                                                        setVehicleForm({ ...vehicleForm, brandId: "", modelId: "", customModel: "" });
-                                                    } else {
-                                                        setIsCustomModel(false); // Normal marka seçildiğinde model dropdown'a dön
-                                                        setVehicleForm({ ...vehicleForm, brandId: e.target.value, modelId: "", customModel: "" });
+                                            <div className="flex-1">
+                                                <SearchableSelect
+                                                    value={vehicleForm.brandId}
+                                                    onChange={(brandId) => {
+                                                        if (brandId === "__custom__") {
+                                                            setIsCustomBrand(true);
+                                                            setIsCustomModel(true); // Marka özel seçildiğinde model de manuel girişe geç
+                                                            setVehicleForm({ ...vehicleForm, brandId: "", modelId: "", customModel: "" });
+                                                        } else {
+                                                            setIsCustomModel(false); // Normal marka seçildiğinde model dropdown'a dön
+                                                            setVehicleForm({ ...vehicleForm, brandId: brandId, modelId: "", customModel: "" });
+                                                        }
+                                                    }}
+                                                    options={[
+                                                        ...vehicleBrands.map((brand) => ({
+                                                            id: brand.id,
+                                                            label: brand.name,
+                                                        })),
+                                                        { id: "__custom__", label: "+ Özel Giriş" },
+                                                    ]}
+                                                    placeholder={
+                                                        loadingBrands
+                                                            ? "Yükleniyor..."
+                                                            : brandsError
+                                                            ? "Hata - Tekrar deneyin"
+                                                            : vehicleBrands.length === 0
+                                                            ? "Marka bulunamadı"
+                                                            : "Marka Seçin"
                                                     }
-                                                }}
-                                                disabled={loadingBrands}
-                                                className="flex-1 bg-[#151821] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[#3B82F6] transition-colors appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                                            >
-                                                <option value="">
-                                                    {loadingBrands ? "Yükleniyor..." : brandsError ? "Hata - Tekrar deneyin" : vehicleBrands.length === 0 ? "Marka bulunamadı" : "Marka Seçin"}
-                                                </option>
-                                                {vehicleBrands.length > 0 && vehicleBrands.map((brand) => (
-                                                    <option key={brand.id} value={brand.id}>
-                                                        {brand.name}
-                                                    </option>
-                                                ))}
-                                                <option value="__custom__">+ Özel Giriş</option>
-                                            </select>
+                                                    disabled={loadingBrands}
+                                                />
+                                            </div>
                                         </div>
                                     ) : (
                                         <div className="flex gap-2">
@@ -368,39 +376,44 @@ export function VehicleManagementModal({
                                     </label>
                                     {!isCustomModel ? (
                                         <div className="flex gap-2">
-                                            <select
-                                                value={vehicleForm.modelId}
-                                                onChange={(e) => {
-                                                    if (e.target.value === "__custom__") {
-                                                        setIsCustomModel(true);
-                                                        setVehicleForm({ ...vehicleForm, modelId: "" });
-                                                    } else {
-                                                        setVehicleForm({ ...vehicleForm, modelId: e.target.value });
+                                            <div className="flex-1">
+                                                <SearchableSelect
+                                                    value={vehicleForm.modelId}
+                                                    onChange={(modelId) => {
+                                                        if (modelId === "__custom__") {
+                                                            setIsCustomModel(true);
+                                                            setVehicleForm({ ...vehicleForm, modelId: "" });
+                                                        } else {
+                                                            setVehicleForm({ ...vehicleForm, modelId: modelId });
+                                                        }
+                                                    }}
+                                                    options={
+                                                        isCustomBrand
+                                                            ? []
+                                                            : [
+                                                                  ...vehicleModels.map((model) => ({
+                                                                      id: model.id,
+                                                                      label: model.name,
+                                                                  })),
+                                                                  ...(vehicleModels.length > 0
+                                                                      ? [{ id: "__custom__", label: "+ Özel Giriş" }]
+                                                                      : []),
+                                                              ]
                                                     }
-                                                }}
-                                                disabled={(!vehicleForm.brandId && !isCustomBrand) || loadingModels}
-                                                className="flex-1 bg-[#151821] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[#3B82F6] transition-colors appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                                            >
-                                                <option value="">
-                                                    {isCustomBrand
-                                                        ? "Model girin (manuel)"
-                                                        : !vehicleForm.brandId
-                                                        ? "Önce marka seçin"
-                                                        : loadingModels
-                                                        ? "Yükleniyor..."
-                                                        : vehicleModels.length > 0
-                                                        ? "Model Seçin"
-                                                        : "Model Seçin veya Özel Giriş"}
-                                                </option>
-                                                {!isCustomBrand && vehicleModels.map((model) => (
-                                                    <option key={model.id} value={model.id}>
-                                                        {model.name}
-                                                    </option>
-                                                ))}
-                                                {!isCustomBrand && vehicleModels.length > 0 && (
-                                                    <option value="__custom__">+ Özel Giriş</option>
-                                                )}
-                                            </select>
+                                                    placeholder={
+                                                        isCustomBrand
+                                                            ? "Model girin (manuel)"
+                                                            : !vehicleForm.brandId
+                                                            ? "Önce marka seçin"
+                                                            : loadingModels
+                                                            ? "Yükleniyor..."
+                                                            : vehicleModels.length > 0
+                                                            ? "Model Seçin"
+                                                            : "Model Seçin veya Özel Giriş"
+                                                    }
+                                                    disabled={(!vehicleForm.brandId && !isCustomBrand) || loadingModels}
+                                                />
+                                            </div>
                                         </div>
                                     ) : (
                                         <div className="flex gap-2">
@@ -433,18 +446,15 @@ export function VehicleManagementModal({
                                     <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">
                                         Renk
                                     </label>
-                                    <select
+                                    <SearchableSelect
                                         value={vehicleForm.color}
-                                        onChange={(e) => setVehicleForm({ ...vehicleForm, color: e.target.value })}
-                                        className="w-full bg-[#151821] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[#3B82F6] transition-colors appearance-none cursor-pointer"
-                                    >
-                                        <option value="">Renk Seçin (Opsiyonel)</option>
-                                        {vehicleColors.map((color) => (
-                                            <option key={color} value={color}>
-                                                {color}
-                                            </option>
-                                        ))}
-                                    </select>
+                                        onChange={(color) => setVehicleForm({ ...vehicleForm, color: color })}
+                                        options={vehicleColors.map((color) => ({
+                                            id: color,
+                                            label: color,
+                                        }))}
+                                        placeholder="Renk Seçin (Opsiyonel)"
+                                    />
                                 </div>
                                 
                                 {/* Fuel Type */}
@@ -452,17 +462,15 @@ export function VehicleManagementModal({
                                     <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">
                                         Yakıt Türü
                                     </label>
-                                    <select
+                                    <SearchableSelect
                                         value={vehicleForm.fuelType}
-                                        onChange={(e) => setVehicleForm({ ...vehicleForm, fuelType: e.target.value })}
-                                        className="w-full bg-[#151821] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[#3B82F6] transition-colors appearance-none cursor-pointer"
-                                    >
-                                        {fuelTypes.map((fuel) => (
-                                            <option key={fuel} value={fuel}>
-                                                {fuel}
-                                            </option>
-                                        ))}
-                                    </select>
+                                        onChange={(fuelType) => setVehicleForm({ ...vehicleForm, fuelType: fuelType })}
+                                        options={fuelTypes.map((fuel) => ({
+                                            id: fuel,
+                                            label: fuel,
+                                        }))}
+                                        placeholder="Yakıt Türü Seçin"
+                                    />
                                 </div>
                             </div>
                             

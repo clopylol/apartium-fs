@@ -1,5 +1,10 @@
 {
   "welcome": "Welcome to Apartment Management",
+  "errorBoundary": {
+    "title": "An Error Occurred",
+    "message": "Something went wrong. Please refresh the page or try again.",
+    "retry": "Retry"
+  },
   "common": {
     "buttons": {
       "yes": "Yes",
@@ -453,13 +458,15 @@
       "addResident": "Add Resident",
       "addUnit": "Add Unit",
       "edit": "Edit",
-      "delete": "Delete",
+      "delete": "Delete Resident",
       "manageVehicles": "Manage Vehicles",
       "manageVehiclesTooltip": "Manage Vehicles",
       "noResidents": "No Residents",
       "noResidentsFound": "No residents found",
       "details": "Details",
       "addBuilding": "Add New Building",
+      "editBuilding": "Edit Building",
+      "deleteBuilding": "Delete Building",
       "saveChanges": "Save Changes"
     },
     "stats": {
@@ -490,7 +497,18 @@
         "label": "Floor",
         "all": "All",
         "floor": "Floor {{floor}}"
-      }
+      },
+      "clearAll": "Clear All"
+    },
+    "emptyState": {
+      "noResults": "No Records Found",
+      "noResultsDescription": "No unit records found yet.",
+      "noFilterResults": "No Filter Results",
+      "noFilterResultsDescription": "No units match your selected filters. Clear filters to see all units.",
+      "clearFilters": "Clear Filters"
+    },
+    "errors": {
+      "failedToCreateUnit": "Failed to create unit"
     },
     "messages": {
       "addUnitDescription": "Add new unit to this block",
@@ -608,7 +626,8 @@
         "phone": "Phone",
         "email": "Email",
         "unitInfo": "Unit Information",
-        "editButton": "Edit"
+        "editButton": "Edit",
+        "tab": "Tab"
       }
     },
     "table": {
@@ -871,6 +890,9 @@
         "confirmation": {
           "defaultConfirm": "Confirm",
           "defaultCancel": "Cancel"
+        },
+        "errors": {
+          "failedToUpdate": "Failed to update guest"
         }
       }
     }

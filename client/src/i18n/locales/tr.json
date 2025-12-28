@@ -1,5 +1,10 @@
 {
   "welcome": "Apartman Yönetimine Hoşgeldiniz",
+  "errorBoundary": {
+    "title": "Bir Hata Oluştu",
+    "message": "Bir şeyler yanlış gitti. Lütfen sayfayı yenileyin veya tekrar deneyin.",
+    "retry": "Yeniden Dene"
+  },
   "common": {
     "buttons": {
       "yes": "Evet",
@@ -452,13 +457,15 @@
       "addResident": "Sakin Ekle",
       "addUnit": "Daire Ekle",
       "edit": "Düzenle",
-      "delete": "Sil",
+      "delete": "Kiracıyı Sil",
       "manageVehicles": "Araç Yönetimi",
       "manageVehiclesTooltip": "Araçları Yönet",
       "noResidents": "Sakin Yok",
       "noResidentsFound": "Sakin bulunmuyor",
       "details": "Detaylar",
       "addBuilding": "Yeni Blok Ekle",
+      "editBuilding": "Bloğu Düzenle",
+      "deleteBuilding": "Bloğu Sil",
       "saveChanges": "Değişiklikleri Kaydet"
     },
     "stats": {
@@ -489,7 +496,18 @@
         "label": "Kat",
         "all": "Tümü",
         "floor": "{{floor}}. Kat"
-      }
+      },
+      "clearAll": "Tümünü Temizle"
+    },
+    "emptyState": {
+      "noResults": "Kayıt Bulunamadı",
+      "noResultsDescription": "Henüz hiç daire kaydı bulunmuyor.",
+      "noFilterResults": "Filtre Sonucu Bulunamadı",
+      "noFilterResultsDescription": "Seçtiğiniz filtrelere uygun daire bulunamadı. Filtreleri temizleyerek tüm daireleri görebilirsiniz.",
+      "clearFilters": "Filtreleri Temizle"
+    },
+    "errors": {
+      "failedToCreateUnit": "Daire oluşturulamadı"
     },
     "messages": {
       "addUnitDescription": "Bu bloğa yeni daire ekle",
@@ -607,7 +625,8 @@
         "phone": "Telefon",
         "email": "E-posta",
         "unitInfo": "Daire Bilgileri",
-        "editButton": "Düzenle"
+        "editButton": "Düzenle",
+        "tab": "Sekme"
       }
     },
     "table": {
@@ -825,6 +844,9 @@
             "guestNameRequired": "Lütfen misafir adını girin",
             "expectedDateRequired": "Lütfen beklenen tarihi seçin"
           }
+        },
+        "errors": {
+          "failedToUpdate": "Misafir güncellenemedi"
         },
         "detail": {
           "title": "Misafir Detayları",

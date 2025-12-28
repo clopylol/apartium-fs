@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
 // Hooks
@@ -13,10 +13,12 @@ import {
     useGuestActions,
 } from "@/hooks/residents";
 import { useGuestMutations } from "@/hooks/residents/api";
+import { useKeyboardShortcuts } from "@/hooks/residents/resident/useKeyboardShortcuts";
 
 // Components
 import { ResidentsHeader } from "./components_residents/shared/header";
 import { ResidentsView, ParkingView, GuestsView } from "./components_residents/views";
+import { ErrorBoundary } from "@/components/shared/error-boundary/ErrorBoundary";
 
 // Modals
 import { ConfirmationModal } from "@/components/shared/modals";
@@ -39,10 +41,13 @@ export function ResidentsPage() {
     // Active Tab State
     const [activeTab, setActiveTab] = useState<"residents" | "parking" | "guests">("residents");
 
+    // Search input ref for keyboard shortcuts
+    const searchInputRef = useRef<HTMLInputElement>(null);
+
     // Initialize State Hooks
     const residentsState = useResidentsState();
     const parkingState = useParkingState();
-    const guestState = useGuestState(residentsState.searchTerm);
+    const guestState = useGuestState(residentsState.debouncedSearchTerm);
     const modalState = useModalState();
 
     // Initialize Action Hooks
@@ -74,6 +79,41 @@ export function ResidentsPage() {
         deleteBuildingConfirm: modalState.deleteBuildingConfirm,
     });
 
+    // Keyboard shortcuts
+    const handleSearchFocus = useCallback(() => {
+        searchInputRef.current?.focus();
+    }, []);
+
+    const handleToggleView = useCallback(() => {
+        residentsState.setResidentViewMode(
+            residentsState.residentViewMode === "grid" ? "list" : "grid"
+        );
+    }, [residentsState.residentViewMode, residentsState.setResidentViewMode]);
+
+    const hasActiveFilters = useMemo(() => {
+        return (
+            residentsState.typeFilter !== "all" ||
+            residentsState.unitStatusFilter !== "all" ||
+            residentsState.vehicleFilter !== "all" ||
+            residentsState.floorFilter !== "all" ||
+            (residentsState.debouncedSearchTerm && residentsState.debouncedSearchTerm.length > 0)
+        );
+    }, [
+        residentsState.typeFilter,
+        residentsState.unitStatusFilter,
+        residentsState.vehicleFilter,
+        residentsState.floorFilter,
+        residentsState.debouncedSearchTerm,
+    ]);
+
+    useKeyboardShortcuts({
+        enabled: activeTab === "residents",
+        onSearchFocus: handleSearchFocus,
+        onClearFilters: residentsState.clearAllFilters,
+        onToggleView: handleToggleView,
+        hasActiveFilters,
+    });
+
     const parkingActions = useParkingActions({
         buildings: residentsState.buildings,
         setBuildings: residentsState.setBuildings,
@@ -82,7 +122,7 @@ export function ResidentsPage() {
         activeParkingFloor: parkingState.activeParkingFloor,
         guestList: guestState.guestList,
         setGuestList: guestState.setGuestList,
-        searchTerm: residentsState.searchTerm,
+        searchTerm: residentsState.debouncedSearchTerm,
         openAddSpotModal: modalState.openAddSpotModal,
         openEditSpotModal: modalState.openEditSpotModal,
         openDeleteSpotModal: modalState.openDeleteSpotModal,
@@ -108,13 +148,14 @@ export function ResidentsPage() {
         <div className="flex flex-col h-full bg-slate-950 overflow-hidden relative">
             {/* Header */}
             <ResidentsHeader
+                ref={searchInputRef}
                 sites={residentsState.sites}
                 activeSiteId={residentsState.activeSiteId}
                 onSiteChange={residentsState.setActiveSiteId}
                 activeTab={activeTab}
                 onTabChange={setActiveTab}
-                searchTerm={residentsState.searchTerm}
-                onSearchChange={residentsState.setSearchTerm}
+                localSearchTerm={residentsState.localSearchTerm}
+                onSearchChange={residentsState.setLocalSearchTerm}
             />
 
             {/* Main Content */}
@@ -122,7 +163,13 @@ export function ResidentsPage() {
                 <div className="max-w-7xl mx-auto">
                     {/* Residents View */}
                     {activeTab === "residents" && (
-                        <ResidentsView
+                        <ErrorBoundary
+                            onRetry={() => {
+                                residentsState.clearAllFilters();
+                                residentsState.setCurrentPage(1);
+                            }}
+                        >
+                            <ResidentsView
                             buildings={residentsState.buildings}
                             activeBlockId={residentsState.activeBlockId}
                             activeBlock={residentsState.activeBlock}
@@ -141,6 +188,8 @@ export function ResidentsPage() {
                             floorFilter={residentsState.floorFilter}
                             onFloorChange={residentsState.setFloorFilter}
                             availableFloors={residentsState.availableFloors}
+                            debouncedSearchTerm={residentsState.debouncedSearchTerm}
+                            onClearFilters={residentsState.clearAllFilters}
                             onBlockChange={residentsState.setActiveBlockId}
                             onAddBuilding={buildingActions.handleOpenAddBuilding}
                             onEditBuilding={buildingActions.handleOpenEditBuilding}
@@ -152,6 +201,7 @@ export function ResidentsPage() {
                             onDeleteResident={residentActions.handleOpenDeleteResident}
                             onManageVehicles={residentActions.handleOpenVehicleManager}
                         />
+                        </ErrorBoundary>
                     )}
 
                     {/* Parking View */}
@@ -378,7 +428,7 @@ export function ResidentsPage() {
                             });
                             modalState.closeEditGuestModal();
                         } catch (error) {
-                            // Error handled by mutation
+                            showError(t("residents.guests.errors.failedToUpdate") || "Misafir güncellenemedi");
                             console.error('Failed to update guest:', error);
                         }
                     }}

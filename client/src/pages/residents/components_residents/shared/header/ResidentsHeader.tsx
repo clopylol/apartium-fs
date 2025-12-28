@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Users, Car, CarFront } from "lucide-react";
+import { forwardRef } from "react";
 import { SearchInput } from "@/components/shared/inputs/search-input";
 import { TabToggle } from "@/components/shared/navigation/tab-toggle";
 import { SiteSelector } from "@/components/residents/site-selector";
@@ -11,19 +12,23 @@ export interface ResidentsHeaderProps {
     onSiteChange: (siteId: string) => void;
     activeTab: "residents" | "parking" | "guests";
     onTabChange: (tab: "residents" | "parking" | "guests") => void;
-    searchTerm: string;
+    localSearchTerm: string;
     onSearchChange: (term: string) => void;
 }
 
-export function ResidentsHeader({
-    sites,
-    activeSiteId,
-    onSiteChange,
-    activeTab,
-    onTabChange,
-    searchTerm,
-    onSearchChange,
-}: ResidentsHeaderProps) {
+export const ResidentsHeader = forwardRef<HTMLInputElement, ResidentsHeaderProps>(
+    function ResidentsHeader(
+        {
+            sites,
+            activeSiteId,
+            onSiteChange,
+            activeTab,
+            onTabChange,
+            localSearchTerm,
+            onSearchChange,
+        },
+        searchInputRef
+    ) {
     const { t } = useTranslation();
 
     return (
@@ -43,7 +48,8 @@ export function ResidentsHeader({
 
             <div className="flex items-center gap-4">
                 <SearchInput
-                    value={searchTerm}
+                    ref={searchInputRef}
+                    value={localSearchTerm}
                     onChange={onSearchChange}
                     placeholder={
                         activeTab === "guests"
@@ -68,5 +74,5 @@ export function ResidentsHeader({
             </div>
         </header>
     );
-}
+});
 

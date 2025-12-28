@@ -1,12 +1,12 @@
-import type { Building, Resident, Unit } from "@/types/residents.types";
-import { Car, Phone, Mail, Key, Edit2, Trash2, Plus, Home } from "lucide-react";
-import { useState } from "react";
+import type { Building, Resident, Unit, UnitWithResidents } from "@/types/residents.types";
+import { Car, Phone, Mail, Key, Edit2, Trash2, Plus, Home, MapPin } from "lucide-react";
+import { useState, useCallback, memo } from "react";
 import { useTranslation } from "react-i18next";
 import { formatLicensePlateForDisplay } from "@/utils/validation";
 import { ResidentDetailModal } from "../../resident/modals/resident-detail-modal";
 
 export interface ResidentsListViewProps {
-    paginatedUnits: Building["units"];
+    paginatedUnits: UnitWithResidents[];
     activeBlockId: string;
     activeBlock?: Building | null;
     onAddResident: (blockId?: string, unitId?: string) => void;
@@ -15,7 +15,7 @@ export interface ResidentsListViewProps {
     onManageVehicles: (resident: Resident, blockId: string, unitId: string) => void;
 }
 
-export function ResidentsListView({
+export const ResidentsListView = memo(function ResidentsListView({
     paginatedUnits,
     activeBlockId,
     activeBlock,
@@ -28,17 +28,24 @@ export function ResidentsListView({
     const [showDetailModal, setShowDetailModal] = useState(false);
     const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
 
-    const handleShowDetails = (unit: Unit) => {
+    const handleShowDetails = useCallback((unit: UnitWithResidents) => {
         if (unit.residents.length > 0) {
-            setSelectedUnit(unit);
+            setSelectedUnit(unit as Unit);
             setShowDetailModal(true);
         }
-    };
+    }, []);
 
-    const handleCloseDetailModal = () => {
+    const handleCloseDetailModal = useCallback(() => {
         setShowDetailModal(false);
         setSelectedUnit(null);
-    };
+    }, []);
+
+    // Helper function to get parking spot name from parkingSpotId
+    const getParkingSpotName = useCallback((parkingSpotId: string | null | undefined): string | null => {
+        if (!parkingSpotId || !activeBlock?.parkingSpots) return null;
+        const spot = activeBlock.parkingSpots.find(s => s.id === parkingSpotId);
+        return spot?.name || null;
+    }, [activeBlock?.parkingSpots]);
     
     return (
         <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl animate-in fade-in duration-300">
@@ -92,6 +99,8 @@ export function ResidentsListView({
                                                             src={r.avatar}
                                                             className="w-8 h-8 rounded-full border border-slate-700 object-cover"
                                                             alt=""
+                                                            loading="lazy"
+                                                            decoding="async"
                                                         />
                                                         <div>
                                                             <div className="text-sm font-medium text-slate-200">{r.name}</div>
@@ -144,11 +153,15 @@ export function ResidentsListView({
                                                                     <div className="flex items-center gap-2 text-slate-300 font-mono text-xs">
                                                                         <Car className="w-3 h-3 text-slate-500" /> {formatLicensePlateForDisplay(v.plate)}
                                                                     </div>
-                                                                    {v.parkingSpot && (
-                                                                        <div className="text-[10px] bg-slate-800 text-blue-300 px-1.5 py-0.5 rounded w-fit mt-0.5 border border-slate-700 ml-5">
-                                                                            {t("residents.messages.parkingSpot")} {v.parkingSpot}
-                                                                        </div>
-                                                                    )}
+                                                                    {(() => {
+                                                                        const parkingSpotName = getParkingSpotName(v.parkingSpotId);
+                                                                        return parkingSpotName ? (
+                                                                            <div className="text-[10px] bg-slate-800 text-blue-300 px-1.5 py-0.5 rounded w-fit mt-0.5 border border-slate-700 ml-5 flex items-center gap-1">
+                                                                                <MapPin className="w-2.5 h-2.5" />
+                                                                                {parkingSpotName}
+                                                                            </div>
+                                                                        ) : null;
+                                                                    })()}
                                                                 </div>
                                                             ))}
                                                         </div>
@@ -168,14 +181,20 @@ export function ResidentsListView({
                                             {unit.residents.map((r) => (
                                                 <div key={r.id} className="flex gap-1">
                                                     <button
-                                                        onClick={() => onManageVehicles(r, activeBlockId, unit.id)}
+                                                        onClick={() => {
+                                                            // Type cast needed because ResidentWithVehicles extends Resident
+                                                            onManageVehicles(r as unknown as Resident, activeBlockId, unit.id);
+                                                        }}
                                                         className="p-1.5 hover:bg-slate-800 text-slate-400 hover:text-blue-400 rounded transition-colors"
                                                         title={t("residents.actions.manageVehicles")}
                                                     >
                                                         <Car className="w-4 h-4" />
                                                     </button>
                                                     <button
-                                                        onClick={() => onEditResident(r, activeBlockId, unit.id)}
+                                                        onClick={() => {
+                                                            // Type cast needed because ResidentWithVehicles extends Resident
+                                                            onEditResident(r as unknown as Resident, activeBlockId, unit.id);
+                                                        }}
                                                         className="p-1.5 hover:bg-slate-800 text-slate-400 hover:text-white rounded transition-colors"
                                                         title={t("residents.actions.edit")}
                                                     >
@@ -232,4 +251,4 @@ export function ResidentsListView({
             )}
         </div>
     );
-}
+});

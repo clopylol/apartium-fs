@@ -1,5 +1,6 @@
 import type { FC, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { X } from "lucide-react";
 import { MultiFilter } from "@/components/shared/inputs/multi-filter";
 import type { FilterConfig, ActiveFilter } from "@/components/shared/inputs/multi-filter";
 
@@ -13,6 +14,7 @@ interface ResidentFiltersProps {
     floorFilter: "all" | number;
     onFloorChange: (value: "all" | number) => void;
     availableFloors: number[];
+    onClearFilters?: () => void;
     rightContent?: ReactNode;
 }
 
@@ -55,9 +57,16 @@ export const ResidentFilters: FC<ResidentFiltersProps> = ({
     floorFilter,
     onFloorChange,
     availableFloors,
+    onClearFilters,
     rightContent,
 }) => {
     const { t } = useTranslation();
+
+    // Check if any filter is active
+    const hasActiveFilters = typeFilter !== "all" || 
+        unitStatusFilter !== "all" || 
+        vehicleFilter !== "all" || 
+        floorFilter !== "all";
 
     const filters: FilterConfig[] = [
         {
@@ -157,6 +166,24 @@ export const ResidentFilters: FC<ResidentFiltersProps> = ({
             : []),
     ];
 
-    return <MultiFilter filters={filters} activeFilters={activeFilters} rightContent={rightContent} />;
+    // Clear filters button
+    const clearFiltersButton = hasActiveFilters && onClearFilters ? (
+        <button
+            onClick={onClearFilters}
+            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-ds-muted-light dark:text-ds-muted-dark hover:text-ds-primary-light dark:hover:text-ds-primary-dark transition-colors"
+            aria-label={t("residents.filters.clearAll")}
+        >
+            <X className="w-4 h-4" />
+            {t("residents.filters.clearAll")}
+        </button>
+    ) : null;
+
+    return (
+        <MultiFilter 
+            filters={filters} 
+            activeFilters={activeFilters} 
+            rightContent={clearFiltersButton || rightContent} 
+        />
+    );
 };
 

@@ -1,8 +1,11 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import type { Building, UnitWithResidents, Site } from "@/types/residents.types";
 import { ITEMS_PER_PAGE } from "@/constants/residents.constants";
 import { useBuildings, useBuildingData } from "@/hooks/residents/api";
 import { useSites } from "@/hooks/residents/site";
+import { useDebounce } from "@/hooks/useDebounce";
+
+const DEBOUNCE_DELAY = 300; // 300ms debounce delay
 
 export interface ResidentsStateReturn {
     // Core State
@@ -13,8 +16,9 @@ export interface ResidentsStateReturn {
     setBuildings: React.Dispatch<React.SetStateAction<Building[]>>;
     activeBlockId: string | null;
     setActiveBlockId: (id: string) => void;
-    searchTerm: string;
-    setSearchTerm: (term: string) => void;
+    localSearchTerm: string;
+    setLocalSearchTerm: (term: string) => void;
+    debouncedSearchTerm: string;
 
     // Filter State
     typeFilter: "all" | "owner" | "tenant";
@@ -26,6 +30,7 @@ export interface ResidentsStateReturn {
     floorFilter: "all" | number;
     setFloorFilter: (value: "all" | number) => void;
     availableFloors: number[];
+    clearAllFilters: () => void;
 
     // Loading States (Granular)
     loadingStates: {
@@ -58,7 +63,10 @@ export function useResidentsState(): ResidentsStateReturn {
     // Core State
     const [activeSiteId, setActiveSiteId] = useState<string | null>(null);
     const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
-    const [searchTerm, setSearchTerm] = useState("");
+    const [localSearchTerm, setLocalSearchTerm] = useState("");
+
+    // Debounced search term
+    const debouncedSearchTerm = useDebounce(localSearchTerm, DEBOUNCE_DELAY);
 
     // View State
     const [residentViewMode, setResidentViewMode] = useState<"grid" | "list">("grid");
@@ -110,7 +118,7 @@ export function useResidentsState(): ResidentsStateReturn {
     // Reset Page on Filter Change
     useEffect(() => {
         setCurrentPage(1);
-    }, [activeBlockId, searchTerm, typeFilter, unitStatusFilter, vehicleFilter, floorFilter]);
+    }, [activeBlockId, debouncedSearchTerm, typeFilter, unitStatusFilter, vehicleFilter, floorFilter]);
 
     // Computed: Active Block (merge with buildingData to include parkingSpots and units)
     const activeBlock = useMemo(() => {
@@ -143,9 +151,9 @@ export function useResidentsState(): ResidentsStateReturn {
     const filteredUnits = useMemo(() => {
         let filtered = units;
 
-        // Search filter
-        if (searchTerm) {
-            const term = searchTerm.toLowerCase();
+        // Search filter (using debounced search term)
+        if (debouncedSearchTerm) {
+            const term = debouncedSearchTerm.toLowerCase();
             filtered = filtered.filter((unit) => {
                 const matchesSearch =
                     unit.number.includes(term) ||
@@ -193,7 +201,7 @@ export function useResidentsState(): ResidentsStateReturn {
         }
 
         return filtered;
-    }, [units, searchTerm, typeFilter, unitStatusFilter, vehicleFilter, floorFilter]);
+    }, [units, debouncedSearchTerm, typeFilter, unitStatusFilter, vehicleFilter, floorFilter]);
 
     // Computed: Paginated Units
     const paginatedUnits = useMemo(() => {
@@ -202,6 +210,8 @@ export function useResidentsState(): ResidentsStateReturn {
     }, [filteredUnits, currentPage]);
 
     // Computed: Stats
+    // Stats are calculated from all units, not filtered units
+    // This ensures stats always show the total state regardless of active filters
     const stats = useMemo(() => {
         const totalUnits = units.length;
         const occupiedUnits = units.filter((u) => u.status === "occupied").length;
@@ -233,6 +243,15 @@ export function useResidentsState(): ResidentsStateReturn {
         console.warn('setBuildings is deprecated with API usage');
     };
 
+    // Clear all filters
+    const clearAllFilters = useCallback(() => {
+        setTypeFilter("all");
+        setUnitStatusFilter("all");
+        setVehicleFilter("all");
+        setFloorFilter("all");
+        setLocalSearchTerm("");
+    }, []);
+
     return {
         // Core State
         sites,
@@ -242,8 +261,9 @@ export function useResidentsState(): ResidentsStateReturn {
         setBuildings,
         activeBlockId,
         setActiveBlockId,
-        searchTerm,
-        setSearchTerm,
+        localSearchTerm,
+        setLocalSearchTerm,
+        debouncedSearchTerm,
 
         // Filter State
         typeFilter,
@@ -255,6 +275,7 @@ export function useResidentsState(): ResidentsStateReturn {
         floorFilter,
         setFloorFilter,
         availableFloors,
+        clearAllFilters,
 
         // Loading States
         loadingStates,
