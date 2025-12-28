@@ -52,14 +52,18 @@ export const MultiFilter: FC<MultiFilterProps> = ({
             }));
 
             return (
-              <Dropdown
-                key={filter.key}
-                options={dropdownOptions}
-                value={filter.value}
-                onChange={filter.onChange}
-                placeholder={filter.label}
-                className="min-w-[140px]"
-              />
+              <div key={filter.key} className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-ds-muted-light dark:text-ds-muted-dark uppercase tracking-wider">
+                  {filter.label}
+                </label>
+                <Dropdown
+                  options={dropdownOptions}
+                  value={filter.value}
+                  onChange={filter.onChange}
+                  placeholder={filter.label}
+                  className="min-w-[140px]"
+                />
+              </div>
             );
           })}
         </div>

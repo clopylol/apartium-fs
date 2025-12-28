@@ -16,6 +16,17 @@ export interface ResidentsStateReturn {
     searchTerm: string;
     setSearchTerm: (term: string) => void;
 
+    // Filter State
+    typeFilter: "all" | "owner" | "tenant";
+    setTypeFilter: (value: "all" | "owner" | "tenant") => void;
+    unitStatusFilter: "all" | "occupied" | "empty";
+    setUnitStatusFilter: (value: "all" | "occupied" | "empty") => void;
+    vehicleFilter: "all" | "with" | "without";
+    setVehicleFilter: (value: "all" | "with" | "without") => void;
+    floorFilter: "all" | number;
+    setFloorFilter: (value: "all" | number) => void;
+    availableFloors: number[];
+
     // Loading States (Granular)
     loadingStates: {
         buildings: boolean;
@@ -52,6 +63,12 @@ export function useResidentsState(): ResidentsStateReturn {
     // View State
     const [residentViewMode, setResidentViewMode] = useState<"grid" | "list">("grid");
     const [currentPage, setCurrentPage] = useState(1);
+
+    // Filter State
+    const [typeFilter, setTypeFilter] = useState<"all" | "owner" | "tenant">("all");
+    const [unitStatusFilter, setUnitStatusFilter] = useState<"all" | "occupied" | "empty">("all");
+    const [vehicleFilter, setVehicleFilter] = useState<"all" | "with" | "without">("all");
+    const [floorFilter, setFloorFilter] = useState<"all" | number>("all");
 
     // ✅ Fetch sites from API
     const { sites, isLoading: loadingSites } = useSites();
@@ -93,7 +110,7 @@ export function useResidentsState(): ResidentsStateReturn {
     // Reset Page on Filter Change
     useEffect(() => {
         setCurrentPage(1);
-    }, [activeBlockId, searchTerm]);
+    }, [activeBlockId, searchTerm, typeFilter, unitStatusFilter, vehicleFilter, floorFilter]);
 
     // Computed: Active Block (merge with buildingData to include parkingSpots and units)
     const activeBlock = useMemo(() => {
@@ -115,25 +132,68 @@ export function useResidentsState(): ResidentsStateReturn {
     // Units from building data
     const units = buildingData?.units || [];
 
+    // Computed: Available Floors
+    const availableFloors = useMemo(() => {
+        const floors = new Set<number>();
+        units.forEach((unit) => floors.add(unit.floor));
+        return Array.from(floors).sort((a, b) => a - b);
+    }, [units]);
+
     // Computed: Filtered Units
     const filteredUnits = useMemo(() => {
-        if (!searchTerm) return units;
+        let filtered = units;
 
-        return units.filter((unit) => {
+        // Search filter
+        if (searchTerm) {
             const term = searchTerm.toLowerCase();
-            const matchesSearch =
-                unit.number.includes(term) ||
-                unit.residents.some(
-                    (r) =>
-                        r.name.toLowerCase().includes(term) ||
-                        r.phone.includes(term) ||
-                        r.vehicles.some((v) =>
-                            v.plate.toLowerCase().replace(/\s/g, "").includes(term.replace(/\s/g, ""))
-                        )
+            filtered = filtered.filter((unit) => {
+                const matchesSearch =
+                    unit.number.includes(term) ||
+                    unit.residents.some(
+                        (r) =>
+                            r.name.toLowerCase().includes(term) ||
+                            r.phone.includes(term) ||
+                            r.vehicles.some((v) =>
+                                v.plate.toLowerCase().replace(/\s/g, "").includes(term.replace(/\s/g, ""))
+                            )
+                    );
+                return matchesSearch;
+            });
+        }
+
+        // Type filter
+        if (typeFilter !== "all") {
+            filtered = filtered.filter((unit) =>
+                unit.residents.some((r) => r.type === typeFilter)
+            );
+        }
+
+        // Unit Status filter
+        if (unitStatusFilter !== "all") {
+            filtered = filtered.filter((unit) => unit.status === unitStatusFilter);
+        }
+
+        // Vehicle filter
+        if (vehicleFilter !== "all") {
+            if (vehicleFilter === "with") {
+                filtered = filtered.filter((unit) =>
+                    unit.residents.some((r) => r.vehicles.length > 0)
                 );
-            return matchesSearch;
-        });
-    }, [units, searchTerm]);
+            } else {
+                // without: all residents must have no vehicles
+                filtered = filtered.filter((unit) =>
+                    unit.residents.length > 0 && unit.residents.every((r) => r.vehicles.length === 0)
+                );
+            }
+        }
+
+        // Floor filter
+        if (floorFilter !== "all") {
+            filtered = filtered.filter((unit) => unit.floor === floorFilter);
+        }
+
+        return filtered;
+    }, [units, searchTerm, typeFilter, unitStatusFilter, vehicleFilter, floorFilter]);
 
     // Computed: Paginated Units
     const paginatedUnits = useMemo(() => {
@@ -184,6 +244,17 @@ export function useResidentsState(): ResidentsStateReturn {
         setActiveBlockId,
         searchTerm,
         setSearchTerm,
+
+        // Filter State
+        typeFilter,
+        setTypeFilter,
+        unitStatusFilter,
+        setUnitStatusFilter,
+        vehicleFilter,
+        setVehicleFilter,
+        floorFilter,
+        setFloorFilter,
+        availableFloors,
 
         // Loading States
         loadingStates,

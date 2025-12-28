@@ -10,6 +10,7 @@ import { ResidentsListView } from "./ResidentsListView";
 import { ITEMS_PER_PAGE } from "@/constants/residents.constants";
 import { AddUnitModal } from "../../resident/modals/add-unit-modal";
 import { useCreateUnit } from "@/hooks/residents/api";
+import { ResidentFilters } from "../../resident/resident-filters";
 
 export interface ResidentsViewProps {
     // Data
@@ -26,6 +27,17 @@ export interface ResidentsViewProps {
     };
     residentViewMode: "grid" | "list";
     isLoading: boolean;
+
+    // Filter Props
+    typeFilter: "all" | "owner" | "tenant";
+    onTypeChange: (value: "all" | "owner" | "tenant") => void;
+    unitStatusFilter: "all" | "occupied" | "empty";
+    onUnitStatusChange: (value: "all" | "occupied" | "empty") => void;
+    vehicleFilter: "all" | "with" | "without";
+    onVehicleChange: (value: "all" | "with" | "without") => void;
+    floorFilter: "all" | number;
+    onFloorChange: (value: "all" | number) => void;
+    availableFloors: number[];
 
     // Handlers
     onBlockChange: (id: string) => void;
@@ -50,6 +62,15 @@ export function ResidentsView({
     stats,
     residentViewMode,
     isLoading,
+    typeFilter,
+    onTypeChange,
+    unitStatusFilter,
+    onUnitStatusChange,
+    vehicleFilter,
+    onVehicleChange,
+    floorFilter,
+    onFloorChange,
+    availableFloors,
     onBlockChange,
     onAddBuilding,
     onEditBuilding,
@@ -148,6 +169,23 @@ export function ResidentsView({
                     )}
                 </div>
             </div>
+
+            {/* Filters */}
+            {activeBlock && (
+                <div className="mb-6">
+                    <ResidentFilters
+                        typeFilter={typeFilter}
+                        onTypeChange={onTypeChange}
+                        unitStatusFilter={unitStatusFilter}
+                        onUnitStatusChange={onUnitStatusChange}
+                        vehicleFilter={vehicleFilter}
+                        onVehicleChange={onVehicleChange}
+                        floorFilter={floorFilter}
+                        onFloorChange={onFloorChange}
+                        availableFloors={availableFloors}
+                    />
+                </div>
+            )}
 
             {/* Content */}
             {isLoading ? (

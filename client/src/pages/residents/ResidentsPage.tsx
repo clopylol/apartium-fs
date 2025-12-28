@@ -132,6 +132,15 @@ export function ResidentsPage() {
                             stats={residentsState.stats}
                             residentViewMode={residentsState.residentViewMode}
                             isLoading={residentsState.loadingStates.residents}
+                            typeFilter={residentsState.typeFilter}
+                            onTypeChange={residentsState.setTypeFilter}
+                            unitStatusFilter={residentsState.unitStatusFilter}
+                            onUnitStatusChange={residentsState.setUnitStatusFilter}
+                            vehicleFilter={residentsState.vehicleFilter}
+                            onVehicleChange={residentsState.setVehicleFilter}
+                            floorFilter={residentsState.floorFilter}
+                            onFloorChange={residentsState.setFloorFilter}
+                            availableFloors={residentsState.availableFloors}
                             onBlockChange={residentsState.setActiveBlockId}
                             onAddBuilding={buildingActions.handleOpenAddBuilding}
                             onEditBuilding={buildingActions.handleOpenEditBuilding}

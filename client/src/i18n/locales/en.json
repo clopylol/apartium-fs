@@ -466,6 +466,32 @@
       "occupied": "Occupied",
       "empty": "Empty"
     },
+    "filters": {
+      "title": "Filters",
+      "type": {
+        "label": "Type",
+        "all": "All",
+        "owner": "Owner",
+        "tenant": "Tenant"
+      },
+      "unitStatus": {
+        "label": "Unit Status",
+        "all": "All",
+        "occupied": "Occupied",
+        "empty": "Empty"
+      },
+      "vehicle": {
+        "label": "Vehicle",
+        "all": "All",
+        "with": "With Vehicle",
+        "without": "Without Vehicle"
+      },
+      "floor": {
+        "label": "Floor",
+        "all": "All",
+        "floor": "Floor {{floor}}"
+      }
+    },
     "messages": {
       "addUnitDescription": "Add new unit to this block",
       "parkingSpot": "Park:",

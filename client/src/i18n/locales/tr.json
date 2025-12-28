@@ -465,6 +465,32 @@
       "occupied": "Dolu",
       "empty": "Boş"
     },
+    "filters": {
+      "title": "Filtreler",
+      "type": {
+        "label": "Tip",
+        "all": "Tümü",
+        "owner": "Ev Sahibi",
+        "tenant": "Kiracı"
+      },
+      "unitStatus": {
+        "label": "Daire Durumu",
+        "all": "Tümü",
+        "occupied": "Dolu",
+        "empty": "Boş"
+      },
+      "vehicle": {
+        "label": "Araç",
+        "all": "Tümü",
+        "with": "Araçlı",
+        "without": "Araçsız"
+      },
+      "floor": {
+        "label": "Kat",
+        "all": "Tümü",
+        "floor": "{{floor}}. Kat"
+      }
+    },
     "messages": {
       "addUnitDescription": "Bu bloğa yeni daire ekle",
       "parkingSpot": "Park:",
