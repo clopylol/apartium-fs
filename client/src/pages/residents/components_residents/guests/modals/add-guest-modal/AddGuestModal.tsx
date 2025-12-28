@@ -12,6 +12,7 @@ import {
     getLicensePlateError,
 } from "@/utils/validation";
 import { showError } from "@/utils/toast";
+import { formatDateForInput } from "@/utils/date";
 
 interface AddGuestModalProps {
     isOpen: boolean;
@@ -30,8 +31,10 @@ interface GuestFormData {
     brandId: string;
     modelId: string;
     color: string;
+    expectedDate: string;
     durationDays: number;
     note: string;
+    parkingSpotId: string;
 }
 
 export function AddGuestModal({ isOpen, onClose, onSubmit, sites, buildings }: AddGuestModalProps) {
@@ -45,8 +48,10 @@ export function AddGuestModal({ isOpen, onClose, onSubmit, sites, buildings }: A
         brandId: "",
         modelId: "",
         color: "",
+        expectedDate: formatDateForInput(new Date()),
         durationDays: 3,
         note: "",
+        parkingSpotId: "",
     });
 
     // Display plate (with spaces) - separate from actual value
@@ -117,6 +122,7 @@ export function AddGuestModal({ isOpen, onClose, onSubmit, sites, buildings }: A
                 ...prev,
                 blockId: availableBuildings[0].id,
                 unitId: "", // Reset unit when building changes
+                parkingSpotId: "", // Reset parking spot when building changes
             }));
         }
     }, [formData.siteId, availableBuildings, formData.blockId]);
@@ -147,6 +153,28 @@ export function AddGuestModal({ isOpen, onClose, onSubmit, sites, buildings }: A
     };
 
     const handleSubmit = () => {
+        // Validate required fields
+        if (!formData.siteId) {
+            showError(t("residents.guests.modals.addGuest.errors.siteRequired") || "Lütfen bir apartman seçin");
+            return;
+        }
+        if (!formData.blockId) {
+            showError(t("residents.guests.modals.addGuest.errors.blockRequired") || "Lütfen bir blok seçin");
+            return;
+        }
+        if (!formData.unitId) {
+            showError(t("residents.guests.modals.addGuest.errors.unitRequired") || "Lütfen bir daire seçin");
+            return;
+        }
+        if (!formData.guestName || formData.guestName.trim() === "") {
+            showError(t("residents.guests.modals.addGuest.errors.guestNameRequired") || "Lütfen misafir adını girin");
+            return;
+        }
+        if (!formData.expectedDate) {
+            showError(t("residents.guests.modals.addGuest.errors.expectedDateRequired") || "Lütfen beklenen tarihi seçin");
+            return;
+        }
+        
         // Validate plate
         const error = getLicensePlateError(formData.plate);
         if (error) {
@@ -179,6 +207,8 @@ export function AddGuestModal({ isOpen, onClose, onSubmit, sites, buildings }: A
             ...formData,
             plate: cleanedPlate,
             model: modelString || undefined,
+            expectedDate: formData.expectedDate,
+            parkingSpotId: formData.parkingSpotId || undefined,
         });
         onClose();
         // Reset form
@@ -191,8 +221,10 @@ export function AddGuestModal({ isOpen, onClose, onSubmit, sites, buildings }: A
             brandId: "",
             modelId: "",
             color: "",
+            expectedDate: formatDateForInput(new Date()),
             durationDays: 3,
             note: "",
+            parkingSpotId: "",
         });
         setDisplayPlate("");
         setPlateError(null);
@@ -252,7 +284,7 @@ export function AddGuestModal({ isOpen, onClose, onSubmit, sites, buildings }: A
                             <SearchableSelect
                                 value={formData.blockId}
                                 onChange={(blockId) =>
-                                    setFormData({ ...formData, blockId, unitId: "" })
+                                    setFormData({ ...formData, blockId, unitId: "", parkingSpotId: "" })
                                 }
                                 options={availableBuildings.map((b) => ({
                                     id: b.id,
@@ -275,6 +307,23 @@ export function AddGuestModal({ isOpen, onClose, onSubmit, sites, buildings }: A
                             units={availableUnits}
                             disabled={!formData.blockId}
                             placeholder={t("residents.guests.modals.addGuest.labels.unitSearchPlaceholder") || t("residents.guests.modals.addGuest.labels.unitSelect")}
+                        />
+                    </div>
+
+                    {/* Parking Spot Selection */}
+                    <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">
+                            {t("residents.guests.modals.addGuest.labels.parkingSpot") || "Park Yeri"}
+                        </label>
+                        <SearchableSelect
+                            value={formData.parkingSpotId}
+                            onChange={(parkingSpotId) => setFormData({ ...formData, parkingSpotId })}
+                            options={buildingData?.parkingSpots?.map((spot) => ({
+                                id: spot.id,
+                                label: `${spot.name}${spot.floor !== undefined ? ` (Kat ${spot.floor})` : ""}`,
+                            })) || []}
+                            disabled={!formData.blockId}
+                            placeholder={t("residents.guests.modals.addGuest.labels.parkingSpotSelect") || "Park Yeri Seçin"}
                         />
                     </div>
 
@@ -365,6 +414,20 @@ export function AddGuestModal({ isOpen, onClose, onSubmit, sites, buildings }: A
                                 label: c,
                             }))}
                             placeholder={t("residents.guests.modals.addGuest.labels.colorPlaceholder")}
+                        />
+                    </div>
+
+                    <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">
+                            {t("residents.guests.modals.addGuest.labels.expectedDate")}
+                        </label>
+                        <input
+                            type="date"
+                            value={formData.expectedDate}
+                            onChange={(e) => setFormData({ ...formData, expectedDate: e.target.value })}
+                            className="w-full bg-[#151821] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#3B82F6] transition-colors [color-scheme:dark]"
+                            min={formatDateForInput(new Date())}
+                            placeholder={t("residents.guests.modals.addGuest.labels.expectedDatePlaceholder")}
                         />
                     </div>
 

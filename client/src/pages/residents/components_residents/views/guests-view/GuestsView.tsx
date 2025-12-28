@@ -5,6 +5,8 @@ import { GuestTable } from "../../guests/guest-table";
 import { GuestRowSkeleton } from "../../guests/skeletons";
 import { StatCardSkeleton } from "../../resident/skeletons";
 import { BuildingTabs } from "../../resident/building-tabs";
+import { Pagination } from "@/components/shared/pagination";
+import { GUESTS_PER_PAGE } from "@/constants/residents.constants";
 
 export interface GuestsViewProps {
     buildings: Building[];
@@ -27,6 +29,15 @@ export interface GuestsViewProps {
     onAddBuilding: () => void;
     onEditBuilding: () => void;
     onDeleteBuilding: () => void;
+    dateRange?: { from: string; to: string } | null;
+    setDateRange?: React.Dispatch<React.SetStateAction<{ from: string; to: string } | null>>;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+    onSortChange?: (sortBy: string, sortOrder: 'asc' | 'desc') => void;
+    currentPage?: number;
+    totalPages?: number;
+    totalItems?: number;
+    onPageChange?: (page: number) => void;
 }
 
 export function GuestsView({
@@ -46,6 +57,15 @@ export function GuestsView({
     onAddBuilding,
     onEditBuilding,
     onDeleteBuilding,
+    dateRange,
+    setDateRange,
+    sortBy,
+    sortOrder,
+    onSortChange,
+    currentPage,
+    totalPages,
+    totalItems,
+    onPageChange,
 }: GuestsViewProps) {
     if (isLoading) {
         return (
@@ -92,6 +112,8 @@ export function GuestsView({
                 activeFilter={guestFilter}
                 onFilterChange={onFilterChange}
                 onAddGuest={onAddGuest}
+                dateRange={dateRange}
+                onDateRangeChange={setDateRange || undefined}
             />
 
             <GuestTable 
@@ -99,7 +121,20 @@ export function GuestsView({
                 onGuestSelect={onGuestSelect}
                 onEditGuest={onEditGuest}
                 onDeleteGuest={onDeleteGuest}
+                sortBy={sortBy}
+                sortOrder={sortOrder}
+                onSortChange={onSortChange}
             />
+
+            {/* Pagination */}
+            {!isLoading && totalItems !== undefined && totalItems > 0 && onPageChange && currentPage !== undefined && (
+                <Pagination
+                    totalItems={totalItems}
+                    itemsPerPage={GUESTS_PER_PAGE}
+                    currentPage={currentPage}
+                    onPageChange={onPageChange}
+                />
+            )}
         </div>
     );
 }

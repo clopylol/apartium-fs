@@ -1,4 +1,5 @@
-import { Clock, LogIn, LogOut, MoreVertical, Smartphone, CarFront, CalendarDays, User, Edit2, Trash2, MapPin } from "lucide-react";
+import { Clock, LogIn, LogOut, MoreVertical, Smartphone, CarFront, CalendarDays, User, Edit2, Trash2, MapPin, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { GuestVisit } from "@/types/residents.types";
 import { formatGuestVisitTime, formatDate } from "@/utils/date";
@@ -10,11 +11,42 @@ interface GuestTableProps {
     onGuestSelect: (guest: GuestVisit) => void;
     onEditGuest?: (guest: GuestVisit) => void;
     onDeleteGuest?: (guestId: string) => void;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+    onSortChange?: (sortBy: string, sortOrder: 'asc' | 'desc') => void;
 }
 
-export function GuestTable({ guests, isLoading, onGuestSelect, onEditGuest, onDeleteGuest }: GuestTableProps) {
+export function GuestTable({ guests, isLoading, onGuestSelect, onEditGuest, onDeleteGuest, sortBy: externalSortBy, sortOrder: externalSortOrder, onSortChange }: GuestTableProps) {
     const { t } = useTranslation();
+    const [internalSortBy, setInternalSortBy] = useState<string>('createdAt');
+    const [internalSortOrder, setInternalSortOrder] = useState<'asc' | 'desc'>('desc');
+    
+    const sortBy = externalSortBy ?? internalSortBy;
+    const sortOrder = externalSortOrder ?? internalSortOrder;
+    
     if (isLoading) return null;
+
+    const handleSort = (column: string) => {
+        const newSortOrder = sortBy === column 
+            ? (sortOrder === 'asc' ? 'desc' : 'asc')
+            : 'asc';
+        
+        if (onSortChange) {
+            onSortChange(column, newSortOrder);
+        } else {
+            setInternalSortBy(column);
+            setInternalSortOrder(newSortOrder);
+        }
+    };
+
+    const getSortIcon = (column: string) => {
+        if (sortBy !== column) {
+            return <ArrowUpDown className="w-3 h-3 text-slate-500" />;
+        }
+        return sortOrder === 'asc' 
+            ? <ArrowUp className="w-3 h-3 text-blue-400" />
+            : <ArrowDown className="w-3 h-3 text-blue-400" />;
+    };
 
     // Helper function to get icon color based on guest status
     const getGuestIconColor = (status: string) => {
@@ -150,7 +182,7 @@ export function GuestTable({ guests, isLoading, onGuestSelect, onEditGuest, onDe
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex items-center justify-end gap-1">
-                                            {onEditGuest && (
+                                            {onEditGuest && guest.status === 'pending' && (
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();

@@ -13,6 +13,7 @@ import {
     getLicensePlateError,
 } from "@/utils/validation";
 import { showError } from "@/utils/toast";
+import { formatDateForInput } from "@/utils/date";
 
 interface EditGuestModalProps {
     isOpen: boolean;
@@ -32,6 +33,7 @@ interface GuestFormData {
     brandId: string;
     modelId: string;
     color: string;
+    expectedDate: string;
     durationDays: number;
     note: string;
     parkingSpotId: string;
@@ -39,6 +41,10 @@ interface GuestFormData {
 
 export function EditGuestModal({ isOpen, onClose, onSave, guest, sites, buildings }: EditGuestModalProps) {
     const { t } = useTranslation();
+    
+    // Early return if guest is not provided
+    if (!isOpen || !guest) return null;
+    
     const [formData, setFormData] = useState<GuestFormData>({
         siteId: "",
         blockId: "",
@@ -48,6 +54,7 @@ export function EditGuestModal({ isOpen, onClose, onSave, guest, sites, building
         brandId: "",
         modelId: "",
         color: "",
+        expectedDate: formatDateForInput(new Date()),
         durationDays: 3,
         note: "",
         parkingSpotId: "",
@@ -83,13 +90,17 @@ export function EditGuestModal({ isOpen, onClose, onSave, guest, sites, building
 
     // Find the building that contains the guest's unit
     const guestBuilding = useMemo(() => {
-        if (!guest.unitId) return null;
-        return buildings.find((b) => b.units.some((u) => u.id === guest.unitId));
-    }, [buildings, guest.unitId]);
+        if (!guest?.unitId || !buildings || buildings.length === 0) return null;
+        return buildings.find((b) => {
+            // Check if building has units array and it contains the guest's unit
+            if (!b.units || !Array.isArray(b.units)) return false;
+            return b.units.some((u) => u.id === guest.unitId);
+        });
+    }, [buildings, guest?.unitId]);
 
     // Find the site that contains the guest's building
     const guestSite = useMemo(() => {
-        if (!guestBuilding) return null;
+        if (!guestBuilding || !sites || sites.length === 0) return null;
         return sites.find((s) => s.id === guestBuilding.siteId);
     }, [sites, guestBuilding]);
 
@@ -129,6 +140,10 @@ export function EditGuestModal({ isOpen, onClose, onSave, guest, sites, building
     useEffect(() => {
         if (guest && guestBuilding && guestSite) {
             const guestPlate = guest.plate || "";
+            const expectedDate = guest.expectedDate 
+                ? formatDateForInput(new Date(guest.expectedDate))
+                : formatDateForInput(new Date());
+            
             setFormData({
                 siteId: guestSite.id,
                 blockId: guestBuilding.id,
@@ -138,6 +153,7 @@ export function EditGuestModal({ isOpen, onClose, onSave, guest, sites, building
                 brandId: parseModelString.brandId,
                 modelId: parseModelString.modelId,
                 color: guest.color || "",
+                expectedDate: expectedDate,
                 durationDays: guest.durationDays || 3,
                 note: guest.note || "",
                 parkingSpotId: guest.parkingSpotId || "",
@@ -148,7 +164,7 @@ export function EditGuestModal({ isOpen, onClose, onSave, guest, sites, building
             } else {
                 setDisplayPlate("");
             }
-        } else if (isOpen && sites.length > 0 && !formData.siteId) {
+        } else if (isOpen && sites && sites.length > 0 && !formData.siteId) {
             // If guest data is not available, set first site as default
             setFormData((prev) => ({
                 ...prev,
@@ -247,6 +263,7 @@ export function EditGuestModal({ isOpen, onClose, onSave, guest, sites, building
             plate: cleanedPlate,
             model: modelString || undefined,
             color: formData.color || undefined,
+            expectedDate: formData.expectedDate,
             durationDays: formData.durationDays,
             note: formData.note || undefined,
             parkingSpotId: formData.parkingSpotId || null,
@@ -338,20 +355,16 @@ export function EditGuestModal({ isOpen, onClose, onSave, guest, sites, building
                     <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">
                         {t("residents.guests.modals.addGuest.labels.parkingSpot") || "Park Yeri"}
                     </label>
-                    <select
+                    <SearchableSelect
                         value={formData.parkingSpotId}
-                        onChange={(e) => setFormData({ ...formData, parkingSpotId: e.target.value })}
+                        onChange={(value) => setFormData({ ...formData, parkingSpotId: value })}
+                        options={currentBlock?.parkingSpots?.map((spot) => ({
+                            id: spot.id,
+                            label: `${spot.name}${spot.floor !== undefined ? ` (Kat ${spot.floor})` : ""}`,
+                        })) || []}
                         disabled={!formData.blockId}
-                        className={`w-full bg-[#151821] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[#3B82F6] transition-colors appearance-none cursor-pointer ${!formData.blockId ? "opacity-50 cursor-not-allowed" : ""
-                            }`}
-                    >
-                        <option value="">{t("residents.guests.modals.addGuest.labels.parkingSpotSelect") || "Park Yeri Seçin"}</option>
-                        {currentBlock?.parkingSpots?.map((spot) => (
-                            <option key={spot.id} value={spot.id}>
-                                {spot.name} {spot.floor !== undefined ? `(Kat ${spot.floor})` : ""}
-                            </option>
-                        ))}
-                    </select>
+                        placeholder={t("residents.guests.modals.addGuest.labels.parkingSpotSelect") || "Park Yeri Seçin"}
+                    />
                 </div>
 
                 <div className="space-y-1.5">
@@ -441,6 +454,20 @@ export function EditGuestModal({ isOpen, onClose, onSave, guest, sites, building
                             label: c,
                         }))}
                         placeholder={t("residents.guests.modals.addGuest.labels.colorPlaceholder")}
+                    />
+                </div>
+
+                <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">
+                        {t("residents.guests.modals.addGuest.labels.expectedDate")}
+                    </label>
+                    <input
+                        type="date"
+                        value={formData.expectedDate}
+                        onChange={(e) => setFormData({ ...formData, expectedDate: e.target.value })}
+                        className="w-full bg-[#151821] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#3B82F6] transition-colors [color-scheme:dark]"
+                        min={formatDateForInput(new Date())}
+                        placeholder={t("residents.guests.modals.addGuest.labels.expectedDatePlaceholder")}
                     />
                 </div>
 

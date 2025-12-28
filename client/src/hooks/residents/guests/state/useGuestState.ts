@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import type { GuestVisit } from "@/types/residents.types";
 import { useGuestVisits } from "@/hooks/residents/api";
 import { GUESTS_PER_PAGE } from "@/constants/residents.constants";
@@ -11,7 +11,14 @@ export interface GuestStateReturn {
     currentPage: number;
     setCurrentPage: (page: number) => void;
     totalPages: number;
+    totalItems: number;
     isLoading: boolean;
+    dateRange: { from: string; to: string } | null;
+    setDateRange: React.Dispatch<React.SetStateAction<{ from: string; to: string } | null>>;
+    sortBy: string;
+    setSortBy: React.Dispatch<React.SetStateAction<string>>;
+    sortOrder: 'asc' | 'desc';
+    setSortOrder: React.Dispatch<React.SetStateAction<'asc' | 'desc'>>;
 
     // Computed Values
     filteredGuests: GuestVisit[];
@@ -25,6 +32,14 @@ export interface GuestStateReturn {
 export function useGuestState(searchTerm: string): GuestStateReturn {
     const [guestFilter, setGuestFilter] = useState<"all" | "pending" | "active" | "completed">("all");
     const [currentPage, setCurrentPage] = useState(1);
+    const [dateRange, setDateRange] = useState<{ from: string; to: string } | null>(null);
+    const [sortBy, setSortBy] = useState<string>('createdAt');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
+    // Reset page when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [guestFilter, dateRange, sortBy, sortOrder, searchTerm]);
 
     // ✅ Fetch guest visits with pagination from API
     const { visits, total, isLoading } = useGuestVisits(
@@ -33,15 +48,43 @@ export function useGuestState(searchTerm: string): GuestStateReturn {
         {
             status: guestFilter === 'all' ? undefined : guestFilter,
             search: searchTerm.length >= 3 ? searchTerm : undefined,
+            dateFrom: dateRange?.from,
+            dateTo: dateRange?.to,
+            sortBy,
+            sortOrder,
         }
     );
 
-    // Computed: Stats (from current page data)
-    const guestStats = useMemo(() => ({
-        active: visits.filter((g) => g.status === "active").length,
-        pending: visits.filter((g) => g.status === "pending").length,
-        completedToday: visits.filter((g) => g.status === "completed").length,
-    }), [visits]);
+    // ✅ Fetch ALL guest visits for stats (without pagination)
+    const { visits: allVisitsForStats } = useGuestVisits(
+        1,
+        10000, // Large limit to get all filtered results
+        {
+            status: guestFilter === 'all' ? undefined : guestFilter,
+            search: searchTerm.length >= 3 ? searchTerm : undefined,
+            dateFrom: dateRange?.from,
+            dateTo: dateRange?.to,
+            // No sort needed for stats
+        }
+    );
+
+    // Computed: Stats (from ALL filtered data, not just current page)
+    const guestStats = useMemo(() => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        return {
+            active: allVisitsForStats.filter((g) => g.status === "active").length,
+            pending: allVisitsForStats.filter((g) => g.status === "pending").length,
+            completedToday: allVisitsForStats.filter((g) => {
+                if (g.status !== "completed") return false;
+                if (!g.exitTime) return false;
+                const exitDate = new Date(g.exitTime);
+                exitDate.setHours(0, 0, 0, 0);
+                return exitDate.getTime() === today.getTime();
+            }).length,
+        };
+    }, [allVisitsForStats]);
 
     // Dummy setGuestList for compatibility (not used with API)
     const setGuestList = () => {
@@ -56,8 +99,15 @@ export function useGuestState(searchTerm: string): GuestStateReturn {
         currentPage,
         setCurrentPage,
         totalPages: Math.ceil(total / GUESTS_PER_PAGE),
+        totalItems: total,
         isLoading,
         filteredGuests: visits, // Already filtered by backend
         guestStats,
+        dateRange,
+        setDateRange,
+        sortBy,
+        setSortBy,
+        sortOrder,
+        setSortOrder,
     };
 }

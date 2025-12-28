@@ -185,13 +185,30 @@ export function ResidentsPage() {
                             onAddGuest={modalState.openGuestModal}
                             filteredGuests={guestState.filteredGuests}
                             onGuestSelect={modalState.setSelectedGuest}
-                            onEditGuest={(guest) => modalState.openEditGuestModal(guest)}
+                            onEditGuest={(guest) => {
+                                // Only allow editing if status is pending
+                                if (guest.status === 'pending') {
+                                    modalState.openEditGuestModal(guest);
+                                }
+                            }}
                             onDeleteGuest={guestActions.handleDeleteGuest}
                             isLoading={residentsState.loadingStates.guests}
                             onBlockChange={residentsState.setActiveBlockId}
                             onAddBuilding={buildingActions.handleOpenAddBuilding}
                             onEditBuilding={buildingActions.handleOpenEditBuilding}
                             onDeleteBuilding={buildingActions.handleOpenDeleteBuilding}
+                            dateRange={guestState.dateRange}
+                            setDateRange={guestState.setDateRange}
+                            sortBy={guestState.sortBy}
+                            sortOrder={guestState.sortOrder}
+                            onSortChange={(sortBy, sortOrder) => {
+                                guestState.setSortBy(sortBy);
+                                guestState.setSortOrder(sortOrder);
+                            }}
+                            currentPage={guestState.currentPage}
+                            totalPages={guestState.totalPages}
+                            totalItems={guestState.totalItems}
+                            onPageChange={guestState.setCurrentPage}
                         />
                     )}
                 </div>
@@ -318,8 +335,11 @@ export function ResidentsPage() {
                     onCheckIn={guestActions.handleCheckInClick}
                     onCheckOut={guestActions.handleCheckOutClick}
                     onEdit={(guest) => {
-                        modalState.setSelectedGuest(null);
-                        modalState.openEditGuestModal(guest);
+                        // Only allow editing if status is pending
+                        if (guest.status === 'pending') {
+                            modalState.setSelectedGuest(null);
+                            modalState.openEditGuestModal(guest);
+                        }
                     }}
                 />
             )}

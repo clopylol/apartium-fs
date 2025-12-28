@@ -1984,15 +1984,26 @@ export function createRoutes(storage: IStorage): Router {
         }
     });
 
-    // GET /api/guest-visits?page=1&limit=10&status=active&search=34ABC
+    // GET /api/guest-visits?page=1&limit=10&status=active&search=34ABC&dateFrom=2024-01-01&dateTo=2024-12-31&sortBy=plate&sortOrder=asc
     router.get('/guest-visits', requireAuth, async (req, res) => {
         try {
             const page = parseInt(req.query.page as string) || 1;
             const limit = parseInt(req.query.limit as string) || 10;
             const status = req.query.status as string | undefined;
             const search = req.query.search as string | undefined;
+            const dateFrom = req.query.dateFrom as string | undefined;
+            const dateTo = req.query.dateTo as string | undefined;
+            const sortBy = req.query.sortBy as string | undefined;
+            const sortOrder = req.query.sortOrder as 'asc' | 'desc' | undefined;
             
-            const result = await storage.getGuestVisitsPaginated(page, limit, { status, search });
+            const result = await storage.getGuestVisitsPaginated(page, limit, { 
+                status, 
+                search, 
+                dateFrom, 
+                dateTo,
+                sortBy,
+                sortOrder
+            });
             res.json(result);
         } catch (error: any) {
             console.error('Guest visits error:', error);

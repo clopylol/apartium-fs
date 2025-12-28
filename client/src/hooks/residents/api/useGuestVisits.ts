@@ -6,7 +6,7 @@ import type { GuestVisitsPaginatedResponse, GuestVisit } from '@/types/residents
 export function useGuestVisits(
     page: number,
     limit: number,
-    filters?: { status?: string; search?: string }
+    filters?: { status?: string; search?: string; dateFrom?: string; dateTo?: string; sortBy?: string; sortOrder?: 'asc' | 'desc' }
 ) {
     const query = useQuery<GuestVisitsPaginatedResponse>({
         queryKey: ['guest-visits', page, limit, filters],

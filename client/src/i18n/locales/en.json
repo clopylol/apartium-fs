@@ -429,7 +429,7 @@
       },
       "searchPlaceholders": {
         "residents": "Search unit, person or plate...",
-        "guests": "Search plate, guest or owner..."
+        "guests": "Search plate, guest name, host, unit, block, model, color..."
       }
     },
     "table": {
@@ -718,7 +718,16 @@
         "pending": "Pending",
         "active": "Active",
         "completed": "Completed",
-        "addGuest": "Add Guest"
+        "addGuest": "Add Guest",
+        "dateRange": {
+          "label": "Date Range",
+          "none": "All",
+          "thisWeek": "This Week",
+          "thisMonth": "This Month",
+          "custom": "Custom Range",
+          "from": "From",
+          "to": "To"
+        }
       },
       "stats": {
         "activeGuests": "Active Guests",
@@ -771,14 +780,25 @@
             "modelPlaceholder": "e.g.: VW Golf",
             "color": "Color (Optional)",
             "colorPlaceholder": "e.g.: Black",
+            "expectedDate": "Expected Date",
+            "expectedDatePlaceholder": "Select date",
             "duration": "Visit Duration (Days)",
             "days": "Days",
             "note": "Note",
-            "notePlaceholder": "Your note if any..."
+            "notePlaceholder": "Your note if any...",
+            "parkingSpot": "Parking Spot",
+            "parkingSpotSelect": "Select Parking Spot"
           },
           "buttons": {
             "cancel": "Cancel",
             "saveAndCheckIn": "Save & Check In"
+          },
+          "errors": {
+            "siteRequired": "Please select an apartment",
+            "blockRequired": "Please select a building",
+            "unitRequired": "Please select a unit",
+            "guestNameRequired": "Please enter guest name",
+            "expectedDateRequired": "Please select expected date"
           }
         },
         "detail": {

@@ -526,11 +526,16 @@ export function VehicleManagementModal({
                 onConfirm={handleConfirmDelete}
                 title={t("residents.modals.vehicleManagement.deleteConfirm.title")}
                 message={
-                    <p>
-                        {t("residents.modals.vehicleManagement.deleteConfirm.message", {
-                            plate: deleteConfirm.plate,
-                        })}
-                    </p>
+                    <div className="flex flex-col items-center gap-2">
+                        <div className="bg-slate-950/50 p-4 rounded-xl border border-slate-800 w-full mb-2">
+                            <div className="text-xl font-bold text-white font-mono text-center tracking-wider">
+                                {formatLicensePlateForDisplay(deleteConfirm.plate)}
+                            </div>
+                        </div>
+                        <p>{t("residents.modals.vehicleManagement.deleteConfirm.message", {
+                            plate: formatLicensePlateForDisplay(deleteConfirm.plate),
+                        })}</p>
+                    </div>
                 }
                 variant="danger"
             />

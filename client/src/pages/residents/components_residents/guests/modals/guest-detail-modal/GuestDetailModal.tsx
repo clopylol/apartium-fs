@@ -105,7 +105,7 @@ export function GuestDetailModal({ isOpen, onClose, guest, onCheckIn, onCheckOut
                         {t("residents.guests.modals.detail.buttons.close")}
                     </button>
 
-                    {onEdit && (
+                    {onEdit && guest.status === 'pending' && (
                         <button
                             onClick={() => {
                                 onClose();

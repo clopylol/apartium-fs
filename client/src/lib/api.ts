@@ -177,12 +177,16 @@ export const api = {
             apiClient(`/parking-spots/${id}`, { method: 'DELETE' }),
         
         // Guest Visits
-        getGuestVisits: (page: number, limit: number, filters?: { status?: string; search?: string }) => {
+        getGuestVisits: (page: number, limit: number, filters?: { status?: string; search?: string; dateFrom?: string; dateTo?: string; sortBy?: string; sortOrder?: 'asc' | 'desc' }) => {
             const params = new URLSearchParams();
             params.append('page', page.toString());
             params.append('limit', limit.toString());
             if (filters?.status) params.append('status', filters.status);
             if (filters?.search) params.append('search', filters.search);
+            if (filters?.dateFrom) params.append('dateFrom', filters.dateFrom);
+            if (filters?.dateTo) params.append('dateTo', filters.dateTo);
+            if (filters?.sortBy) params.append('sortBy', filters.sortBy);
+            if (filters?.sortOrder) params.append('sortOrder', filters.sortOrder);
             return apiClient(`/guest-visits?${params.toString()}`);
         },
         createGuestVisit: (data: any) =>

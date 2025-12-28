@@ -1,4 +1,4 @@
-import { eq, and, or, desc, gte, lte, count, isNull, ilike, sql, inArray } from 'drizzle-orm';
+import { eq, and, or, desc, asc, gte, lte, count, isNull, ilike, sql, inArray } from 'drizzle-orm';
 import { db } from './db/index.js';
 import type { IStorage } from './storage.js';
 import * as schema from 'apartium-shared';
@@ -2187,7 +2187,7 @@ export class DatabaseStorage implements IStorage {
     async getGuestVisitsPaginated(
         page: number,
         limit: number,
-        filters?: { status?: string; search?: string }
+        filters?: { status?: string; search?: string; dateFrom?: string; dateTo?: string; sortBy?: string; sortOrder?: 'asc' | 'desc' }
     ): Promise<{ visits: GuestVisit[]; total: number; page: number; limit: number }> {
         const offset = (page - 1) * limit;
         
@@ -2199,13 +2199,27 @@ export class DatabaseStorage implements IStorage {
         }
         
         if (filters?.search) {
+            const searchTerm = `%${filters.search}%`;
             const searchCondition = or(
-                ilike(schema.guestVisits.plate, `%${filters.search}%`),
-                ilike(schema.guestVisits.guestName, `%${filters.search}%`)
+                ilike(schema.guestVisits.plate, searchTerm),
+                ilike(schema.guestVisits.guestName, searchTerm),
+                ilike(schema.guestVisits.model, searchTerm),
+                ilike(schema.guestVisits.color, searchTerm),
+                ilike(schema.units.number, searchTerm),
+                ilike(schema.buildings.name, searchTerm),
+                ilike(schema.residents.name, searchTerm)
             );
             if (searchCondition) {
                 conditions.push(searchCondition);
             }
+        }
+        
+        if (filters?.dateFrom) {
+            conditions.push(gte(schema.guestVisits.expectedDate, filters.dateFrom));
+        }
+        
+        if (filters?.dateTo) {
+            conditions.push(lte(schema.guestVisits.expectedDate, filters.dateTo));
         }
         
         // Build where clause
@@ -2217,8 +2231,8 @@ export class DatabaseStorage implements IStorage {
             .from(schema.guestVisits)
             .where(whereClause);
         
-        // Get paginated results with JOINs
-        const visitsWithJoins = await db
+        // Get paginated results with JOINs (query builder - no await yet)
+        const visitsWithJoinsQuery = db
             .select({
                 // Guest visit fields
                 id: schema.guestVisits.id,
@@ -2256,15 +2270,48 @@ export class DatabaseStorage implements IStorage {
                 )
             )
             .leftJoin(schema.parkingSpots, eq(schema.guestVisits.parkingSpotId, schema.parkingSpots.id))
-            .where(whereClause)
-            .orderBy(desc(schema.guestVisits.createdAt))
+            .where(whereClause);
+        
+        // Dynamic sorting
+        let orderByClause;
+        const sortColumn = filters?.sortBy || 'createdAt';
+        const order = filters?.sortOrder || 'desc';
+        
+        switch (sortColumn) {
+            case 'plate':
+                orderByClause = order === 'asc' 
+                    ? asc(schema.guestVisits.plate) 
+                    : desc(schema.guestVisits.plate);
+                break;
+            case 'expectedDate':
+                orderByClause = order === 'asc' 
+                    ? asc(schema.guestVisits.expectedDate) 
+                    : desc(schema.guestVisits.expectedDate);
+                break;
+            case 'status':
+                orderByClause = order === 'asc' 
+                    ? asc(schema.guestVisits.status) 
+                    : desc(schema.guestVisits.status);
+                break;
+            case 'hostName':
+                orderByClause = order === 'asc' 
+                    ? asc(schema.residents.name) 
+                    : desc(schema.residents.name);
+                break;
+            default:
+                orderByClause = desc(schema.guestVisits.createdAt);
+        }
+        
+        // Execute query with orderBy, limit, and offset
+        const visitsWithJoinsSorted = await visitsWithJoinsQuery
+            .orderBy(orderByClause)
             .limit(limit)
             .offset(offset);
         
         // Group by guest visit id to handle multiple residents per unit
         // Take the first owner as hostName
         const visitsMap = new Map<string, any>();
-        for (const row of visitsWithJoins) {
+        for (const row of visitsWithJoinsSorted) {
             if (!visitsMap.has(row.id)) {
                 visitsMap.set(row.id, {
                     ...row,

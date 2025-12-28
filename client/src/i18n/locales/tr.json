@@ -428,7 +428,7 @@
       },
       "searchPlaceholders": {
         "residents": "Daire, kişi veya plaka...",
-        "guests": "Plaka, misafir veya ev sahibi..."
+        "guests": "Plaka, misafir adı, host, daire, blok, model, renk ara..."
       }
     },
     "table": {
@@ -717,7 +717,16 @@
         "pending": "Bekleyenler",
         "active": "İçeridekiler",
         "completed": "Çıkış Yapanlar",
-        "addGuest": "Misafir Kaydı"
+        "addGuest": "Misafir Kaydı",
+        "dateRange": {
+          "label": "Tarih Aralığı",
+          "none": "Tümü",
+          "thisWeek": "Bu Hafta",
+          "thisMonth": "Bu Ay",
+          "custom": "Özel Aralık",
+          "from": "Başlangıç",
+          "to": "Bitiş"
+        }
       },
       "stats": {
         "activeGuests": "İçerideki Misafir",
@@ -770,14 +779,25 @@
             "modelPlaceholder": "Örn: VW Golf",
             "color": "Renk (Opsiyonel)",
             "colorPlaceholder": "Örn: Siyah",
+            "expectedDate": "Beklenen Tarih",
+            "expectedDatePlaceholder": "Tarih seçin",
             "duration": "Ziyaret Süresi (Gün)",
             "days": "Gün",
             "note": "Not",
-            "notePlaceholder": "Varsa notunuz..."
+            "notePlaceholder": "Varsa notunuz...",
+            "parkingSpot": "Park Yeri",
+            "parkingSpotSelect": "Park Yeri Seçin"
           },
           "buttons": {
             "cancel": "İptal",
             "saveAndCheckIn": "Kaydet & Giriş Yap"
+          },
+          "errors": {
+            "siteRequired": "Lütfen bir apartman seçin",
+            "blockRequired": "Lütfen bir blok seçin",
+            "unitRequired": "Lütfen bir daire seçin",
+            "guestNameRequired": "Lütfen misafir adını girin",
+            "expectedDateRequired": "Lütfen beklenen tarihi seçin"
           }
         },
         "detail": {
