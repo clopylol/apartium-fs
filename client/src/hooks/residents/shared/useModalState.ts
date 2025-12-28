@@ -44,6 +44,8 @@ export interface ModalStateReturn {
     setCheckInConfirm: React.Dispatch<React.SetStateAction<{ isOpen: boolean; guestId: string | null }>>;
     checkOutConfirm: { isOpen: boolean; guestId: string | null };
     setCheckOutConfirm: React.Dispatch<React.SetStateAction<{ isOpen: boolean; guestId: string | null }>>;
+    deleteGuestConfirm: { isOpen: boolean; guestId: string | null };
+    setDeleteGuestConfirm: React.Dispatch<React.SetStateAction<{ isOpen: boolean; guestId: string | null }>>;
 
     // Vehicle Management Modal
     showVehicleManager: boolean;
@@ -56,6 +58,12 @@ export interface ModalStateReturn {
     editingResident: { resident: Resident; blockId: string; unitId: string } | null;
     openEditResidentModal: (resident: Resident, blockId: string, unitId: string) => void;
     closeEditResidentModal: () => void;
+
+    // Edit Guest Modal
+    showEditGuestModal: boolean;
+    editingGuest: GuestVisit | null;
+    openEditGuestModal: (guest: GuestVisit) => void;
+    closeEditGuestModal: () => void;
 
     // Delete Confirmations
     deleteResidentConfirm: {
@@ -108,6 +116,10 @@ export function useModalState(): ModalStateReturn {
         isOpen: false,
         guestId: null,
     });
+    const [deleteGuestConfirm, setDeleteGuestConfirm] = useState<{ isOpen: boolean; guestId: string | null }>({
+        isOpen: false,
+        guestId: null,
+    });
 
     // Vehicle Management Modal
     const [showVehicleManager, setShowVehicleManager] = useState(false);
@@ -124,6 +136,10 @@ export function useModalState(): ModalStateReturn {
         blockId: string;
         unitId: string;
     } | null>(null);
+
+    // Edit Guest Modal
+    const [showEditGuestModal, setShowEditGuestModal] = useState(false);
+    const [editingGuest, setEditingGuest] = useState<GuestVisit | null>(null);
 
     // Delete Confirmations
     const [deleteResidentConfirm, setDeleteResidentConfirm] = useState({
@@ -204,6 +220,8 @@ export function useModalState(): ModalStateReturn {
         setCheckInConfirm,
         checkOutConfirm,
         setCheckOutConfirm,
+        deleteGuestConfirm,
+        setDeleteGuestConfirm,
 
         // Vehicle Management Modal
         showVehicleManager,
@@ -222,6 +240,18 @@ export function useModalState(): ModalStateReturn {
             setShowEditResidentModal(true);
         },
         closeEditResidentModal: () => setShowEditResidentModal(false),
+
+        // Edit Guest Modal
+        showEditGuestModal,
+        editingGuest,
+        openEditGuestModal: (guest: GuestVisit) => {
+            setEditingGuest(guest);
+            setShowEditGuestModal(true);
+        },
+        closeEditGuestModal: () => {
+            setShowEditGuestModal(false);
+            setEditingGuest(null);
+        },
 
         // Delete Confirmations
         deleteResidentConfirm,

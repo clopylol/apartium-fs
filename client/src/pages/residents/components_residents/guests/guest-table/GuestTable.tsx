@@ -1,15 +1,18 @@
-import { Clock, LogIn, LogOut, MoreVertical, Smartphone, CarFront, CalendarDays, User } from "lucide-react";
+import { Clock, LogIn, LogOut, MoreVertical, Smartphone, CarFront, CalendarDays, User, Edit2, Trash2, MapPin } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { GuestVisit } from "@/types/residents.types";
-import { formatGuestVisitTime } from "@/utils/date";
+import { formatGuestVisitTime, formatDate } from "@/utils/date";
+import { formatLicensePlateForDisplay } from "@/utils/validation";
 
 interface GuestTableProps {
     guests: GuestVisit[];
     isLoading?: boolean;
     onGuestSelect: (guest: GuestVisit) => void;
+    onEditGuest?: (guest: GuestVisit) => void;
+    onDeleteGuest?: (guestId: string) => void;
 }
 
-export function GuestTable({ guests, isLoading, onGuestSelect }: GuestTableProps) {
+export function GuestTable({ guests, isLoading, onGuestSelect, onEditGuest, onDeleteGuest }: GuestTableProps) {
     const { t } = useTranslation();
     if (isLoading) return null;
 
@@ -58,13 +61,21 @@ export function GuestTable({ guests, isLoading, onGuestSelect }: GuestTableProps
                                                 <div className="text-sm font-bold text-white mb-0.5">
                                                     {guest.guestName || t("residents.guests.table.guest")}
                                                 </div>
-                                                <div className="flex items-center gap-2">
+                                                <div className="flex items-center gap-2 flex-wrap">
                                                     <span className="font-mono text-xs text-slate-400 bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800 w-fit inline-block">
-                                                        {guest.plate}
+                                                        {formatLicensePlateForDisplay(guest.plate)}
                                                     </span>
-                                                    <span className="text-xs text-slate-500">
-                                                        {guest.model}
-                                                    </span>
+                                                    {guest.parkingSpot && (
+                                                        <span className="text-[10px] bg-blue-500/10 text-blue-400 px-1.5 py-0.5 rounded border border-blue-500/20 flex items-center gap-1">
+                                                            <MapPin className="w-2.5 h-2.5" />
+                                                            {guest.parkingSpot}
+                                                        </span>
+                                                    )}
+                                                    {guest.model && (
+                                                        <span className="text-xs text-slate-500">
+                                                            {guest.model}
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
@@ -90,7 +101,7 @@ export function GuestTable({ guests, isLoading, onGuestSelect }: GuestTableProps
                                         <div className="flex flex-col text-sm text-slate-300">
                                             <span className="flex items-center gap-2">
                                                 <CalendarDays className="w-3.5 h-3.5 text-slate-500" />{" "}
-                                                {guest.expectedDate}
+                                                {formatDate(guest.expectedDate)}
                                             </span>
                                             <span className="text-xs text-slate-500 mt-0.5 ml-5">
                                                 {guest.durationDays} {t("residents.guests.table.daysDuration")}
@@ -138,15 +149,42 @@ export function GuestTable({ guests, isLoading, onGuestSelect }: GuestTableProps
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 text-right">
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                onGuestSelect(guest);
-                                            }}
-                                            className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
-                                        >
-                                            <MoreVertical className="w-4 h-4" />
-                                        </button>
+                                        <div className="flex items-center justify-end gap-1">
+                                            {onEditGuest && (
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        onEditGuest(guest);
+                                                    }}
+                                                    className="p-1.5 hover:bg-slate-800 text-slate-400 hover:text-white rounded transition-colors"
+                                                    title={t("residents.actions.edit") || "Düzenle"}
+                                                >
+                                                    <Edit2 className="w-4 h-4" />
+                                                </button>
+                                            )}
+                                            {onDeleteGuest && (
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        onDeleteGuest(guest.id);
+                                                    }}
+                                                    className="p-1.5 hover:bg-slate-800 text-slate-400 hover:text-red-400 rounded transition-colors"
+                                                    title={t("residents.actions.delete") || "Sil"}
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            )}
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    onGuestSelect(guest);
+                                                }}
+                                                className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded transition-colors"
+                                                title={t("residents.guests.modals.detail.title") || "Detaylar"}
+                                            >
+                                                <MoreVertical className="w-4 h-4" />
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))

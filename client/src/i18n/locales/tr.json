@@ -544,6 +544,11 @@
         "message": "Bu misafirin siteden çıkışını onaylıyor musunuz?",
         "confirmText": "Çıkış Yap"
       },
+      "deleteGuest": {
+        "title": "Misafir Kaydını Sil",
+        "message": "Bu misafir kaydını silmek istediğinizden emin misiniz?",
+        "confirmText": "Sil"
+      },
       "vehicleManagement": {
         "title": "Araç Yönetimi",
         "residentLabel": "Sakin:",
@@ -756,6 +761,7 @@
             "blockSelect": "Blok Seçin",
             "unit": "Daire",
             "unitSelect": "Daire Seçin",
+            "unitSearchPlaceholder": "Daire numarası veya sakin adı ara...",
             "guestName": "Misafir Adı Soyadı",
             "guestNamePlaceholder": "Ad Soyad",
             "plate": "Araç Plakası",
@@ -800,7 +806,19 @@
           "buttons": {
             "close": "Kapat",
             "checkIn": "Giriş Yap",
-            "checkOut": "Çıkış Yap"
+            "checkOut": "Çıkış Yap",
+            "edit": "Düzenle"
+          }
+        },
+        "editGuest": {
+          "title": "Misafir Düzenle",
+          "labels": {
+            "parkingSpot": "Park Yeri",
+            "parkingSpotSelect": "Park Yeri Seçin"
+          },
+          "buttons": {
+            "cancel": "İptal",
+            "save": "Kaydet"
           }
         },
         "confirmation": {

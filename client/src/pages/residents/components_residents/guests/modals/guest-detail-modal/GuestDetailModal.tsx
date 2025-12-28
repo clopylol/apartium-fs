@@ -1,7 +1,8 @@
-import { X, Clock, LogIn, LogOut, CarFront, Home, Phone, CalendarDays, MessageSquare } from "lucide-react";
+import { X, Clock, LogIn, LogOut, CarFront, Home, Phone, CalendarDays, MessageSquare, Edit2, MapPin } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { GuestVisit } from "@/types/residents.types";
-import { formatGuestVisitTime } from "@/utils/date";
+import { formatGuestVisitTime, formatDate } from "@/utils/date";
+import { formatLicensePlateForDisplay } from "@/utils/validation";
 
 interface GuestDetailModalProps {
     isOpen: boolean;
@@ -9,9 +10,10 @@ interface GuestDetailModalProps {
     guest: GuestVisit;
     onCheckIn: (guestId: string) => void;
     onCheckOut: (guestId: string) => void;
+    onEdit?: (guest: GuestVisit) => void;
 }
 
-export function GuestDetailModal({ isOpen, onClose, guest, onCheckIn, onCheckOut }: GuestDetailModalProps) {
+export function GuestDetailModal({ isOpen, onClose, guest, onCheckIn, onCheckOut, onEdit }: GuestDetailModalProps) {
     const { t } = useTranslation();
     if (!isOpen) return null;
 
@@ -52,9 +54,17 @@ export function GuestDetailModal({ isOpen, onClose, guest, onCheckIn, onCheckOut
                             <CarFront className="w-6 h-6 text-blue-500" />
                         </div>
                         <div>
-                            <h3 className="text-white font-bold font-mono text-lg tracking-wide">{guest.plate}</h3>
+                            <h3 className="text-white font-bold font-mono text-lg tracking-wide">{formatLicensePlateForDisplay(guest.plate)}</h3>
                             <p className="text-slate-400 text-sm">{guest.model || t("residents.guests.modals.detail.placeholders.noModel")} {guest.color && `• ${guest.color}`}</p>
                             <p className="text-slate-500 text-xs mt-1">{guest.guestName || t("residents.guests.modals.detail.placeholders.anonymousGuest")}</p>
+                            {guest.parkingSpot && (
+                                <div className="flex items-center gap-1 mt-2">
+                                    <span className="text-[10px] bg-blue-500/10 text-blue-400 px-1.5 py-0.5 rounded border border-blue-500/20 flex items-center gap-1">
+                                        <MapPin className="w-2.5 h-2.5" />
+                                        {guest.parkingSpot}
+                                    </span>
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -72,7 +82,7 @@ export function GuestDetailModal({ isOpen, onClose, guest, onCheckIn, onCheckOut
                         {/* Visit Info */}
                         <div className="bg-slate-800/20 p-4 rounded-xl border border-slate-800">
                             <p className="text-xs font-bold text-slate-500 uppercase mb-2 flex items-center gap-1"><CalendarDays className="w-3 h-3" /> {t("residents.guests.modals.detail.labels.visit")}</p>
-                            <p className="text-slate-200 font-bold text-sm">{guest.expectedDate}</p>
+                            <p className="text-slate-200 font-bold text-sm">{formatDate(guest.expectedDate)}</p>
                             <p className="text-slate-400 text-xs mt-1">{guest.durationDays} {t("residents.guests.modals.detail.labels.daysDuration")}</p>
                             {guest.entryTime && <p className="text-blue-400 text-xs mt-2">{t("residents.guests.modals.detail.labels.entry")} {formatGuestVisitTime(guest.entryTime)}</p>}
                             {guest.exitTime && <p className="text-slate-500 text-xs">{t("residents.guests.modals.detail.labels.exit")} {formatGuestVisitTime(guest.exitTime)}</p>}
@@ -94,6 +104,19 @@ export function GuestDetailModal({ isOpen, onClose, guest, onCheckIn, onCheckOut
                     <button onClick={onClose} className="flex-1 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-medium transition-colors text-sm">
                         {t("residents.guests.modals.detail.buttons.close")}
                     </button>
+
+                    {onEdit && (
+                        <button
+                            onClick={() => {
+                                onClose();
+                                onEdit(guest);
+                            }}
+                            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-medium transition-colors text-sm"
+                        >
+                            <Edit2 className="w-4 h-4" />
+                            {t("residents.guests.modals.detail.buttons.edit") || "Düzenle"}
+                        </button>
+                    )}
 
                     {guest.status === 'pending' && (
                         <button

@@ -121,6 +121,7 @@ export interface GuestVisit {
  */
 export interface GuestVisitRaw {
     id: string;
+    unitId: string;
     plate: string;
     guestName?: string;
     model?: string;
@@ -133,6 +134,14 @@ export interface GuestVisitRaw {
     exitTime?: string | null;  // ISO string
     note?: string;
     parkingSpotId?: string | null;
+    // JOIN fields from backend
+    unitNumber?: string | null;
+    blockName?: string | null;
+    hostName?: string | null;
+    parkingSpot?: string | null;
+    createdAt?: string;
+    updatedAt?: string;
+    deletedAt?: string | null;
 }
 
 /**

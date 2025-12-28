@@ -4,8 +4,10 @@ import { useGuestMutations } from "@/hooks/residents/api";
 export interface GuestActionsParams {
     setCheckInConfirm: React.Dispatch<React.SetStateAction<{ isOpen: boolean; guestId: string | null }>>;
     setCheckOutConfirm: React.Dispatch<React.SetStateAction<{ isOpen: boolean; guestId: string | null }>>;
+    setDeleteGuestConfirm: React.Dispatch<React.SetStateAction<{ isOpen: boolean; guestId: string | null }>>;
     checkInConfirm: { isOpen: boolean; guestId: string | null };
     checkOutConfirm: { isOpen: boolean; guestId: string | null };
+    deleteGuestConfirm: { isOpen: boolean; guestId: string | null };
     setSelectedGuest: (guest: GuestVisit | null) => void;
     closeGuestModal: () => void;
 }
@@ -16,20 +18,24 @@ export interface GuestActionsReturn {
     handleCheckOutClick: (guestId: string) => void;
     confirmCheckIn: () => void;
     confirmCheckOut: () => void;
+    handleDeleteGuest: (guestId: string) => void;
+    confirmDeleteGuest: () => void;
 }
 
 export function useGuestActions(params: GuestActionsParams): GuestActionsReturn {
     const {
         setCheckInConfirm,
         setCheckOutConfirm,
+        setDeleteGuestConfirm,
         checkInConfirm,
         checkOutConfirm,
+        deleteGuestConfirm,
         setSelectedGuest,
         closeGuestModal,
     } = params;
 
     // ✅ Use API mutations
-    const { createGuest, updateGuestStatus } = useGuestMutations();
+    const { createGuest, updateGuestStatus, deleteGuest } = useGuestMutations();
 
     const handleAddGuest = async (guestData: any) => {
         try {
@@ -94,11 +100,30 @@ export function useGuestActions(params: GuestActionsParams): GuestActionsReturn 
         }
     };
 
+    const handleDeleteGuest = (guestId: string) => {
+        setDeleteGuestConfirm({ isOpen: true, guestId });
+    };
+
+    const confirmDeleteGuest = async () => {
+        if (!deleteGuestConfirm.guestId) return;
+
+        try {
+            await deleteGuest.mutateAsync(deleteGuestConfirm.guestId);
+            setDeleteGuestConfirm({ isOpen: false, guestId: null });
+            setSelectedGuest(null);
+        } catch (error) {
+            // Error handled by mutation
+            console.error('Failed to delete guest:', error);
+        }
+    };
+
     return {
         handleAddGuest,
         handleCheckInClick,
         handleCheckOutClick,
         confirmCheckIn,
         confirmCheckOut,
+        handleDeleteGuest,
+        confirmDeleteGuest,
     };
 }

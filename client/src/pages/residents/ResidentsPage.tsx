@@ -12,6 +12,7 @@ import {
     useParkingActions,
     useGuestActions,
 } from "@/hooks/residents";
+import { useGuestMutations } from "@/hooks/residents/api";
 
 // Components
 import { ResidentsHeader } from "./components_residents/shared/header";
@@ -27,6 +28,8 @@ import { AddGuestModal } from "./components_residents/guests/modals/add-guest-mo
 import { VehicleManagementModal } from "./components_residents/resident/modals/vehicle-management-modal";
 import { EditResidentModal } from "./components_residents/resident/modals/edit-resident-modal";
 import { GuestDetailModal } from "./components_residents/guests/modals/guest-detail-modal";
+import { EditGuestModal } from "./components_residents/guests/modals/edit-guest-modal";
+import { formatLicensePlateForDisplay } from "@/utils/validation";
 import { FloorManagementModal } from "./components_residents/parking/modals/floor-management-modal";
 import { AssignVehicleModal } from "./components_residents/parking/modals/assign-vehicle-modal";
 
@@ -91,11 +94,15 @@ export function ResidentsPage() {
     const guestActions = useGuestActions({
         setCheckInConfirm: modalState.setCheckInConfirm,
         setCheckOutConfirm: modalState.setCheckOutConfirm,
+        setDeleteGuestConfirm: modalState.setDeleteGuestConfirm,
         checkInConfirm: modalState.checkInConfirm,
         checkOutConfirm: modalState.checkOutConfirm,
+        deleteGuestConfirm: modalState.deleteGuestConfirm,
         setSelectedGuest: modalState.setSelectedGuest,
         closeGuestModal: modalState.closeGuestModal,
     });
+
+    const { updateGuest } = useGuestMutations();
 
     return (
         <div className="flex flex-col h-full bg-slate-950 overflow-hidden relative">
@@ -178,6 +185,8 @@ export function ResidentsPage() {
                             onAddGuest={modalState.openGuestModal}
                             filteredGuests={guestState.filteredGuests}
                             onGuestSelect={modalState.setSelectedGuest}
+                            onEditGuest={(guest) => modalState.openEditGuestModal(guest)}
+                            onDeleteGuest={guestActions.handleDeleteGuest}
                             isLoading={residentsState.loadingStates.guests}
                             onBlockChange={residentsState.setActiveBlockId}
                             onAddBuilding={buildingActions.handleOpenAddBuilding}
@@ -268,6 +277,7 @@ export function ResidentsPage() {
                 isOpen={modalState.showGuestModal}
                 onClose={modalState.closeGuestModal}
                 onSubmit={guestActions.handleAddGuest}
+                sites={residentsState.sites}
                 buildings={residentsState.buildings}
             />
 
@@ -307,8 +317,71 @@ export function ResidentsPage() {
                     guest={modalState.selectedGuest}
                     onCheckIn={guestActions.handleCheckInClick}
                     onCheckOut={guestActions.handleCheckOutClick}
+                    onEdit={(guest) => {
+                        modalState.setSelectedGuest(null);
+                        modalState.openEditGuestModal(guest);
+                    }}
                 />
             )}
+
+            {/* Edit Guest Modal */}
+            {modalState.editingGuest && (
+                <EditGuestModal
+                    isOpen={modalState.showEditGuestModal}
+                    onClose={modalState.closeEditGuestModal}
+                    guest={modalState.editingGuest}
+                    sites={residentsState.sites}
+                    buildings={residentsState.buildings}
+                    onSave={async (guestData) => {
+                        try {
+                            await updateGuest.mutateAsync({
+                                id: guestData.id,
+                                data: {
+                                    unitId: guestData.unitId,
+                                    guestName: guestData.guestName,
+                                    plate: guestData.plate,
+                                    model: guestData.model,
+                                    color: guestData.color,
+                                    durationDays: guestData.durationDays,
+                                    note: guestData.note,
+                                    parkingSpotId: guestData.parkingSpotId,
+                                },
+                            });
+                            modalState.closeEditGuestModal();
+                        } catch (error) {
+                            // Error handled by mutation
+                            console.error('Failed to update guest:', error);
+                        }
+                    }}
+                />
+            )}
+
+            {/* Delete Guest Confirmation */}
+            <ConfirmationModal
+                isOpen={modalState.deleteGuestConfirm.isOpen}
+                onClose={() => modalState.setDeleteGuestConfirm({ isOpen: false, guestId: null })}
+                onConfirm={guestActions.confirmDeleteGuest}
+                title={t("residents.modals.deleteGuest.title") || "Misafir Kaydını Sil"}
+                message={
+                    <div className="flex flex-col items-center gap-2">
+                        {(() => {
+                            const guest = guestState.guestList.find((g) => g.id === modalState.deleteGuestConfirm.guestId);
+                            if (!guest) return null;
+                            return (
+                                <>
+                                    <div className="bg-slate-950/50 p-4 rounded-xl border border-slate-800 w-full mb-2">
+                                        <div className="text-xl font-bold text-white font-mono text-center tracking-wider">{formatLicensePlateForDisplay(guest.plate)}</div>
+                                        <div className="text-sm text-slate-400 text-center mt-1">{guest.guestName || t("residents.messages.anonymousGuest")}</div>
+                                    </div>
+                                    <p>{t("residents.modals.deleteGuest.message") || "Bu misafir kaydını silmek istediğinizden emin misiniz?"}</p>
+                                </>
+                            );
+                        })()}
+                    </div>
+                }
+                variant="danger"
+                confirmText={t("residents.modals.deleteGuest.confirmText") || "Sil"}
+            />
 
             {/* Check In Confirmation */}
             <ConfirmationModal
@@ -324,7 +397,7 @@ export function ResidentsPage() {
                             return (
                                 <>
                                     <div className="bg-slate-950/50 p-4 rounded-xl border border-slate-800 w-full mb-2">
-                                        <div className="text-xl font-bold text-white font-mono text-center tracking-wider">{guest.plate}</div>
+                                        <div className="text-xl font-bold text-white font-mono text-center tracking-wider">{formatLicensePlateForDisplay(guest.plate)}</div>
                                         <div className="text-sm text-slate-400 text-center mt-1">{guest.guestName || t("residents.messages.anonymousGuest")}</div>
                                     </div>
                                     <p>{t("residents.modals.checkIn.message")}</p>
@@ -351,7 +424,7 @@ export function ResidentsPage() {
                             return (
                                 <>
                                     <div className="bg-slate-950/50 p-4 rounded-xl border border-slate-800 w-full mb-2">
-                                        <div className="text-xl font-bold text-white font-mono text-center tracking-wider">{guest.plate}</div>
+                                        <div className="text-xl font-bold text-white font-mono text-center tracking-wider">{formatLicensePlateForDisplay(guest.plate)}</div>
                                         <div className="text-sm text-slate-400 text-center mt-1">{guest.guestName || t("residents.messages.anonymousGuest")}</div>
                                     </div>
                                     <p>{t("residents.modals.checkOut.message")}</p>

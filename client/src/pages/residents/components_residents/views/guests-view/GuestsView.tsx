@@ -20,6 +20,8 @@ export interface GuestsViewProps {
     onAddGuest: () => void;
     filteredGuests: GuestVisit[];
     onGuestSelect: (guest: GuestVisit | null) => void;
+    onEditGuest?: (guest: GuestVisit) => void;
+    onDeleteGuest?: (guestId: string) => void;
     isLoading: boolean;
     onBlockChange: (blockId: string) => void;
     onAddBuilding: () => void;
@@ -37,6 +39,8 @@ export function GuestsView({
     onAddGuest,
     filteredGuests,
     onGuestSelect,
+    onEditGuest,
+    onDeleteGuest,
     isLoading,
     onBlockChange,
     onAddBuilding,
@@ -90,7 +94,12 @@ export function GuestsView({
                 onAddGuest={onAddGuest}
             />
 
-            <GuestTable guests={filteredGuests} onGuestSelect={onGuestSelect} />
+            <GuestTable 
+                guests={filteredGuests} 
+                onGuestSelect={onGuestSelect}
+                onEditGuest={onEditGuest}
+                onDeleteGuest={onDeleteGuest}
+            />
         </div>
     );
 }

@@ -545,6 +545,11 @@
         "message": "Do you confirm this guest's exit from the site?",
         "confirmText": "Check Out"
       },
+      "deleteGuest": {
+        "title": "Delete Guest Record",
+        "message": "Are you sure you want to delete this guest record?",
+        "confirmText": "Delete"
+      },
       "vehicleManagement": {
         "title": "Vehicle Management",
         "residentLabel": "Resident:",
@@ -757,6 +762,7 @@
             "blockSelect": "Select Building",
             "unit": "Unit",
             "unitSelect": "Select Unit",
+            "unitSearchPlaceholder": "Search by unit number or resident name...",
             "guestName": "Guest Full Name",
             "guestNamePlaceholder": "Full Name",
             "plate": "License Plate",
@@ -801,7 +807,19 @@
           "buttons": {
             "close": "Close",
             "checkIn": "Check In",
-            "checkOut": "Check Out"
+            "checkOut": "Check Out",
+            "edit": "Edit"
+          }
+        },
+        "editGuest": {
+          "title": "Edit Guest",
+          "labels": {
+            "parkingSpot": "Parking Spot",
+            "parkingSpotSelect": "Select Parking Spot"
+          },
+          "buttons": {
+            "cancel": "Cancel",
+            "save": "Save"
           }
         },
         "confirmation": {

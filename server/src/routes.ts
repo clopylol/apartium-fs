@@ -1985,7 +1985,7 @@ export function createRoutes(storage: IStorage): Router {
     });
 
     // GET /api/guest-visits?page=1&limit=10&status=active&search=34ABC
-    router.get('/guest-visits', async (req, res) => {
+    router.get('/guest-visits', requireAuth, async (req, res) => {
         try {
             const page = parseInt(req.query.page as string) || 1;
             const limit = parseInt(req.query.limit as string) || 10;

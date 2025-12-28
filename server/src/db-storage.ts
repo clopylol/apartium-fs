@@ -2217,14 +2217,69 @@ export class DatabaseStorage implements IStorage {
             .from(schema.guestVisits)
             .where(whereClause);
         
-        // Get paginated results
-        const visits = await db
-            .select()
+        // Get paginated results with JOINs
+        const visitsWithJoins = await db
+            .select({
+                // Guest visit fields
+                id: schema.guestVisits.id,
+                unitId: schema.guestVisits.unitId,
+                parkingSpotId: schema.guestVisits.parkingSpotId,
+                plate: schema.guestVisits.plate,
+                guestName: schema.guestVisits.guestName,
+                model: schema.guestVisits.model,
+                color: schema.guestVisits.color,
+                status: schema.guestVisits.status,
+                source: schema.guestVisits.source,
+                expectedDate: schema.guestVisits.expectedDate,
+                durationDays: schema.guestVisits.durationDays,
+                entryTime: schema.guestVisits.entryTime,
+                exitTime: schema.guestVisits.exitTime,
+                note: schema.guestVisits.note,
+                createdAt: schema.guestVisits.createdAt,
+                updatedAt: schema.guestVisits.updatedAt,
+                deletedAt: schema.guestVisits.deletedAt,
+                // JOIN fields
+                unitNumber: schema.units.number,
+                blockName: schema.buildings.name,
+                hostName: schema.residents.name,
+                parkingSpot: schema.parkingSpots.name,
+            })
             .from(schema.guestVisits)
+            .leftJoin(schema.units, eq(schema.guestVisits.unitId, schema.units.id))
+            .leftJoin(schema.buildings, eq(schema.units.buildingId, schema.buildings.id))
+            .leftJoin(
+                schema.residents,
+                and(
+                    eq(schema.units.id, schema.residents.unitId),
+                    eq(schema.residents.type, 'owner'),
+                    isNull(schema.residents.deletedAt)
+                )
+            )
+            .leftJoin(schema.parkingSpots, eq(schema.guestVisits.parkingSpotId, schema.parkingSpots.id))
             .where(whereClause)
             .orderBy(desc(schema.guestVisits.createdAt))
             .limit(limit)
             .offset(offset);
+        
+        // Group by guest visit id to handle multiple residents per unit
+        // Take the first owner as hostName
+        const visitsMap = new Map<string, any>();
+        for (const row of visitsWithJoins) {
+            if (!visitsMap.has(row.id)) {
+                visitsMap.set(row.id, {
+                    ...row,
+                    hostName: row.hostName || null, // First owner found
+                });
+            } else {
+                // If we already have this visit but hostName is null, update it
+                const existing = visitsMap.get(row.id)!;
+                if (!existing.hostName && row.hostName) {
+                    existing.hostName = row.hostName;
+                }
+            }
+        }
+        
+        const visits = Array.from(visitsMap.values()) as GuestVisit[];
         
         return {
             visits,

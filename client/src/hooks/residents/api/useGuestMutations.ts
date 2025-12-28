@@ -28,6 +28,18 @@ export function useGuestMutations() {
         },
     });
 
+    const updateGuest = useMutation({
+        mutationFn: ({ id, data }: { id: string; data: any }) =>
+            api.residents.updateGuestVisit(id, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['guest-visits'] });
+            showSuccess('Misafir kaydı güncellendi');
+        },
+        onError: (error: Error) => {
+            showError(error.message || 'Kayıt güncellenemedi');
+        },
+    });
+
     const deleteGuest = useMutation({
         mutationFn: api.residents.deleteGuestVisit,
         onSuccess: () => {
@@ -42,6 +54,7 @@ export function useGuestMutations() {
     return {
         createGuest,
         updateGuestStatus,
+        updateGuest,
         deleteGuest,
     };
 }

@@ -22,10 +22,11 @@ export function useGuestVisits(
             ...visit,
             entryTime: visit.entryTime ? new Date(visit.entryTime) : null,
             exitTime: visit.exitTime ? new Date(visit.exitTime) : null,
-            // Add missing fields for compatibility
-            hostName: '', // Will be populated from backend join
-            unitNumber: '',
-            blockName: '',
+            // Use JOIN fields from backend
+            hostName: visit.hostName || '',
+            unitNumber: visit.unitNumber || '',
+            blockName: visit.blockName || '',
+            parkingSpot: visit.parkingSpot || undefined,
         })) as GuestVisit[];
     }, [query.data?.visits]);
 
