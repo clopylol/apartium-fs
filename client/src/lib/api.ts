@@ -85,23 +85,78 @@ export const api = {
 
     // Payments
     payments: {
-        getByPeriod: (month: string, year: number) =>
-            apiClient(`/payments?month=${month}&year=${year}`),
+        getByPeriod: (
+            month: string,
+            year: number,
+            page: number = 1,
+            limit: number = 20,
+            filters?: { search?: string; status?: 'paid' | 'unpaid'; siteId?: string; buildingId?: string }
+        ) => {
+            const params = new URLSearchParams();
+            params.append('month', month);
+            params.append('year', year.toString());
+            params.append('page', page.toString());
+            params.append('limit', limit.toString());
+            if (filters?.search && filters.search.trim().length >= 3) {
+                params.append('search', filters.search.trim());
+            }
+            if (filters?.status) {
+                params.append('status', filters.status);
+            }
+            if (filters?.buildingId) {
+                params.append('buildingId', filters.buildingId);
+            } else if (filters?.siteId) {
+                params.append('siteId', filters.siteId);
+            }
+            return apiClient(`/payments?${params.toString()}`);
+        },
         create: (payment: any) =>
-            apiClient('/payments', { data: payment }),
-        updateStatus: (id: string, status: 'paid' | 'unpaid') =>
+            apiClient('/payments', { method: 'POST', data: payment }),
+        updateStatus: (id: string, status: 'paid' | 'unpaid', paymentDate?: string) =>
             apiClient(`/payments/${id}/status`, {
                 method: 'PATCH',
-                data: { status }
+                data: { status, paymentDate }
+            }),
+        bulkAmountUpdate: (month: string, year: number, amount: number) =>
+            apiClient('/payments/bulk-amount', {
+                method: 'PATCH',
+                data: { month, year, amount }
             }),
     },
 
     // Expenses
     expenses: {
-        getByPeriod: (month: string, year: number) =>
-            apiClient(`/expenses?month=${month}&year=${year}`),
+        getByPeriod: (
+            month: string,
+            year: number,
+            page: number = 1,
+            limit: number = 20,
+            filters?: { search?: string; category?: string; siteId?: string; buildingId?: string }
+        ) => {
+            const params = new URLSearchParams();
+            params.append('month', month);
+            params.append('year', year.toString());
+            params.append('page', page.toString());
+            params.append('limit', limit.toString());
+            if (filters?.search && filters.search.trim().length >= 3) {
+                params.append('search', filters.search.trim());
+            }
+            if (filters?.category) {
+                params.append('category', filters.category);
+            }
+            if (filters?.buildingId) {
+                params.append('buildingId', filters.buildingId);
+            } else if (filters?.siteId) {
+                params.append('siteId', filters.siteId);
+            }
+            return apiClient(`/expenses?${params.toString()}`);
+        },
+        getById: (id: string) =>
+            apiClient(`/expenses/${id}`),
         create: (expense: any) =>
-            apiClient('/expenses', { data: expense }),
+            apiClient('/expenses', { method: 'POST', data: expense }),
+        update: (id: string, data: any) =>
+            apiClient(`/expenses/${id}`, { method: 'PATCH', data }),
         delete: (id: string) =>
             apiClient(`/expenses/${id}`, { method: 'DELETE' }),
     },

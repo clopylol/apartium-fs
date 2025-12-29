@@ -38,7 +38,18 @@ export const ConfirmationModal: FC<ConfirmationModalProps> = ({ isOpen, payment,
     const customMessage = (
         <>
             <strong className="text-ds-secondary-light dark:text-ds-secondary-dark font-bold">{payment.residentName}</strong> {t('payments.modals.confirmation.residentLabel')} <br />
-            <strong className={`font-bold text-lg ${actionType === 'pay' ? 'text-ds-in-success-500' : 'text-ds-in-destructive-500'}`}>{amount}</strong> <br />
+            <div className={`inline-flex items-center justify-center px-5 py-3 rounded-xl my-3 ${
+                actionType === 'pay'
+                    ? 'bg-gradient-to-r from-ds-in-success-500/30 via-ds-success/30 to-ds-in-success-500/30 border-2 border-ds-in-success-500/60 shadow-lg shadow-ds-in-success-500/20'
+                    : 'bg-gradient-to-r from-ds-in-destructive-500/30 via-ds-destructive/30 to-ds-in-destructive-500/30 border-2 border-ds-in-destructive-500/60 shadow-lg shadow-ds-in-destructive-500/20'
+            } backdrop-blur-sm`}>
+                <span className={`font-extrabold text-4xl ${
+                    actionType === 'pay' ? 'text-ds-in-success-500' : 'text-ds-in-destructive-500'
+                } drop-shadow-lg tracking-tight`}>
+                    {amount}
+                </span>
+            </div>
+            <br />
             {actionType === 'pay' ? t('payments.modals.confirmation.message.pay', { name: payment.residentName }) : t('payments.modals.confirmation.message.cancel', { name: payment.residentName })}
         </>
     );

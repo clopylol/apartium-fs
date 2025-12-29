@@ -241,6 +241,15 @@
     "archive": {
       "label": "Archive Period"
     },
+    "amount": {
+      "label": "Payment Amount",
+      "notSet": "Not Set",
+      "clickToSet": "Click to set the dues amount"
+    },
+    "navigation": {
+      "previousMonth": "Previous month",
+      "nextMonth": "Next month"
+    },
     "stats": {
       "income": {
         "collected": "Collected Dues",

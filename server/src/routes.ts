@@ -435,9 +435,9 @@ export function createRoutes(storage: IStorage): Router {
     // GET /api/payments?month=Ocak&year=2025
     router.get('/payments', requireAuth, async (req, res) => {
         try {
-            const { month, year, page = '1', limit = '20', search, status } = req.query;
+            const { month, year, page = '1', limit = '20', search, status, siteId, buildingId } = req.query;
             
-            console.log('Payment fetch request:', { month, year, page, limit, search, status });
+            console.log('Payment fetch request:', { month, year, page, limit, search, status, siteId, buildingId });
             
             // Validation
             if (!month || !year) {
@@ -465,12 +465,22 @@ export function createRoutes(storage: IStorage): Router {
                 return res.status(400).json({ error: 'Geçersiz status değeri' });
             }
 
-            const filters: { search?: string; status?: 'paid' | 'unpaid' } = {};
+            // Validate siteId and buildingId - buildingId takes precedence
+            if (buildingId && siteId) {
+                return res.status(400).json({ error: 'buildingId ve siteId birlikte kullanılamaz. buildingId seçildiğinde siteId kullanılmamalıdır' });
+            }
+
+            const filters: { search?: string; status?: 'paid' | 'unpaid'; siteId?: string; buildingId?: string } = {};
             if (search && typeof search === 'string' && search.trim().length >= 3) {
                 filters.search = search.trim();
             }
             if (status) {
                 filters.status = status as 'paid' | 'unpaid';
+            }
+            if (buildingId && typeof buildingId === 'string') {
+                filters.buildingId = buildingId;
+            } else if (siteId && typeof siteId === 'string') {
+                filters.siteId = siteId;
             }
 
             const result = await storage.getPaymentRecordsPaginated(
@@ -597,9 +607,9 @@ export function createRoutes(storage: IStorage): Router {
     // ==================== EXPENSE ROUTES ====================
     router.get('/expenses', requireAuth, async (req, res) => {
         try {
-            const { month, year, page = '1', limit = '20', search, category } = req.query;
+            const { month, year, page = '1', limit = '20', search, category, siteId, buildingId } = req.query;
 
-            console.log('Expense fetch request:', { month, year, page, limit, search, category });
+            console.log('Expense fetch request:', { month, year, page, limit, search, category, siteId, buildingId });
 
             // Validation
             if (!month || !year) {
@@ -628,12 +638,23 @@ export function createRoutes(storage: IStorage): Router {
                 return res.status(400).json({ error: 'Geçersiz kategori değeri' });
             }
 
-            const filters: { search?: string; category?: string } = {};
+            // Validate siteId and buildingId - buildingId takes precedence
+            if (buildingId && siteId) {
+                return res.status(400).json({ error: 'buildingId ve siteId birlikte kullanılamaz. buildingId seçildiğinde siteId kullanılmamalıdır' });
+            }
+
+            // Note: Expenses don't have direct siteId/buildingId relationship, but we accept the parameters for API consistency
+            const filters: { search?: string; category?: string; siteId?: string; buildingId?: string } = {};
             if (search && typeof search === 'string' && search.trim().length >= 3) {
                 filters.search = search.trim();
             }
             if (category) {
                 filters.category = category as string;
+            }
+            if (buildingId && typeof buildingId === 'string') {
+                filters.buildingId = buildingId;
+            } else if (siteId && typeof siteId === 'string') {
+                filters.siteId = siteId;
             }
 
             const result = await storage.getExpenseRecordsPaginated(

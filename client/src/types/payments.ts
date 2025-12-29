@@ -1,5 +1,5 @@
 export interface PaymentRecord {
-    id: string;
+    id: string | null; // null for placeholder payment records
     residentId: string;
     unitId: string;
     amount: number | string; // Can be decimal string from DB
@@ -8,14 +8,15 @@ export interface PaymentRecord {
     paymentDate: string | null; // ISO timestamp from DB
     periodMonth: string;
     periodYear: number;
-    createdAt: string;
-    updatedAt: string;
+    createdAt: string | null; // null for placeholder records
+    updatedAt: string | null; // null for placeholder records
     // JOIN data from API
     residentName: string;
     residentPhone: string;
     residentAvatar: string | null;
     unitNumber: string;
     buildingId: string;
+    buildingName: string | null;
 }
 
 // Legacy format for components (temporary compatibility)

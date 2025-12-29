@@ -57,7 +57,7 @@ export const PaymentTable: FC<PaymentTableProps> = ({
                                         {selectablePaymentsCount > 0 && selectedIds.length === selectablePaymentsCount ? <CheckSquare className="w-5 h-5 text-ds-in-indigo-light" /> : <Square className="w-5 h-5" />}
                                     </button>
                                 </th>
-                                <th className="px-6 py-4 w-24">{t('payments.table.columns.unit')}</th>
+                                <th className="px-6 py-4 w-48">{t('payments.table.columns.unit')}</th>
                                 <th className="px-6 py-4">{t('payments.table.columns.resident')}</th>
                                 <th className="px-6 py-4">{t('payments.table.columns.paymentType')}</th>
                                 <th className="px-6 py-4">{t('payments.table.columns.amount')}</th>

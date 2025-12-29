@@ -560,47 +560,96 @@ export class DatabaseStorage implements IStorage {
         year: number,
         page: number,
         limit: number,
-        filters?: { search?: string; status?: 'paid' | 'unpaid' }
+        filters?: { search?: string; status?: 'paid' | 'unpaid'; siteId?: string; buildingId?: string }
     ): Promise<{
         payments: any[];
         total: number;
         stats: { total: number; collected: number; pending: number; rate: number };
     }> {
-        // Build WHERE conditions
-        const conditions = [
+        // Step 1: Get all units for the selected building/site
+        const unitConditions = [];
+        if (filters?.buildingId) {
+            unitConditions.push(eq(schema.units.buildingId, filters.buildingId));
+        } else if (filters?.siteId) {
+            // Get all buildings for this site first
+            const buildings = await db
+                .select({ id: schema.buildings.id })
+                .from(schema.buildings)
+                .where(eq(schema.buildings.siteId, filters.siteId));
+            
+            if (buildings.length === 0) {
+                return {
+                    payments: [],
+                    total: 0,
+                    stats: { total: 0, collected: 0, pending: 0, rate: 0 },
+                };
+            }
+            
+            unitConditions.push(inArray(schema.units.buildingId, buildings.map(b => b.id)));
+        }
+
+        // Get all units with building names
+        const allUnits = await db
+            .select({
+                id: schema.units.id,
+                number: schema.units.number,
+                buildingId: schema.units.buildingId,
+                buildingName: schema.buildings.name,
+            })
+            .from(schema.units)
+            .leftJoin(schema.buildings, eq(schema.units.buildingId, schema.buildings.id))
+            .where(unitConditions.length > 0 ? and(...unitConditions) : undefined);
+
+        if (allUnits.length === 0) {
+            return {
+                payments: [],
+                total: 0,
+                stats: { total: 0, collected: 0, pending: 0, rate: 0 },
+            };
+        }
+
+        const unitIds = allUnits.map(u => u.id);
+
+        // Step 2: Get first resident for each unit (oldest created_at)
+        // Get all residents for these units, then filter in JavaScript to get first per unit
+        const allResidents = await db
+            .select({
+                id: schema.residents.id,
+                unitId: schema.residents.unitId,
+                name: schema.residents.name,
+                phone: schema.residents.phone,
+                avatar: schema.residents.avatar,
+                createdAt: schema.residents.createdAt,
+            })
+            .from(schema.residents)
+            .where(inArray(schema.residents.unitId, unitIds))
+            .orderBy(asc(schema.residents.createdAt));
+
+        // Group by unitId and get first resident for each unit
+        const unitToResidentMap = new Map<string, typeof allResidents[0]>();
+        for (const resident of allResidents) {
+            if (!unitToResidentMap.has(resident.unitId)) {
+                unitToResidentMap.set(resident.unitId, resident);
+            }
+        }
+
+        const firstResidents = Array.from(unitToResidentMap.values());
+        const residentIds = firstResidents.map(r => r.id);
+
+        // Step 3: Get payment records for these residents
+        const paymentConditions = [
             eq(schema.paymentRecords.periodMonth, month),
             eq(schema.paymentRecords.periodYear, year),
             isNull(schema.paymentRecords.deletedAt),
+            inArray(schema.paymentRecords.residentId, residentIds),
         ];
 
-        // Add status filter
         if (filters?.status) {
-            conditions.push(eq(schema.paymentRecords.status, filters.status));
+            paymentConditions.push(eq(schema.paymentRecords.status, filters.status));
         }
 
-        // Add search filter (resident name or unit number)
-        // Search minimum 3 characters for security
-        if (filters?.search && filters.search.trim().length >= 3) {
-            const searchTerm = `%${filters.search.trim().toLowerCase()}%`;
-            conditions.push(
-                or(
-                    ilike(schema.residents.name, searchTerm),
-                    ilike(schema.units.number, searchTerm)
-                )
-            );
-        }
-
-        // Get total count
-        const [{ count: totalCount }] = await db
-            .select({ count: count() })
-            .from(schema.paymentRecords)
-            .leftJoin(schema.residents, eq(schema.paymentRecords.residentId, schema.residents.id))
-            .leftJoin(schema.units, eq(schema.paymentRecords.unitId, schema.units.id))
-            .where(and(...conditions));
-
-        // Get paginated data with JOINs
-        const offset = (page - 1) * limit;
-        const payments = await db
+        // Get payment records
+        const paymentRecords = await db
             .select({
                 id: schema.paymentRecords.id,
                 residentId: schema.paymentRecords.residentId,
@@ -613,51 +662,160 @@ export class DatabaseStorage implements IStorage {
                 periodYear: schema.paymentRecords.periodYear,
                 createdAt: schema.paymentRecords.createdAt,
                 updatedAt: schema.paymentRecords.updatedAt,
-                // JOIN data
-                residentName: schema.residents.name,
-                residentPhone: schema.residents.phone,
-                residentAvatar: schema.residents.avatar,
-                unitNumber: schema.units.number,
-                buildingId: schema.units.buildingId,
             })
             .from(schema.paymentRecords)
-            .leftJoin(schema.residents, eq(schema.paymentRecords.residentId, schema.residents.id))
-            .leftJoin(schema.units, eq(schema.paymentRecords.unitId, schema.units.id))
-            .where(and(...conditions))
-            .orderBy(desc(schema.paymentRecords.createdAt))
-            .limit(limit)
-            .offset(offset);
+            .where(and(...paymentConditions));
 
-        // Calculate stats for the period (without search filter for accurate stats)
-        const statsConditions = [
-            eq(schema.paymentRecords.periodMonth, month),
-            eq(schema.paymentRecords.periodYear, year),
-            isNull(schema.paymentRecords.deletedAt),
-        ];
+        // Create a map of residentId -> payment record
+        const residentToPaymentMap = new Map(paymentRecords.map(pr => [pr.residentId, pr]));
 
-        const [statsResult] = await db
+        // Step 4: Combine units with first residents and payment records
+        // Also handle search filter if provided
+        let combinedPayments = allUnits
+            .map(unit => {
+                const firstResident = unitToResidentMap.get(unit.id);
+                if (!firstResident) {
+                    // Unit has no residents, skip it
+                    return null;
+                }
+
+                const paymentRecord = residentToPaymentMap.get(firstResident.id);
+                
+                // Apply search filter if provided
+                if (filters?.search && filters.search.trim().length >= 3) {
+                    const searchTerm = filters.search.trim().toLowerCase();
+                    const matchesResident = firstResident.name.toLowerCase().includes(searchTerm);
+                    const matchesUnit = unit.number.toLowerCase().includes(searchTerm);
+                    if (!matchesResident && !matchesUnit) {
+                        return null;
+                    }
+                }
+
+                // Create payment record object (with placeholder if no payment record exists)
+                if (paymentRecord) {
+                    return {
+                        id: paymentRecord.id,
+                        residentId: firstResident.id,
+                        unitId: unit.id,
+                        amount: paymentRecord.amount,
+                        type: paymentRecord.type,
+                        status: paymentRecord.status,
+                        paymentDate: paymentRecord.paymentDate,
+                        periodMonth: paymentRecord.periodMonth,
+                        periodYear: paymentRecord.periodYear,
+                        createdAt: paymentRecord.createdAt,
+                        updatedAt: paymentRecord.updatedAt,
+                        // JOIN data
+                        residentName: firstResident.name,
+                        residentPhone: firstResident.phone,
+                        residentAvatar: firstResident.avatar,
+                        unitNumber: unit.number,
+                        buildingId: unit.buildingId,
+                    };
+                } else {
+                    // Placeholder payment record (no payment record exists yet)
+                    return {
+                        id: null, // No payment record ID
+                        residentId: firstResident.id,
+                        unitId: unit.id,
+                        amount: '0', // Will be set when bulk amount is updated
+                        type: 'aidat',
+                        status: 'unpaid' as const,
+                        paymentDate: null,
+                        periodMonth: month,
+                        periodYear: year,
+                        createdAt: null,
+                        updatedAt: null,
+                        // JOIN data
+                        residentName: firstResident.name,
+                        residentPhone: firstResident.phone,
+                        residentAvatar: firstResident.avatar,
+                        unitNumber: unit.number,
+                        buildingId: unit.buildingId,
+                        buildingName: unit.buildingName,
+                    };
+                }
+            })
+            .filter((p): p is NonNullable<typeof p> => p !== null);
+
+        // Apply status filter to placeholder records if needed
+        if (filters?.status) {
+            combinedPayments = combinedPayments.filter(p => p.status === filters.status);
+        }
+
+        // Sort by unit number
+        combinedPayments.sort((a, b) => {
+            // Extract numbers from unit numbers (e.g., "A-1" -> ["A", "1"])
+            const aParts = a.unitNumber.match(/(\d+)/);
+            const bParts = b.unitNumber.match(/(\d+)/);
+            if (aParts && bParts) {
+                return parseInt(aParts[1]) - parseInt(bParts[1]);
+            }
+            return a.unitNumber.localeCompare(b.unitNumber);
+        });
+
+        // Get total count
+        const totalCount = combinedPayments.length;
+
+        // Apply pagination
+        const offset = (page - 1) * limit;
+        const paginatedPayments = combinedPayments.slice(offset, offset + limit);
+
+        // Calculate stats for the period
+        // Stats should include all units (not filtered by search), but only first residents
+        // Get all payment records for first residents (without search filter)
+        const allPaymentRecordsForStats = await db
             .select({
-                totalAmount: sql<string>`COALESCE(SUM(${schema.paymentRecords.amount}), 0)`,
-                collectedAmount: sql<string>`COALESCE(SUM(CASE WHEN ${schema.paymentRecords.status} = 'paid' THEN ${schema.paymentRecords.amount} ELSE 0 END), 0)`,
-                totalCount: count(),
+                id: schema.paymentRecords.id,
+                residentId: schema.paymentRecords.residentId,
+                unitId: schema.paymentRecords.unitId,
+                amount: schema.paymentRecords.amount,
+                status: schema.paymentRecords.status,
             })
             .from(schema.paymentRecords)
-            .where(and(...statsConditions));
+            .where(
+                and(
+                    eq(schema.paymentRecords.periodMonth, month),
+                    eq(schema.paymentRecords.periodYear, year),
+                    isNull(schema.paymentRecords.deletedAt),
+                    inArray(schema.paymentRecords.residentId, residentIds)
+                )
+            );
 
-        const total = parseFloat(statsResult.totalAmount);
-        const collected = parseFloat(statsResult.collectedAmount);
-        const pending = total - collected;
-        const rate = total > 0 ? Math.round((collected / total) * 100) : 0;
+        // Calculate stats from payment records
+        let totalAmount = 0;
+        let collectedAmount = 0;
+
+        // For each unit, use payment record amount if exists, otherwise use 0 (placeholder)
+        for (const unit of allUnits) {
+            const firstResident = unitToResidentMap.get(unit.id);
+            if (!firstResident) continue;
+
+            const paymentRecord = allPaymentRecordsForStats.find(pr => pr.residentId === firstResident.id);
+            if (paymentRecord) {
+                const amount = parseFloat(paymentRecord.amount);
+                totalAmount += amount;
+                if (paymentRecord.status === 'paid') {
+                    collectedAmount += amount;
+                }
+            }
+            // If no payment record, it's a placeholder with amount 0, so we don't add to total
+            // This means stats only count units that have payment records created
+        }
+
+        const pending = totalAmount - collectedAmount;
+        const rate = totalAmount > 0 ? Math.round((collectedAmount / totalAmount) * 100) : 0;
 
         return {
-            payments,
+            payments: paginatedPayments,
             total: totalCount,
-            stats: { total, collected, pending, rate },
+            stats: { total: totalAmount, collected: collectedAmount, pending, rate },
         };
     }
 
     async updatePaymentAmountByPeriod(month: string, year: number, amount: string): Promise<number> {
-        const result = await db
+        // First, update existing payment records
+        const updateResult = await db
             .update(schema.paymentRecords)
             .set({
                 amount: amount,
@@ -670,9 +828,68 @@ export class DatabaseStorage implements IStorage {
                     isNull(schema.paymentRecords.deletedAt)
                 )
             )
-            .returning({ id: schema.paymentRecords.id });
+            .returning({ id: schema.paymentRecords.id, residentId: schema.paymentRecords.residentId });
         
-        return result.length;
+        // Get all units and their first residents
+        const allUnits = await db
+            .select({
+                id: schema.units.id,
+                buildingId: schema.units.buildingId,
+            })
+            .from(schema.units)
+            .where(isNull(schema.units.deletedAt));
+
+        const unitIds = allUnits.map(u => u.id);
+
+        // Get all residents for these units
+        const allResidents = await db
+            .select({
+                id: schema.residents.id,
+                unitId: schema.residents.unitId,
+                createdAt: schema.residents.createdAt,
+            })
+            .from(schema.residents)
+            .where(inArray(schema.residents.unitId, unitIds))
+            .orderBy(asc(schema.residents.createdAt));
+
+        // Group by unitId and get first resident for each unit
+        const unitToResidentMap = new Map<string, typeof allResidents[0]>();
+        for (const resident of allResidents) {
+            if (!unitToResidentMap.has(resident.unitId)) {
+                unitToResidentMap.set(resident.unitId, resident);
+            }
+        }
+
+        // Get existing payment record resident IDs for this period
+        const existingPaymentResidentIds = new Set(updateResult.map(r => r.residentId));
+
+        // Create payment records for units that don't have one yet
+        const newPaymentRecords: any[] = [];
+        for (const [unitId, firstResident] of unitToResidentMap.entries()) {
+            // Skip if payment record already exists for this resident
+            if (existingPaymentResidentIds.has(firstResident.id)) {
+                continue;
+            }
+
+            newPaymentRecords.push({
+                residentId: firstResident.id,
+                unitId: unitId,
+                amount: amount,
+                type: 'aidat',
+                status: 'unpaid',
+                periodMonth: month,
+                periodYear: year,
+            });
+        }
+
+        // Insert new payment records if any
+        if (newPaymentRecords.length > 0) {
+            await db
+                .insert(schema.paymentRecords)
+                .values(newPaymentRecords);
+        }
+
+        return updateResult.length + newPaymentRecords.length;
     }
 
     async getPaymentRecordsByResidentId(residentId: string): Promise<PaymentRecord[]> {
@@ -752,7 +969,7 @@ export class DatabaseStorage implements IStorage {
         year: number,
         page: number,
         limit: number,
-        filters?: { search?: string; category?: string }
+        filters?: { search?: string; category?: string; siteId?: string; buildingId?: string }
     ): Promise<{
         expenses: ExpenseRecord[];
         total: number;
@@ -782,6 +999,10 @@ export class DatabaseStorage implements IStorage {
             );
         }
 
+        // Note: Expenses don't have direct siteId/buildingId relationship in schema
+        // If siteId/buildingId filters are provided, they will be ignored for expenses
+        // This is kept for API consistency but won't filter expenses
+
         // Get total count
         const [{ count: totalCount }] = await db
             .select({ count: count() })
@@ -804,6 +1025,8 @@ export class DatabaseStorage implements IStorage {
             eq(schema.expenseRecords.periodYear, year),
             isNull(schema.expenseRecords.deletedAt),
         ];
+
+        // Note: Expenses don't have siteId/buildingId, so stats won't be filtered by them
 
         const [statsResult] = await db
             .select({

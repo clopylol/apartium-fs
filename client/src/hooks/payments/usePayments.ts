@@ -1,84 +1,25 @@
 import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { api } from '@/lib/api';
+import { showSuccess, showError } from '@/utils/toast';
 import type { PaymentRecord, PaymentRecordLegacy, PaymentsApiResponse, PaymentStatusUpdateData, BulkAmountUpdateData } from '@/types/payments';
-
-// API Functions
-const fetchPayments = async (
-    month: string,
-    year: string,
-    page: number,
-    limit: number,
-    filters?: { search?: string; status?: 'paid' | 'unpaid' }
-): Promise<PaymentsApiResponse> => {
-    const params = new URLSearchParams({
-        month,
-        year: year.toString(),
-        page: page.toString(),
-        limit: limit.toString(),
-    });
-
-    if (filters?.search && filters.search.trim().length >= 3) {
-        params.append('search', filters.search.trim());
-    }
-    if (filters?.status) {
-        params.append('status', filters.status);
-    }
-
-    const response = await fetch(`/api/payments?${params.toString()}`, {
-        credentials: 'include',
-    });
-
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Ödemeler yüklenirken hata oluştu');
-    }
-
-    return response.json();
-};
-
-const updatePaymentStatus = async (
-    id: string,
-    data: PaymentStatusUpdateData
-): Promise<{ payment: PaymentRecord }> => {
-    const response = await fetch(`/api/payments/${id}/status`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Ödeme durumu güncellenemedi');
-    }
-
-    return response.json();
-};
-
-const updateBulkAmount = async (
-    data: BulkAmountUpdateData
-): Promise<{ message: string; updatedCount: number }> => {
-    const response = await fetch('/api/payments/bulk-amount', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Aidat tutarları güncellenemedi');
-    }
-
-    return response.json();
-};
 
 // Transform DB data to legacy format for components
 const transformToLegacy = (payment: PaymentRecord): PaymentRecordLegacy => {
+    // Handle placeholder payment records (id is null)
+    // For placeholder records, we need to generate a temporary ID
+    // Format: "placeholder-{residentId}-{unitId}"
+    const id = payment.id || `placeholder-${payment.residentId}-${payment.unitId}`;
+    
+    // Format unit display: "Blok Adı - Unit No" (e.g., "A Blok - 101")
+    const unitDisplay = payment.buildingName 
+        ? `${payment.buildingName} - ${payment.unitNumber}`
+        : payment.unitNumber;
+    
     return {
-        id: payment.id,
-        unit: payment.unitNumber,
+        id,
+        unit: unitDisplay,
         residentName: payment.residentName,
         amount: typeof payment.amount === 'string' ? parseFloat(payment.amount) : payment.amount,
         status: payment.status,
@@ -99,39 +40,64 @@ export interface UsePaymentsReturn {
     updatePaymentsAmount: (amount: number) => void;
     togglePaymentStatus: (id: string, status: 'paid' | 'unpaid', month: string, year: string) => void;
     refetch: () => void;
+    total: number;
+    stats: {
+        total: number;
+        collected: number;
+        pending: number;
+        rate: number;
+    };
 }
 
-export const usePayments = (month: string, year: string): UsePaymentsReturn => {
+export const usePayments = (
+    month: string,
+    year: string,
+    page: number = 1,
+    limit: number = 1000,
+    filters?: { search?: string; status?: 'paid' | 'unpaid'; siteId?: string; buildingId?: string }
+): UsePaymentsReturn => {
     const { t } = useTranslation();
     const queryClient = useQueryClient();
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
-    // Fetch payments with React Query
+    // Fetch payments with React Query using API client
     const {
         data,
         isLoading,
         error,
         refetch,
-    } = useQuery({
-        queryKey: ['payments', month, year],
-        queryFn: () => fetchPayments(month, year, 1, 1000), // Get all for now (no pagination in UI yet)
+    } = useQuery<PaymentsApiResponse>({
+        queryKey: ['payments', month, year, page, limit, filters],
+        queryFn: () => api.payments.getByPeriod(month, parseInt(year), page, limit, filters),
         staleTime: 30000, // 30 seconds
+        enabled: !!(month && year), // Only fetch when month and year are provided
     });
 
     // Mutation: Update payment status
     const statusMutation = useMutation({
         mutationFn: ({ id, data }: { id: string; data: PaymentStatusUpdateData }) =>
-            updatePaymentStatus(id, data),
+            api.payments.updateStatus(id, data.status, data.paymentDate),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['payments', month, year] });
+            showSuccess(t('payments.messages.statusUpdated') || 'Ödeme durumu güncellendi');
+        },
+        onError: (error: Error) => {
+            showError(error.message || t('payments.messages.statusUpdateFailed') || 'Ödeme durumu güncellenemedi');
         },
     });
 
     // Mutation: Update bulk amount
     const bulkAmountMutation = useMutation({
-        mutationFn: (data: BulkAmountUpdateData) => updateBulkAmount(data),
-        onSuccess: () => {
+        mutationFn: (data: BulkAmountUpdateData) => api.payments.bulkAmountUpdate(data.month, data.year, data.amount),
+        onSuccess: (response) => {
             queryClient.invalidateQueries({ queryKey: ['payments', month, year] });
+            showSuccess(
+                t('payments.messages.bulkAmountUpdated', { count: response.updatedCount }) ||
+                `${response.updatedCount} ödeme tutarı güncellendi`
+            );
+        },
+        onError: (error: Error) => {
+            showError(error.message || t('payments.messages.bulkAmountUpdateFailed') || 'Aidat tutarları güncellenemedi');
         },
     });
 
@@ -153,6 +119,27 @@ export const usePayments = (month: string, year: string): UsePaymentsReturn => {
         });
     }, [month, year, bulkAmountMutation]);
 
+    // Mutation: Create payment record (for placeholder records)
+    const createPaymentMutation = useMutation({
+        mutationFn: (paymentData: {
+            residentId: string;
+            unitId: string;
+            amount: string;
+            type: 'aidat' | 'demirbas' | 'yakit';
+            status: 'paid' | 'unpaid';
+            paymentDate?: string;
+            periodMonth: string;
+            periodYear: number;
+        }) => api.payments.create(paymentData),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['payments', month, year] });
+            showSuccess(t('payments.messages.statusUpdated') || 'Ödeme durumu güncellendi');
+        },
+        onError: (error: Error) => {
+            showError(error.message || t('payments.messages.statusUpdateFailed') || 'Ödeme durumu güncellenemedi');
+        },
+    });
+
     const togglePaymentStatus = useCallback((
         id: string,
         status: 'paid' | 'unpaid',
@@ -160,11 +147,45 @@ export const usePayments = (month: string, year: string): UsePaymentsReturn => {
         _year: string
     ) => {
         const paymentDate = status === 'paid' ? new Date().toISOString() : undefined;
+        
+        // Check if this is a placeholder payment record
+        if (id.startsWith('placeholder-')) {
+            // Extract residentId and unitId from placeholder ID
+            const parts = id.split('-');
+            if (parts.length >= 3) {
+                const residentId = parts[1];
+                const unitId = parts[2];
+                
+                // Find the original payment data to get amount and type
+                const originalPayment = data?.payments.find(p => 
+                    p.residentId === residentId && p.unitId === unitId
+                );
+                
+                if (originalPayment) {
+                    // Create new payment record
+                    createPaymentMutation.mutate({
+                        residentId: originalPayment.residentId,
+                        unitId: originalPayment.unitId,
+                        amount: typeof originalPayment.amount === 'string' ? originalPayment.amount : originalPayment.amount.toString(),
+                        type: originalPayment.type,
+                        status,
+                        paymentDate,
+                        periodMonth: month,
+                        periodYear: parseInt(year),
+                    });
+                    return;
+                }
+            }
+            showError('Placeholder payment record bilgileri bulunamadı');
+            return;
+        }
+        
+        // Regular payment record update
         statusMutation.mutate({
             id,
             data: { status, paymentDate },
         });
-    }, [statusMutation]);
+    }, [statusMutation, createPaymentMutation, data, month, year]);
 
     return {
         payments,
@@ -176,5 +197,7 @@ export const usePayments = (month: string, year: string): UsePaymentsReturn => {
         updatePaymentsAmount,
         togglePaymentStatus,
         refetch,
+        total: data?.total || 0,
+        stats: data?.stats || { total: 0, collected: 0, pending: 0, rate: 0 },
     };
 };

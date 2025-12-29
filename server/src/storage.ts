@@ -102,7 +102,7 @@ export interface IStorage {
         year: number,
         page: number,
         limit: number,
-        filters?: { search?: string; status?: 'paid' | 'unpaid' }
+        filters?: { search?: string; status?: 'paid' | 'unpaid'; siteId?: string; buildingId?: string }
     ): Promise<{
         payments: any[]; // PaymentRecord with JOIN data (resident, unit)
         total: number;
@@ -122,7 +122,7 @@ export interface IStorage {
         year: number,
         page: number,
         limit: number,
-        filters?: { search?: string; category?: string }
+        filters?: { search?: string; category?: string; siteId?: string; buildingId?: string }
     ): Promise<{
         expenses: ExpenseRecord[];
         total: number;

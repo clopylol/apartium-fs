@@ -10,3 +10,6 @@ export type { UsePaymentFiltersReturn } from './usePaymentFilters';
 export { usePaymentModals } from './usePaymentModals';
 export type { UsePaymentModalsReturn } from './usePaymentModals';
 
+export { usePaymentsState } from './usePaymentsState';
+export type { PaymentsStateReturn } from './usePaymentsState';
+

@@ -241,6 +241,15 @@
     "archive": {
       "label": "Arşiv Dönemi"
     },
+    "amount": {
+      "label": "Ödeme Tutarı",
+      "notSet": "Belirlenmemiş",
+      "clickToSet": "Aidat tutarını belirlemek için tıklayın"
+    },
+    "navigation": {
+      "previousMonth": "Önceki ay",
+      "nextMonth": "Sonraki ay"
+    },
     "stats": {
       "income": {
         "collected": "Toplanan Aidat",

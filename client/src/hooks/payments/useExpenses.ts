@@ -1,71 +1,9 @@
 import { useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { api } from '@/lib/api';
+import { showSuccess, showError } from '@/utils/toast';
 import type { ExpenseRecord, ExpenseRecordLegacy, ExpensesApiResponse, ExpenseFormData } from '@/types/payments';
-
-// API Functions
-const fetchExpenses = async (
-    month: string,
-    year: string,
-    page: number,
-    limit: number,
-    filters?: { search?: string; category?: string }
-): Promise<ExpensesApiResponse> => {
-    const params = new URLSearchParams({
-        month,
-        year: year.toString(),
-        page: page.toString(),
-        limit: limit.toString(),
-    });
-
-    if (filters?.search && filters.search.trim().length >= 3) {
-        params.append('search', filters.search.trim());
-    }
-    if (filters?.category) {
-        params.append('category', filters.category);
-    }
-
-    const response = await fetch(`/api/expenses?${params.toString()}`, {
-        credentials: 'include',
-    });
-
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Giderler yüklenirken hata oluştu');
-    }
-
-    return response.json();
-};
-
-const createExpense = async (data: ExpenseFormData): Promise<{ expense: ExpenseRecord }> => {
-    const response = await fetch('/api/expenses', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Gider oluşturulamadı');
-    }
-
-    return response.json();
-};
-
-const deleteExpenseApi = async (id: string): Promise<{ message: string }> => {
-    const response = await fetch(`/api/expenses/${id}`, {
-        method: 'DELETE',
-        credentials: 'include',
-    });
-
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Gider silinemedi');
-    }
-
-    return response.json();
-};
 
 // Transform DB data to legacy format for components
 const transformToLegacy = (expense: ExpenseRecord): ExpenseRecordLegacy => {
@@ -86,45 +24,73 @@ export interface UseExpensesReturn {
     isLoading: boolean;
     error: string | null;
     addExpense: (expense: Partial<ExpenseRecordLegacy>) => void;
+    updateExpense: (id: string, expense: Partial<ExpenseRecordLegacy>) => void;
     deleteExpense: (id: string) => void;
     refetch: () => void;
+    stats: {
+        total: number;
+        paid: number;
+        pending: number;
+    };
 }
 
-export const useExpenses = (month: string, year: string): UseExpensesReturn => {
+export const useExpenses = (
+    month: string,
+    year: string,
+    page: number = 1,
+    limit: number = 1000,
+    filters?: { search?: string; category?: string; siteId?: string; buildingId?: string }
+): UseExpensesReturn => {
     const { t } = useTranslation();
     const queryClient = useQueryClient();
 
-    // Fetch expenses with React Query
+    // Fetch expenses with React Query using API client
     const {
         data,
         isLoading,
         error,
         refetch,
-    } = useQuery({
-        queryKey: ['expenses', month, year],
-        queryFn: () => fetchExpenses(month, year, 1, 1000), // Get all for now (no pagination in UI yet)
+    } = useQuery<ExpensesApiResponse>({
+        queryKey: ['expenses', month, year, page, limit, filters],
+        queryFn: () => api.expenses.getByPeriod(month, parseInt(year), page, limit, filters),
         staleTime: 30000, // 30 seconds
+        enabled: !!(month && year), // Only fetch when month and year are provided
     });
 
     // Mutation: Create expense
     const createMutation = useMutation({
-        mutationFn: (data: ExpenseFormData) => createExpense(data),
+        mutationFn: (data: ExpenseFormData) => api.expenses.create(data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['expenses', month, year] });
+            showSuccess(t('payments.messages.expenseCreated') || 'Gider başarıyla oluşturuldu');
         },
         onError: (error: Error) => {
-            console.error('Create expense error:', error);
+            showError(error.message || t('payments.messages.expenseCreateFailed') || 'Gider oluşturulamadı');
+        },
+    });
+
+    // Mutation: Update expense
+    const updateMutation = useMutation({
+        mutationFn: ({ id, data }: { id: string; data: Partial<ExpenseFormData> }) =>
+            api.expenses.update(id, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['expenses', month, year] });
+            showSuccess(t('payments.messages.expenseUpdated') || 'Gider başarıyla güncellendi');
+        },
+        onError: (error: Error) => {
+            showError(error.message || t('payments.messages.expenseUpdateFailed') || 'Gider güncellenemedi');
         },
     });
 
     // Mutation: Delete expense
     const deleteMutation = useMutation({
-        mutationFn: (id: string) => deleteExpenseApi(id),
+        mutationFn: (id: string) => api.expenses.delete(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['expenses', month, year] });
+            showSuccess(t('payments.messages.expenseDeleted') || 'Gider başarıyla silindi');
         },
         onError: (error: Error) => {
-            console.error('Delete expense error:', error);
+            showError(error.message || t('payments.messages.expenseDeleteFailed') || 'Gider silinemedi');
         },
     });
 
@@ -146,18 +112,33 @@ export const useExpenses = (month: string, year: string): UseExpensesReturn => {
         };
 
         createMutation.mutate(expenseData);
-    }, [month, year, createMutation]);
+    }, [month, year, createMutation, t]);
+
+    const updateExpense = useCallback((id: string, newExpense: Partial<ExpenseRecordLegacy>) => {
+        // Transform legacy format to API format
+        const expenseData: Partial<ExpenseFormData> = {};
+        if (newExpense.title !== undefined) expenseData.title = newExpense.title;
+        if (newExpense.category !== undefined) expenseData.category = newExpense.category as any;
+        if (newExpense.amount !== undefined) expenseData.amount = Number(newExpense.amount);
+        if (newExpense.date !== undefined) expenseData.expenseDate = newExpense.date;
+        if (newExpense.status !== undefined) expenseData.status = newExpense.status as any;
+        if (newExpense.description !== undefined) expenseData.description = newExpense.description;
+
+        updateMutation.mutate({ id, data: expenseData });
+    }, [updateMutation, t]);
 
     const deleteExpense = useCallback((id: string) => {
         deleteMutation.mutate(id);
-    }, [deleteMutation]);
+    }, [deleteMutation, t]);
 
     return {
         expenses,
         isLoading,
         error: error ? (error as Error).message : null,
         addExpense,
+        updateExpense,
         deleteExpense,
         refetch,
+        stats: data?.stats || { total: 0, paid: 0, pending: 0 },
     };
 };
