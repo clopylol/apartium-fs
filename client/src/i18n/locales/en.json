@@ -251,6 +251,8 @@
       "nextMonth": "Next month"
     },
     "stats": {
+      "paid": "Paid",
+      "unpaid": "Unpaid",
       "income": {
         "collected": "Collected Dues",
         "collectionRate": "collection rate",
@@ -305,17 +307,23 @@
       "confirmation": {
         "title": {
           "pay": "Payment Confirmation",
-          "cancel": "Payment Cancellation"
+          "cancel": "Payment Cancellation",
+          "reminder": "Send Reminder",
+          "bulkReminder": "Send Bulk Reminder"
         },
         "message": {
           "pay": "Do you confirm the payment for resident {{name}}?",
-          "cancel": "Do you want to cancel the payment for resident {{name}}?"
+          "cancel": "Do you want to cancel the payment for resident {{name}}?",
+          "reminder": "Are you sure you want to send a reminder message to resident {{name}}?",
+          "bulkReminder": "Are you sure you want to send bulk reminder messages to {{count}} selected residents?"
         },
         "residentLabel": "named resident",
         "buttons": {
           "cancel": "Cancel",
           "confirm": "Confirm",
-          "cancelPayment": "Cancel Payment"
+          "cancelPayment": "Cancel Payment",
+          "sendReminder": "Send Reminder",
+          "sendBulkReminder": "Send Bulk Reminder"
         }
       },
       "dues": {

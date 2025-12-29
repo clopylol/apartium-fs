@@ -251,6 +251,8 @@
       "nextMonth": "Sonraki ay"
     },
     "stats": {
+      "paid": "Ödeyen",
+      "unpaid": "Ödemeyen",
       "income": {
         "collected": "Toplanan Aidat",
         "collectionRate": "tahsilat oranı",
@@ -308,16 +310,22 @@
       "confirmation": {
         "title": {
           "pay": "Ödeme Onayı",
-          "cancel": "Ödeme İptali"
+          "cancel": "Ödeme İptali",
+          "reminder": "Hatırlatma Gönder",
+          "bulkReminder": "Toplu Hatırlatma Gönder"
         },
         "message": {
           "pay": "{{name}} isimli sakinin tutarındaki ödemesini onaylıyor musunuz?",
-          "cancel": "{{name}} isimli sakinin tutarındaki ödemesini iptal etmek istiyor musunuz?"
+          "cancel": "{{name}} isimli sakinin tutarındaki ödemesini iptal etmek istiyor musunuz?",
+          "reminder": "{{name}} isimli sakine hatırlatma mesajı göndermek istediğinize emin misiniz?",
+          "bulkReminder": "Seçili {{count}} sakine toplu hatırlatma mesajı göndermek istediğinize emin misiniz?"
         },
         "buttons": {
           "cancel": "Vazgeç",
           "confirm": "Onayla",
-          "cancelPayment": "İptal Et"
+          "cancelPayment": "İptal Et",
+          "sendReminder": "Hatırlatma Gönder",
+          "sendBulkReminder": "Toplu Hatırlatma Gönder"
         }
       },
       "dues": {

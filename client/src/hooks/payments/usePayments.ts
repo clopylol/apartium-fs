@@ -3,6 +3,29 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { api } from '@/lib/api';
 import { showSuccess, showError } from '@/utils/toast';
+import { formatDateShort } from '@/utils/date';
+
+// Format payment date with time for display
+const formatPaymentDateTime = (dateString: string | null | undefined): string | undefined => {
+    if (!dateString) return undefined;
+    
+    try {
+        const date = new Date(dateString);
+        const dateStr = date.toLocaleDateString('tr-TR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
+        const timeStr = date.toLocaleTimeString('tr-TR', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+        });
+        return `${dateStr} - ${timeStr}`;
+    } catch {
+        return formatDateShort(dateString);
+    }
+};
 import type { PaymentRecord, PaymentRecordLegacy, PaymentsApiResponse, PaymentStatusUpdateData, BulkAmountUpdateData } from '@/types/payments';
 
 // Transform DB data to legacy format for components
@@ -23,7 +46,7 @@ const transformToLegacy = (payment: PaymentRecord): PaymentRecordLegacy => {
         residentName: payment.residentName,
         amount: typeof payment.amount === 'string' ? parseFloat(payment.amount) : payment.amount,
         status: payment.status,
-        date: payment.paymentDate || undefined,
+        date: formatPaymentDateTime(payment.paymentDate),
         avatar: payment.residentAvatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(payment.residentName),
         type: payment.type,
         phone: payment.residentPhone,

@@ -48,6 +48,9 @@ export const PaymentsPage = () => {
     const [selectedYear, setSelectedYear] = useState<string>(CURRENT_YEAR.toString());
     const [showExpenseDeleteModal, setShowExpenseDeleteModal] = useState<boolean>(false);
     const [targetExpense, setTargetExpense] = useState<{ id: string; title: string; amount: number } | null>(null);
+    const [showReminderModal, setShowReminderModal] = useState<boolean>(false);
+    const [targetReminderPayment, setTargetReminderPayment] = useState<PaymentRecordLegacy | null>(null);
+    const [showBulkReminderModal, setShowBulkReminderModal] = useState<boolean>(false);
     const ITEMS_PER_PAGE = 20;
 
     // --- Site and Building State ---
@@ -204,6 +207,13 @@ export const PaymentsPage = () => {
         return null; // Belirlenmemiş
     }, [payments]);
 
+    // --- Payment Stats Calculation ---
+    const paymentStats = useMemo(() => {
+        const paid = payments.filter(p => p.status === 'paid').length;
+        const unpaid = payments.filter(p => p.status === 'unpaid').length;
+        return { paid, unpaid };
+    }, [payments]);
+
     // --- Handlers ---
     const toggleSelectAll = () => {
         const allSelectableIds = selectablePayments.map(p => p.id);
@@ -241,12 +251,40 @@ export const PaymentsPage = () => {
     };
 
     const handleSendReminder = (id: string) => {
-        alert(t('payments.messages.reminderSent', { id }));
+        const payment = payments.find(p => p.id === id);
+        if (payment) {
+            setTargetReminderPayment(payment);
+            setShowReminderModal(true);
+        }
+    };
+
+    const confirmSendReminder = () => {
+        if (targetReminderPayment) {
+            // TODO: Implement actual reminder sending API call
+            showSuccess(t('payments.messages.reminderSent', { id: targetReminderPayment.id }) || 'Hatırlatma gönderildi');
+            setShowReminderModal(false);
+            setTargetReminderPayment(null);
+        }
+    };
+
+    const cancelSendReminder = () => {
+        setShowReminderModal(false);
+        setTargetReminderPayment(null);
     };
 
     const handleBulkRemind = () => {
-        alert(t('payments.messages.bulkReminderQueued', { count: selectedIds.length }));
+        setShowBulkReminderModal(true);
+    };
+
+    const confirmBulkReminder = () => {
+        // TODO: Implement actual bulk reminder sending API call
+        showSuccess(t('payments.messages.bulkReminderQueued', { count: selectedIds.length }) || `${selectedIds.length} hatırlatma gönderildi`);
+        setShowBulkReminderModal(false);
         setSelectedIds([]);
+    };
+
+    const cancelBulkReminder = () => {
+        setShowBulkReminderModal(false);
     };
 
     const handleGenerateDues = async (mode: 'single' | 'bulk', amount: number, bulkList?: any[]) => {
@@ -462,6 +500,8 @@ export const PaymentsPage = () => {
                                             <PaymentFilters
                                                 activeFilter={statusFilter}
                                                 onFilterChange={setStatusFilter}
+                                                paidCount={paymentStats.paid}
+                                                unpaidCount={paymentStats.unpaid}
                                             />
 
                                             <PaymentTable
@@ -556,6 +596,45 @@ export const PaymentsPage = () => {
                 actionType={actionType}
                 onConfirm={processTransaction}
                 onCancel={closeConfirmModal}
+            />
+
+            {/* Reminder Confirmation Modal */}
+            {targetReminderPayment && (
+                <ConfirmationModal
+                    isOpen={showReminderModal}
+                    payment={{
+                        id: targetReminderPayment.id,
+                        residentId: '',
+                        unitId: '',
+                        amount: targetReminderPayment.amount.toString(),
+                        type: targetReminderPayment.type,
+                        status: targetReminderPayment.status,
+                        paymentDate: null,
+                        periodMonth: selectedMonth,
+                        periodYear: parseInt(selectedYear),
+                        createdAt: '',
+                        updatedAt: '',
+                        residentName: targetReminderPayment.residentName,
+                        residentPhone: targetReminderPayment.phone,
+                        residentAvatar: targetReminderPayment.avatar,
+                        unitNumber: targetReminderPayment.unit,
+                        buildingId: '',
+                        buildingName: null,
+                    }}
+                    actionType="reminder"
+                    onConfirm={confirmSendReminder}
+                    onCancel={cancelSendReminder}
+                />
+            )}
+
+            {/* Bulk Reminder Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={showBulkReminderModal}
+                payment={null}
+                actionType="bulkReminder"
+                bulkCount={selectedIds.length}
+                onConfirm={confirmBulkReminder}
+                onCancel={cancelBulkReminder}
             />
 
             <DuesGeneratorModal
