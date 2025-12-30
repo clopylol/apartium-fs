@@ -5,7 +5,7 @@ import { ExpenseItem } from './ExpenseItem';
 
 interface ExpenseGroupProps {
     category: ExpenseCategory;
-    expenses: ExpenseRecord[];
+    expenses: ExpenseRecordLegacy[];
     onDelete: (id: string) => void;
     onEdit?: (expense: ExpenseRecordLegacy) => void;
     onViewDetail?: (expense: ExpenseRecordLegacy) => void;
@@ -55,6 +55,7 @@ export const ExpenseGroup: FC<ExpenseGroupProps> = ({ category, expenses, onDele
                         key={expense.id}
                         expense={expense}
                         onDelete={onDelete}
+                        onEdit={onEdit}
                         onClick={() => onViewDetail?.(expense as ExpenseRecordLegacy)}
                         isPeriodPast={isPeriodPast}
                     />

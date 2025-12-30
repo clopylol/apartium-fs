@@ -1005,10 +1005,18 @@ export class DatabaseStorage implements IStorage {
         //   - Show expenses for that building (buildingId = filters.buildingId)
         //   - Also show site-wide expenses for the building's site (siteId = building's siteId, buildingId = null)
         // If only siteId is provided:
-        //   - Show only site-wide expenses (siteId = filters.siteId, buildingId = null)
+        //   - Show ALL expenses for that site (both site-wide AND building-specific expenses for all buildings in that site)
+        console.log('=== Expense Filters Debug ===');
+        console.log('Incoming filters:', JSON.stringify(filters, null, 2));
+        console.log('filters?.buildingId:', filters?.buildingId);
+        console.log('filters?.siteId:', filters?.siteId);
+        console.log('Conditions before siteId/buildingId filter:', conditions.length);
+        
         if (filters?.buildingId) {
             // First, get the building to find its siteId
             const building = await this.getBuildingById(filters.buildingId);
+            console.log('Building found:', building ? { id: building.id, name: building.name, siteId: building.siteId } : 'NOT FOUND');
+            
             if (building) {
                 // Show both building-specific and site-wide expenses
                 conditions.push(
@@ -1020,25 +1028,33 @@ export class DatabaseStorage implements IStorage {
                         )
                     )
                 );
+                console.log('Added building filter condition (building-specific + site-wide)');
             } else {
                 // Building not found, fallback to buildingId only
                 conditions.push(eq(schema.expenseRecords.buildingId, filters.buildingId));
+                console.log('Added building filter condition (buildingId only - building not found)');
             }
         } else if (filters?.siteId) {
-            // Filter by siteId (site-wide expenses) - buildingId must be null
+            // Filter by siteId - show ALL expenses for that site
+            // This includes both site-wide expenses (buildingId = null) AND building-specific expenses for all buildings in that site
+            console.log('Adding siteId filter - should show ALL expenses for site:', filters.siteId);
             conditions.push(
-                and(
-                    eq(schema.expenseRecords.siteId, filters.siteId),
-                    isNull(schema.expenseRecords.buildingId)
-                )
+                eq(schema.expenseRecords.siteId, filters.siteId)
             );
+            console.log('Added siteId filter condition (ALL expenses for site - no buildingId restriction)');
+        } else {
+            console.log('No siteId or buildingId filter - showing all expenses');
         }
+        
+        console.log('Final conditions count:', conditions.length);
 
         // Get total count
         const [{ count: totalCount }] = await db
             .select({ count: count() })
             .from(schema.expenseRecords)
             .where(and(...conditions));
+
+        console.log('Total count from query:', totalCount);
 
         // Get paginated data
         const offset = (page - 1) * limit;
@@ -1049,6 +1065,43 @@ export class DatabaseStorage implements IStorage {
             .orderBy(desc(schema.expenseRecords.expenseDate))
             .limit(limit)
             .offset(offset);
+        
+        // Fetch building names for expenses that have buildingId
+        const buildingIds = [...new Set(expenses.filter(e => e.buildingId).map(e => e.buildingId!))];
+        const buildingNameMap = new Map<string, string>();
+        
+        if (buildingIds.length > 0) {
+            const buildings = await db
+                .select({
+                    id: schema.buildings.id,
+                    name: schema.buildings.name,
+                })
+                .from(schema.buildings)
+                .where(inArray(schema.buildings.id, buildingIds));
+            
+            buildings.forEach(building => {
+                buildingNameMap.set(building.id, building.name);
+            });
+        }
+        
+        // Add buildingName to expenses
+        const expensesWithBuildingNames = expenses.map(e => ({
+            ...e,
+            buildingName: e.buildingId ? (buildingNameMap.get(e.buildingId) || null) : null,
+        })) as (ExpenseRecord & { buildingName: string | null })[];
+        
+        console.log('Expenses fetched:', expensesWithBuildingNames.length);
+        console.log('Expenses details:', expensesWithBuildingNames.map(e => ({
+            id: e.id,
+            title: e.title,
+            siteId: e.siteId,
+            buildingId: e.buildingId,
+            buildingName: e.buildingName,
+            amount: e.amount,
+            periodMonth: e.periodMonth,
+            periodYear: e.periodYear
+        })));
+        console.log('=== End Expense Filters Debug ===');
 
         // Calculate stats for the period (without search filter for accurate stats)
         const statsConditions = [
@@ -1059,6 +1112,7 @@ export class DatabaseStorage implements IStorage {
 
         // Add siteId/buildingId filters to stats as well
         // Same logic as main query: if buildingId, include both building-specific and site-wide expenses
+        // If only siteId, show ALL expenses for that site (both site-wide AND building-specific)
         if (filters?.buildingId) {
             const building = await this.getBuildingById(filters.buildingId);
             if (building) {
@@ -1075,11 +1129,10 @@ export class DatabaseStorage implements IStorage {
                 statsConditions.push(eq(schema.expenseRecords.buildingId, filters.buildingId));
             }
         } else if (filters?.siteId) {
+            // Filter by siteId - show ALL expenses for that site
+            // This includes both site-wide expenses (buildingId = null) AND building-specific expenses for all buildings in that site
             statsConditions.push(
-                and(
-                    eq(schema.expenseRecords.siteId, filters.siteId),
-                    isNull(schema.expenseRecords.buildingId)
-                )
+                eq(schema.expenseRecords.siteId, filters.siteId)
             );
         }
 
@@ -1096,7 +1149,7 @@ export class DatabaseStorage implements IStorage {
         const pending = total - paid;
 
         return {
-            expenses,
+            expenses: expensesWithBuildingNames as ExpenseRecord[],
             total: totalCount,
             stats: { total, paid, pending },
         };
@@ -1192,12 +1245,26 @@ export class DatabaseStorage implements IStorage {
     }
 
     async createExpenseRecord(expense: InsertExpenseRecord): Promise<ExpenseRecord> {
-        // Convert Date objects to ISO strings for Drizzle timestamp columns
-        // Drizzle ORM expects ISO string format for timestamp columns
-        const expenseForInsert = {
+        // Drizzle ORM expects Date objects for timestamp columns (not ISO strings)
+        // Keep expenseDate as Date object if it's already a Date, otherwise convert string to Date
+        let expenseForInsert: any = {
             ...expense,
-            expenseDate: expense.expenseDate instanceof Date ? expense.expenseDate.toISOString() : expense.expenseDate,
+            expenseDate: expense.expenseDate instanceof Date 
+                ? expense.expenseDate 
+                : (typeof expense.expenseDate === 'string' 
+                    ? new Date(expense.expenseDate) 
+                    : expense.expenseDate),
         };
+        
+        // IMPORTANT: If buildingId is provided but siteId is null, fetch the building's siteId
+        // Building-specific expenses should also have siteId set for proper filtering
+        if (expenseForInsert.buildingId && !expenseForInsert.siteId) {
+            const building = await this.getBuildingById(expenseForInsert.buildingId);
+            if (building) {
+                expenseForInsert.siteId = building.siteId;
+                console.log(`Auto-set siteId for building-specific expense: buildingId=${expenseForInsert.buildingId}, siteId=${building.siteId}`);
+            }
+        }
         
         const [newExpense] = await db
             .insert(schema.expenseRecords)
@@ -1260,9 +1327,20 @@ export class DatabaseStorage implements IStorage {
             throw new Error('Expense not found');
         }
         
+        // IMPORTANT: If buildingId is provided but siteId is null, fetch the building's siteId
+        // Building-specific expenses should also have siteId set for proper filtering
+        let expenseForUpdate: any = { ...expense };
+        if (expenseForUpdate.buildingId && !expenseForUpdate.siteId) {
+            const building = await this.getBuildingById(expenseForUpdate.buildingId);
+            if (building) {
+                expenseForUpdate.siteId = building.siteId;
+                console.log(`Auto-set siteId for building-specific expense update: buildingId=${expenseForUpdate.buildingId}, siteId=${building.siteId}`);
+            }
+        }
+        
         const [updated] = await db
             .update(schema.expenseRecords)
-            .set({ ...expense, updatedAt: new Date() })
+            .set({ ...expenseForUpdate, updatedAt: new Date() })
             .where(eq(schema.expenseRecords.id, id))
             .returning();
         

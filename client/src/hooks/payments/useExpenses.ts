@@ -41,6 +41,10 @@ const transformToLegacy = (expense: ExpenseRecord): ExpenseRecordLegacy => {
         status: expense.status,
         description: expense.description || undefined,
         attachment: expense.attachmentUrl || undefined,
+        siteId: expense.siteId || undefined,
+        buildingId: expense.buildingId || undefined,
+        buildingName: expense.buildingName || undefined,
+        distributionType: expense.distributionType || undefined,
     };
 };
 

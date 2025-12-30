@@ -653,9 +653,15 @@ export function createRoutes(storage: IStorage): Router {
             }
             if (buildingId && typeof buildingId === 'string') {
                 filters.buildingId = buildingId;
+                console.log('Filter: buildingId set to', buildingId);
             } else if (siteId && typeof siteId === 'string') {
                 filters.siteId = siteId;
+                console.log('Filter: siteId set to', siteId, '(buildingId is null/undefined - should show ALL expenses for site)');
+            } else {
+                console.log('Filter: No siteId or buildingId provided');
             }
+
+            console.log('Final filters object:', JSON.stringify(filters, null, 2));
 
             const result = await storage.getExpenseRecordsPaginated(
                 month as string,
@@ -738,11 +744,11 @@ export function createRoutes(storage: IStorage): Router {
             
             // Prepare data for validation
             // Convert null values to undefined for validation (schema expects undefined for optional fields)
-            // IMPORTANT: expenseDate must be string for Zod validation (override will transform to Date)
+            // Schema expects amount as string (decimal column) and expenseDate as Date object
             const dataToValidate = {
                 ...req.body,
-                amount,
-                expenseDate: expenseDate instanceof Date ? expenseDate.toISOString() : (typeof req.body.expenseDate === 'string' ? req.body.expenseDate : expenseDate),
+                amount: String(amount), // Decimal column expects string
+                expenseDate: expenseDate, // Date object for timestamp column
                 buildingId: buildingId || undefined, // Use undefined instead of null for validation
                 siteId: siteId || undefined, // Use undefined instead of null for validation
                 description: req.body.description || undefined, // Convert null to undefined
@@ -754,24 +760,21 @@ export function createRoutes(storage: IStorage): Router {
                 distributionType: req.body.distributionType || 'equal',
             };
             
-            // Parse with schema
+            // Parse with schema (no override - schema expects string amount and Date expenseDate)
             const validatedData = insertExpenseRecordSchema.parse(dataToValidate);
             
                // Ensure buildingId and siteId are explicitly null (not undefined) for database insert
-               // IMPORTANT: Use the original buildingId and siteId values from req.body, not from validatedData
-               // because validatedData might have undefined for optional fields
-               // Zod transform may not work correctly, so manually convert expenseDate to Date if needed
+               // validatedData already has correct types (amount as string, expenseDate as Date)
+               // Prepare final data for database insert
+               // Drizzle ORM expects Date objects for timestamp columns and string for decimal
+               // IMPORTANT: Use validatedData.expenseDate if it's a Date, otherwise use expenseDate variable
                const finalExpenseDate = validatedData.expenseDate instanceof Date 
                    ? validatedData.expenseDate 
-                   : (typeof validatedData.expenseDate === 'string' 
-                       ? new Date(validatedData.expenseDate) 
-                       : expenseDate);
+                   : (expenseDate instanceof Date ? expenseDate : new Date(expenseDate));
                
-               // Prepare final data for database insert
-               // Drizzle ORM expects Date objects for timestamp columns
                const finalData: any = {
                    ...validatedData,
-                   amount,
+                   amount: String(amount), // Ensure string for decimal column
                    expenseDate: finalExpenseDate, // Date object for timestamp column
                    buildingId: buildingId ?? null, // Use nullish coalescing to preserve null
                    siteId: siteId ?? null, // Use nullish coalescing to preserve null

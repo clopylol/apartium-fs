@@ -64,23 +64,46 @@ export const AddExpenseModal: FC<AddExpenseModalProps> = ({
 
     // Parse expense datetime
     const parseExpenseDateTime = (expenseDate: string): { date: string; time: string } => {
-        if (!expenseDate) return { date: '', time: '' };
+        if (!expenseDate || expenseDate === '-') return { date: '', time: '' };
         
         try {
+            // Handle "DD.MM.YYYY - HH:mm" format (from formatExpenseDateTime)
+            if (expenseDate.includes(' - ')) {
+                const parts = expenseDate.split(' - ');
+                const datePart = parts[0]; // "DD.MM.YYYY"
+                const timePart = parts[1] || '00:00'; // "HH:mm"
+                
+                const [day, month, year] = datePart.split('.');
+                if (day && month && year) {
+                    // Convert to YYYY-MM-DD format
+                    const dateStr = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                    return { 
+                        date: dateStr, 
+                        time: timePart || '00:00'
+                    };
+                }
+            }
+            
+            // Handle ISO format (YYYY-MM-DDTHH:mm:ss or YYYY-MM-DD)
             const dateObj = new Date(expenseDate);
-            const date = formatDateForInput(dateObj);
-            const hours = String(dateObj.getHours()).padStart(2, '0');
-            const minutes = String(dateObj.getMinutes()).padStart(2, '0');
-            return { 
-                date, 
-                time: `${hours}:${minutes}`
-            };
-        } catch {
+            if (!isNaN(dateObj.getTime())) {
+                const date = formatDateForInput(dateObj);
+                const hours = String(dateObj.getHours()).padStart(2, '0');
+                const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+                return { 
+                    date, 
+                    time: `${hours}:${minutes}`
+                };
+            }
+            
             // Eğer sadece tarih formatındaysa (YYYY-MM-DD)
             if (/^\d{4}-\d{2}-\d{2}$/.test(expenseDate)) {
-                return { date: expenseDate, time: '' };
+                return { date: expenseDate, time: '00:00' };
             }
-            return { date: '', time: '' };
+            
+            return { date: '', time: '00:00' };
+        } catch {
+            return { date: '', time: '00:00' };
         }
     };
 
@@ -150,7 +173,11 @@ export const AddExpenseModal: FC<AddExpenseModalProps> = ({
         } else if (isOpen && !isEditMode) {
             // Reset form for new expense
             setNewExpense({ title: '', category: 'utilities', amount: 0, status: 'pending', expenseDate: '', attachmentUrl: '', description: '' });
-            setExpenseScope('building'); // Reset to default for new expense
+            
+            // If "Tüm Bloklar" is selected (activeBuildingId is null), set scope to 'site'
+            // Otherwise, default to 'building'
+            const defaultScope = activeBuildingId === null ? 'site' : 'building';
+            setExpenseScope(defaultScope);
             setDistributionType('equal'); // Reset to default for new expense
             
             // Default: Bugünün tarihi ve saati (seçili ay içindeyse)

@@ -270,7 +270,12 @@
         "paidSuccessfully": "paid successfully",
         "toPay": "To Pay",
         "pendingInvoice": "pending invoice",
-        "items": "Items"
+        "items": "Items",
+        "allPaid": {
+          "title": "All Debts Paid",
+          "message": "All expenses for this month have been successfully paid",
+          "totalPaid": "Total Paid"
+        }
       }
     },
     "filters": {
@@ -511,6 +516,14 @@
       "status": {
         "paid": "Paid",
         "pending": "Pending"
+      },
+      "scope": {
+        "site": "All Site",
+        "building": "Specific Block"
+      },
+      "distributionType": {
+        "equal": "Equal Distribution",
+        "areaBased": "Area Based"
       },
       "emptyState": {
         "title": "No Expense Records Yet",

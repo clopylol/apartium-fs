@@ -545,13 +545,9 @@ export const selectPaymentRecordSchema = createSelectSchema(paymentRecords);
 export const insertExpenseAllocationSchema = createInsertSchema(expenseAllocations);
 export const selectExpenseAllocationSchema = createSelectSchema(expenseAllocations);
 
-export const insertExpenseRecordSchema = createInsertSchema(expenseRecords, {
-    amount: z.union([z.string(), z.number()]).transform(val => String(val)),
-    expenseDate: z.union([z.string(), z.date()]).transform((val) => {
-        if (val instanceof Date) return val;
-        return new Date(val);
-    }),
-});
+// Expense schema: No override - handle transforms in route (Zod v4 compatibility)
+// Zod v4 doesn't support transform in createInsertSchema override
+export const insertExpenseRecordSchema = createInsertSchema(expenseRecords);
 export const selectExpenseRecordSchema = createSelectSchema(expenseRecords);
 
 // Facilities & Bookings

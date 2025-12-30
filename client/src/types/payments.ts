@@ -43,6 +43,7 @@ export interface ExpenseRecord {
     attachmentUrl: string | null;
     siteId: string | null;
     buildingId: string | null;
+    buildingName?: string | null; // Building name from JOIN
     distributionType?: 'equal' | 'area_based'; // Dağıtım tipi
     periodMonth: string;
     periodYear: number;
@@ -63,6 +64,8 @@ export interface ExpenseRecordLegacy {
     attachment?: string;
     siteId?: string | null;
     buildingId?: string | null;
+    buildingName?: string | null; // Building name from JOIN
+    distributionType?: 'equal' | 'area_based';
 }
 
 export interface ExpenseCategory {

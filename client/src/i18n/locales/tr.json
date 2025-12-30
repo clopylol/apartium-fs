@@ -268,7 +268,12 @@
         "paidSuccessfully": "başarıyla ödendi",
         "toPay": "Ödenecek",
         "pendingInvoice": "bekleyen fatura",
-        "items": "Kalem"
+        "items": "Kalem",
+        "allPaid": {
+          "title": "Tüm Borçlar Ödendi",
+          "message": "Bu ay için tüm giderler başarıyla ödendi",
+          "totalPaid": "Toplam Ödenen"
+        }
       }
     },
     "filters": {
@@ -299,6 +304,14 @@
       "status": {
         "paid": "Ödendi",
         "pending": "Bekliyor"
+      },
+      "scope": {
+        "site": "Tüm Site",
+        "building": "Spesifik Blok"
+      },
+      "distributionType": {
+        "equal": "Eşit Dağıtım",
+        "areaBased": "Metrekareye Göre"
       },
       "emptyState": {
         "title": "Henüz Gider Kaydı Yok",
