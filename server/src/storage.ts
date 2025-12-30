@@ -6,6 +6,7 @@ import type {
     Resident, InsertResident,
     PaymentRecord, InsertPaymentRecord,
     ExpenseRecord, InsertExpenseRecord,
+    ExpenseAllocation, InsertExpenseAllocation,
     Vehicle, InsertVehicle,
     VehicleBrand, InsertVehicleBrand,
     VehicleModel, InsertVehicleModel,
@@ -132,6 +133,12 @@ export interface IStorage {
     createExpenseRecord(expense: InsertExpenseRecord): Promise<ExpenseRecord>;
     updateExpenseRecord(id: string, expense: Partial<InsertExpenseRecord>): Promise<ExpenseRecord>;
     deleteExpenseRecord(id: string): Promise<void>;
+
+    // Expense Allocations
+    createExpenseAllocations(expenseId: string, allocations: InsertExpenseAllocation[]): Promise<void>;
+    getExpenseAllocationsByExpenseId(expenseId: string): Promise<ExpenseAllocation[]>;
+    getExpenseAllocationsByUnitId(unitId: string): Promise<ExpenseAllocation[]>;
+    deleteExpenseAllocationsByExpenseId(expenseId: string): Promise<void>;
 
     // Facilities & Bookings
     getAllFacilities(): Promise<Facility[]>;

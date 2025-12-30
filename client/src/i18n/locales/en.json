@@ -361,7 +361,9 @@
           "attachment": "Invoice / Receipt Image",
           "notes": "Notes",
           "date": "Date",
-          "time": "Time"
+          "time": "Time",
+          "scope": "Scope",
+          "distributionType": "Distribution Type"
         },
         "placeholders": {
           "description": "e.g.: Extra Repair",
@@ -379,6 +381,19 @@
           "paid": "Paid",
           "pending": "To Pay"
         },
+        "scope": {
+          "site": "Entire Site",
+          "building": "Specific Block",
+          "siteDesc": "This expense covers the entire site",
+          "buildingDesc": "This expense covers only the selected block"
+        },
+        "distributionType": {
+          "equal": "Equal Distribution",
+          "areaBased": "Area Based",
+          "equalDesc": "Expense is distributed equally among all units",
+          "areaBasedDesc": "Expense is distributed based on unit areas (area information required)",
+          "siteWideInfo": "Site-wide expenses are automatically distributed equally"
+        },
         "buttons": {
           "cancel": "Cancel",
           "save": "Save"
@@ -392,6 +407,16 @@
           "confirm": "Confirm",
           "cancel": "Cancel"
         }
+      },
+      "expenseDetail": {
+        "title": "Expense Allocation Details",
+        "totalAmount": "Total Amount",
+        "loading": "Loading...",
+        "noAllocations": "No allocations made for this expense",
+        "totalAllocated": "Total Allocated",
+        "mismatch": "Mismatch",
+        "allocationCount": "Distributed to {{count}} units",
+        "unknownUnit": "Unknown Unit"
       },
       "expenseDelete": {
         "labels": {

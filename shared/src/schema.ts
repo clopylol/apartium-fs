@@ -17,6 +17,7 @@ export const paymentStatusEnum = pgEnum('enum_payment_status', ['paid', 'unpaid'
 export const paymentTypeEnum = pgEnum('enum_payment_type', ['aidat', 'demirbas', 'yakit']);
 export const expenseCategoryEnum = pgEnum('enum_expense_category', ['utilities', 'maintenance', 'personnel', 'general']);
 export const expenseStatusEnum = pgEnum('enum_expense_status', ['paid', 'pending']);
+export const expenseDistributionTypeEnum = pgEnum('enum_expense_distribution_type', ['equal', 'area_based']);
 
 // Facilities & Bookings Enums
 export const facilityStatusEnum = pgEnum('enum_facility_status', ['open', 'closed', 'maintenance']);
@@ -110,6 +111,7 @@ export const units = pgTable('units', {
     number: varchar('number', { length: 20 }).notNull(),
     floor: integer('floor').notNull(),
     status: unitStatusEnum('status').notNull().default('empty'),
+    area: decimal('area', { precision: 8, scale: 2 }), // Metrekare bilgisi (m²)
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
     deletedAt: timestamp('deleted_at', { withTimezone: true }),
@@ -234,12 +236,29 @@ export const expenseRecords = pgTable('expense_records', {
     attachmentUrl: text('attachment_url'),
     siteId: uuid('site_id').references(() => sites.id, { onDelete: 'set null' }),
     buildingId: uuid('building_id').references(() => buildings.id, { onDelete: 'set null' }),
+    distributionType: expenseDistributionTypeEnum('distribution_type').notNull().default('equal'),
     periodMonth: varchar('period_month', { length: 20 }).notNull(),
     periodYear: integer('period_year').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
     deletedAt: timestamp('deleted_at', { withTimezone: true }),
 });
+
+// Expense Allocations (Gider Dağıtımları)
+export const expenseAllocations = pgTable('expense_allocations', {
+    id: uuid('id').defaultRandom().primaryKey(),
+    expenseId: uuid('expense_id').notNull().references(() => expenseRecords.id, { onDelete: 'cascade' }),
+    unitId: uuid('unit_id').notNull().references(() => units.id, { onDelete: 'cascade' }),
+    allocatedAmount: decimal('allocated_amount', { precision: 10, scale: 2 }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
+}, (table) => ({
+    expenseUnitUnique: {
+        name: 'expense_unit_unique',
+        columns: [table.expenseId, table.unitId],
+    },
+}));
 
 // ============================================================
 // FACILITIES & BOOKINGS
@@ -522,9 +541,17 @@ export const insertPaymentRecordSchema = createInsertSchema(paymentRecords, {
 });
 export const selectPaymentRecordSchema = createSelectSchema(paymentRecords);
 
-// Announcements pattern: No override, use createInsertSchema directly
-// Route handler will handle null -> undefined conversion and manual transforms
-export const insertExpenseRecordSchema = createInsertSchema(expenseRecords);
+// Expense schema: Add override for expenseDate and amount to accept both string and Date/number
+export const insertExpenseAllocationSchema = createInsertSchema(expenseAllocations);
+export const selectExpenseAllocationSchema = createSelectSchema(expenseAllocations);
+
+export const insertExpenseRecordSchema = createInsertSchema(expenseRecords, {
+    amount: z.union([z.string(), z.number()]).transform(val => String(val)),
+    expenseDate: z.union([z.string(), z.date()]).transform((val) => {
+        if (val instanceof Date) return val;
+        return new Date(val);
+    }),
+});
 export const selectExpenseRecordSchema = createSelectSchema(expenseRecords);
 
 // Facilities & Bookings
@@ -621,6 +648,9 @@ export type InsertPaymentRecord = z.infer<typeof insertPaymentRecordSchema>;
 
 export type ExpenseRecord = z.infer<typeof selectExpenseRecordSchema>;
 export type InsertExpenseRecord = z.infer<typeof insertExpenseRecordSchema>;
+
+export type ExpenseAllocation = z.infer<typeof selectExpenseAllocationSchema>;
+export type InsertExpenseAllocation = z.infer<typeof insertExpenseAllocationSchema>;
 
 // Facilities & Bookings Types
 export type Facility = z.infer<typeof selectFacilitySchema>;

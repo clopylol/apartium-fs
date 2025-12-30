@@ -17,6 +17,7 @@ import {
     AddExpenseModal,
     ExpenseConfirmationModal,
     ExpenseEditConfirmationModal,
+    ExpenseDetailModal,
     ExpenseGroupSkeleton,
     PaymentsEmptyState,
     ExpensesEmptyState,
@@ -28,6 +29,8 @@ import { TabToggle } from '@/components/shared/navigation/tab-toggle';
 import { SearchInput } from '@/components/shared/inputs/search-input';
 import { api } from '@/lib/api';
 import { showSuccess, showError } from '@/utils/toast';
+import { logger } from '@/utils/logger';
+import type { BulkDuesItem } from '@/types/payments';
 
 const isDateInPast = (month: string, year: string) => {
     const now = new Date();
@@ -62,6 +65,8 @@ export const PaymentsPage = () => {
         oldExpense: ExpenseRecordLegacy;
         newExpense: Partial<ExpenseRecord>;
     } | null>(null);
+    const [showExpenseDetailModal, setShowExpenseDetailModal] = useState<boolean>(false);
+    const [selectedExpenseForDetail, setSelectedExpenseForDetail] = useState<ExpenseRecordLegacy | null>(null);
     const ITEMS_PER_PAGE = 20;
 
     // --- Site and Building State ---
@@ -79,7 +84,7 @@ export const PaymentsPage = () => {
         currentPage,
         setCurrentPage,
         effectiveSearchTerm,
-    } = usePaymentFilters([], ITEMS_PER_PAGE);
+    } = usePaymentFilters();
 
     // Handle site change - reset building when site changes
     const handleSiteChange = (siteId: string) => {
@@ -231,15 +236,29 @@ export const PaymentsPage = () => {
     }, [selectedMonth, selectedYear]);
 
     // --- Amount Calculation ---
+    // Calculate amount from payment records
+    // If all payments have the same amount, use that amount
+    // Otherwise, return null (amount not set or inconsistent)
     const currentPeriodAmount = useMemo(() => {
-        if (payments.length > 0) {
-            // İlk payment'ın amount'unu al (tüm payment'lar aynı amount'a sahip olmalı)
-            const firstAmount = payments[0]?.amount;
-            if (firstAmount && firstAmount > 0) {
-                return typeof firstAmount === 'string' ? parseFloat(firstAmount) : firstAmount;
-            }
+        if (payments.length === 0) return null;
+        
+        // Extract all amounts from payments (filter out 0 amounts)
+        const amounts = payments
+            .map(p => typeof p.amount === 'string' ? parseFloat(p.amount) : p.amount)
+            .filter(amount => amount > 0);
+        
+        if (amounts.length === 0) return null;
+        
+        // Find unique amount values
+        const uniqueAmounts = [...new Set(amounts)];
+        
+        // If all payments have the same amount, return that amount
+        if (uniqueAmounts.length === 1) {
+            return uniqueAmounts[0];
         }
-        return null; // Belirlenmemiş
+        
+        // Multiple different amounts found - amount not consistently set
+        return null;
     }, [payments]);
 
     // --- Payment Stats Calculation ---
@@ -322,7 +341,7 @@ export const PaymentsPage = () => {
         setShowBulkReminderModal(false);
     };
 
-    const handleGenerateDues = async (mode: 'single' | 'bulk', amount: number, bulkList?: any[]) => {
+    const handleGenerateDues = async (mode: 'single' | 'bulk', amount: number, bulkList?: BulkDuesItem[]) => {
         if (mode === 'single') {
             updatePaymentsAmount(amount);
             // Toast notification is handled by usePayments hook
@@ -343,13 +362,16 @@ export const PaymentsPage = () => {
                         t('payments.messages.duesPlanSaved') || 
                         `${bulkList.length} ay için aidat planı başarıyla kaydedildi`
                     );
-                } catch (error: any) {
-                    console.error('Bulk dues generation error:', error);
-                    showError(
-                        error.message || 
-                        t('payments.messages.duesPlanSaveFailed') || 
-                        'Aidat planı kaydedilirken hata oluştu'
-                    );
+                } catch (error: unknown) {
+                    logger.error('Bulk dues generation error', error, { 
+                        mode, 
+                        amount, 
+                        bulkListLength: bulkList?.length 
+                    });
+                    const errorMessage = error instanceof Error 
+                        ? error.message 
+                        : (t('payments.messages.duesPlanSaveFailed') || 'Aidat planı kaydedilirken hata oluştu');
+                    showError(errorMessage);
                 }
             } else {
                 showError('Aidat listesi boş');
@@ -363,25 +385,24 @@ export const PaymentsPage = () => {
         openAddExpenseModal();
     };
 
+    const handleViewExpenseDetail = (expense: ExpenseRecordLegacy) => {
+        setSelectedExpenseForDetail(expense);
+        setShowExpenseDetailModal(true);
+    };
+
     const handleSaveExpense = (expenseData: Partial<ExpenseRecord>) => {
-        // siteId ve buildingId'yi ekle
-        const expenseDataWithSiteBuilding = {
-            ...expenseData,
-            siteId: paymentsState.activeBuildingId ? undefined : (paymentsState.activeSiteId || undefined),
-            buildingId: paymentsState.activeBuildingId || undefined,
-        };
-        
+        // siteId ve buildingId artık modal içinde setleniyor
         if (editingExpense) {
             // Edit mode: Confirmation modal aç
             setPendingExpenseUpdate({
                 oldExpense: editingExpense,
-                newExpense: expenseDataWithSiteBuilding
+                newExpense: expenseData
             });
             setShowExpenseEditConfirmation(true);
             closeAddExpenseModal(); // AddExpenseModal'ı kapat
         } else {
             // Add mode: Direkt ekle
-            addExpense(expenseDataWithSiteBuilding);
+            addExpense(expenseData);
             closeAddExpenseModal();
         }
     };
@@ -401,10 +422,6 @@ export const PaymentsPage = () => {
         setShowExpenseEditConfirmation(false);
     };
 
-    const handleAddExpense = (newExpense: Partial<any>) => {
-        addExpense(newExpense);
-        closeAddExpenseModal();
-    };
 
     const handleDeleteExpense = (id: string) => {
         if (isSelectedPeriodPast) return; // Geçmiş aylarda silme yapılamaz
@@ -437,6 +454,17 @@ export const PaymentsPage = () => {
     useEffect(() => {
         setCurrentPage(1);
     }, [paymentsState.activeSiteId, paymentsState.activeBuildingId, setCurrentPage]);
+
+    // Clear selectedIds when site, building, month, or year changes
+    useEffect(() => {
+        setSelectedIds([]);
+    }, [
+        paymentsState.activeSiteId, 
+        paymentsState.activeBuildingId, 
+        selectedMonth, 
+        selectedYear,
+        setSelectedIds
+    ]);
 
     return (
         <div className="flex flex-col h-full bg-ds-background-dark overflow-hidden relative">
@@ -545,7 +573,7 @@ export const PaymentsPage = () => {
                                 { id: 'expenses', label: t('payments.tabs.expenses'), icon: <TrendingDown className="w-4 h-4" /> },
                             ]}
                             activeTab={activeTab}
-                            onChange={(id) => setActiveTab(id as any)}
+                            onChange={(id) => setActiveTab(id as 'income' | 'expenses')}
                         />
 
                         {/* Search Bar */}
@@ -651,6 +679,7 @@ export const PaymentsPage = () => {
                                                             expenses={categoryExpenses}
                                                             onDelete={handleDeleteExpense}
                                                             onEdit={handleEditExpense}
+                                                            onViewDetail={handleViewExpenseDetail}
                                                             isPeriodPast={isSelectedPeriodPast}
                                                         />
                                                     );
@@ -745,6 +774,10 @@ export const PaymentsPage = () => {
                 expense={editingExpense || undefined}
                 isEditMode={!!editingExpense}
                 isPeriodPast={isSelectedPeriodPast}
+                sites={paymentsState.sites}
+                activeSiteId={paymentsState.activeSiteId}
+                buildings={paymentsState.buildings}
+                activeBuildingId={paymentsState.activeBuildingId}
             />
 
             {targetExpense && (
@@ -772,6 +805,15 @@ export const PaymentsPage = () => {
                     onCancel={cancelExpenseUpdate}
                 />
             )}
+
+            <ExpenseDetailModal
+                isOpen={showExpenseDetailModal}
+                expense={selectedExpenseForDetail}
+                onClose={() => {
+                    setShowExpenseDetailModal(false);
+                    setSelectedExpenseForDetail(null);
+                }}
+            />
         </div>
     );
 };

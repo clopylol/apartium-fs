@@ -10,6 +10,7 @@ import type {
     Resident, InsertResident,
     PaymentRecord, InsertPaymentRecord,
     ExpenseRecord, InsertExpenseRecord,
+    ExpenseAllocation, InsertExpenseAllocation,
     Vehicle, InsertVehicle,
     VehicleBrand, InsertVehicleBrand,
     VehicleModel, InsertVehicleModel,
@@ -999,9 +1000,39 @@ export class DatabaseStorage implements IStorage {
             );
         }
 
-        // Note: Expenses don't have direct siteId/buildingId relationship in schema
-        // If siteId/buildingId filters are provided, they will be ignored for expenses
-        // This is kept for API consistency but won't filter expenses
+        // Add siteId/buildingId filters
+        // If buildingId is provided:
+        //   - Show expenses for that building (buildingId = filters.buildingId)
+        //   - Also show site-wide expenses for the building's site (siteId = building's siteId, buildingId = null)
+        // If only siteId is provided:
+        //   - Show only site-wide expenses (siteId = filters.siteId, buildingId = null)
+        if (filters?.buildingId) {
+            // First, get the building to find its siteId
+            const building = await this.getBuildingById(filters.buildingId);
+            if (building) {
+                // Show both building-specific and site-wide expenses
+                conditions.push(
+                    or(
+                        eq(schema.expenseRecords.buildingId, filters.buildingId),
+                        and(
+                            eq(schema.expenseRecords.siteId, building.siteId),
+                            isNull(schema.expenseRecords.buildingId)
+                        )
+                    )
+                );
+            } else {
+                // Building not found, fallback to buildingId only
+                conditions.push(eq(schema.expenseRecords.buildingId, filters.buildingId));
+            }
+        } else if (filters?.siteId) {
+            // Filter by siteId (site-wide expenses) - buildingId must be null
+            conditions.push(
+                and(
+                    eq(schema.expenseRecords.siteId, filters.siteId),
+                    isNull(schema.expenseRecords.buildingId)
+                )
+            );
+        }
 
         // Get total count
         const [{ count: totalCount }] = await db
@@ -1026,7 +1057,31 @@ export class DatabaseStorage implements IStorage {
             isNull(schema.expenseRecords.deletedAt),
         ];
 
-        // Note: Expenses don't have siteId/buildingId, so stats won't be filtered by them
+        // Add siteId/buildingId filters to stats as well
+        // Same logic as main query: if buildingId, include both building-specific and site-wide expenses
+        if (filters?.buildingId) {
+            const building = await this.getBuildingById(filters.buildingId);
+            if (building) {
+                statsConditions.push(
+                    or(
+                        eq(schema.expenseRecords.buildingId, filters.buildingId),
+                        and(
+                            eq(schema.expenseRecords.siteId, building.siteId),
+                            isNull(schema.expenseRecords.buildingId)
+                        )
+                    )
+                );
+            } else {
+                statsConditions.push(eq(schema.expenseRecords.buildingId, filters.buildingId));
+            }
+        } else if (filters?.siteId) {
+            statsConditions.push(
+                and(
+                    eq(schema.expenseRecords.siteId, filters.siteId),
+                    isNull(schema.expenseRecords.buildingId)
+                )
+            );
+        }
 
         const [statsResult] = await db
             .select({
@@ -1061,20 +1116,202 @@ export class DatabaseStorage implements IStorage {
         return expense || null;
     }
 
+    /**
+     * Distribute expense amount among units based on distribution type
+     * Implements rounding algorithm: last unit gets remainder
+     */
+    private distributeExpenseAmount(
+        totalAmount: number,
+        units: Unit[],
+        distributionType: 'equal' | 'area_based'
+    ): Array<{ unitId: string; allocatedAmount: string }> {
+        const allocations: Array<{ unitId: string; allocatedAmount: string }> = [];
+        
+        if (units.length === 0) return allocations;
+        
+        if (distributionType === 'equal') {
+            // Eşit dağıtım
+            const unitCount = units.length;
+            const baseAmount = Math.floor((totalAmount * 100) / unitCount) / 100; // İki ondalık basamağa yuvarla
+            const remainder = totalAmount - (baseAmount * unitCount); // Kalan tutar
+            
+            // İlk N-1 daireye baseAmount ver
+            for (let i = 0; i < unitCount - 1; i++) {
+                allocations.push({
+                    unitId: units[i].id,
+                    allocatedAmount: baseAmount.toFixed(2)
+                });
+            }
+            
+            // Son daireye baseAmount + remainder ver (kalan tutarı ekle)
+            const lastAmount = baseAmount + remainder;
+            allocations.push({
+                unitId: units[unitCount - 1].id,
+                allocatedAmount: lastAmount.toFixed(2)
+            });
+        } else if (distributionType === 'area_based') {
+            // Metrekareye göre dağıtım
+            const totalArea = units.reduce((sum, unit) => {
+                const area = unit.area ? parseFloat(unit.area.toString()) : 0;
+                return sum + area;
+            }, 0);
+            
+            if (totalArea === 0) {
+                // Eğer hiç metrekare bilgisi yoksa, eşit dağıt
+                return this.distributeExpenseAmount(totalAmount, units, 'equal');
+            }
+            
+            let allocatedTotal = 0;
+            
+            // İlk N-1 daireye metrekare oranına göre dağıt
+            for (let i = 0; i < units.length - 1; i++) {
+                const unitArea = units[i].area ? parseFloat(units[i].area.toString()) : 0;
+                const amount = Math.floor((totalAmount * unitArea * 100) / totalArea) / 100;
+                allocatedTotal += amount;
+                allocations.push({
+                    unitId: units[i].id,
+                    allocatedAmount: amount.toFixed(2)
+                });
+            }
+            
+            // Son daireye kalan tutarı ver
+            const remainder = totalAmount - allocatedTotal;
+            allocations.push({
+                unitId: units[units.length - 1].id,
+                allocatedAmount: remainder.toFixed(2)
+            });
+        }
+        
+        // Validation: Toplam kontrolü
+        const sum = allocations.reduce((s, a) => s + parseFloat(a.allocatedAmount), 0);
+        if (Math.abs(sum - totalAmount) > 0.01) {
+            throw new Error(`Dağıtım hatası: Toplam tutar eşleşmiyor. Beklenen: ${totalAmount}, Toplam: ${sum}`);
+        }
+        
+        return allocations;
+    }
+
     async createExpenseRecord(expense: InsertExpenseRecord): Promise<ExpenseRecord> {
+        // Convert Date objects to ISO strings for Drizzle timestamp columns
+        // Drizzle ORM expects ISO string format for timestamp columns
+        const expenseForInsert = {
+            ...expense,
+            expenseDate: expense.expenseDate instanceof Date ? expense.expenseDate.toISOString() : expense.expenseDate,
+        };
+        
         const [newExpense] = await db
             .insert(schema.expenseRecords)
-            .values(expense)
+            .values(expenseForInsert)
             .returning();
+        
+        // Create allocations if expense has siteId or buildingId
+        if (newExpense.siteId || newExpense.buildingId) {
+            try {
+                let units: Unit[] = [];
+                
+                if (newExpense.buildingId) {
+                    // Building-specific expense
+                    units = await this.getUnitsByBuildingId(newExpense.buildingId);
+                } else if (newExpense.siteId) {
+                    // Site-wide expense
+                    const buildings = await this.getBuildingsBySiteId(newExpense.siteId);
+                    const allUnits: Unit[] = [];
+                    for (const building of buildings) {
+                        const buildingUnits = await this.getUnitsByBuildingId(building.id);
+                        allUnits.push(...buildingUnits);
+                    }
+                    units = allUnits;
+                }
+                
+                if (units.length > 0) {
+                    const amount = parseFloat(newExpense.amount.toString());
+                    const distributionType = (newExpense.distributionType || 'equal') as 'equal' | 'area_based';
+                    
+                    const allocations = this.distributeExpenseAmount(amount, units, distributionType);
+                    
+                    if (allocations.length > 0) {
+                        await this.createExpenseAllocations(
+                            newExpense.id,
+                            allocations.map(a => ({
+                                expenseId: newExpense.id,
+                                unitId: a.unitId,
+                                allocatedAmount: a.allocatedAmount,
+                            }))
+                        );
+                    }
+                }
+            } catch (allocationError: any) {
+                // Log allocation error but don't fail the expense creation
+                // Expense is already saved, allocations can be created later if needed
+                console.error('Error creating expense allocations:', allocationError);
+                console.error('Expense ID:', newExpense.id);
+                console.error('Allocation error details:', allocationError.message);
+                // Don't throw - expense is already created successfully
+            }
+        }
+        
         return newExpense;
     }
 
     async updateExpenseRecord(id: string, expense: Partial<InsertExpenseRecord>): Promise<ExpenseRecord> {
+        // Get current expense to check if allocation needs recalculation
+        const currentExpense = await this.getExpenseRecordById(id);
+        if (!currentExpense) {
+            throw new Error('Expense not found');
+        }
+        
         const [updated] = await db
             .update(schema.expenseRecords)
             .set({ ...expense, updatedAt: new Date() })
             .where(eq(schema.expenseRecords.id, id))
             .returning();
+        
+        // Recalculate allocations if amount, siteId, buildingId, or distributionType changed
+        const needsRecalculation = 
+            (expense.amount !== undefined && expense.amount !== currentExpense.amount) ||
+            (expense.siteId !== undefined && expense.siteId !== currentExpense.siteId) ||
+            (expense.buildingId !== undefined && expense.buildingId !== currentExpense.buildingId) ||
+            (expense.distributionType !== undefined && expense.distributionType !== currentExpense.distributionType);
+        
+        if (needsRecalculation && (updated.siteId || updated.buildingId)) {
+            // Delete existing allocations
+            await this.deleteExpenseAllocationsByExpenseId(id);
+            
+            // Create new allocations
+            let units: Unit[] = [];
+            
+            if (updated.buildingId) {
+                // Building-specific expense
+                units = await this.getUnitsByBuildingId(updated.buildingId);
+            } else if (updated.siteId) {
+                // Site-wide expense
+                const buildings = await this.getBuildingsBySiteId(updated.siteId);
+                const allUnits: Unit[] = [];
+                for (const building of buildings) {
+                    const buildingUnits = await this.getUnitsByBuildingId(building.id);
+                    allUnits.push(...buildingUnits);
+                }
+                units = allUnits;
+            }
+            
+            if (units.length > 0) {
+                const amount = parseFloat(updated.amount.toString());
+                const distributionType = (updated.distributionType || 'equal') as 'equal' | 'area_based';
+                
+                const allocations = this.distributeExpenseAmount(amount, units, distributionType);
+                
+                if (allocations.length > 0) {
+                    await this.createExpenseAllocations(
+                        id,
+                        allocations.map(a => ({
+                            unitId: a.unitId,
+                            allocatedAmount: a.allocatedAmount,
+                        }))
+                    );
+                }
+            }
+        }
+        
         return updated;
     }
 
@@ -1083,6 +1320,52 @@ export class DatabaseStorage implements IStorage {
             .update(schema.expenseRecords)
             .set({ deletedAt: new Date() })
             .where(eq(schema.expenseRecords.id, id));
+    }
+
+    // ==================== EXPENSE ALLOCATIONS ====================
+
+    async createExpenseAllocations(expenseId: string, allocations: InsertExpenseAllocation[]): Promise<void> {
+        if (allocations.length === 0) return;
+        
+        await db
+            .insert(schema.expenseAllocations)
+            .values(allocations.map(allocation => ({
+                ...allocation,
+                expenseId,
+            })));
+    }
+
+    async getExpenseAllocationsByExpenseId(expenseId: string): Promise<ExpenseAllocation[]> {
+        return await db
+            .select()
+            .from(schema.expenseAllocations)
+            .where(
+                and(
+                    eq(schema.expenseAllocations.expenseId, expenseId),
+                    isNull(schema.expenseAllocations.deletedAt)
+                )
+            )
+            .orderBy(asc(schema.expenseAllocations.createdAt));
+    }
+
+    async getExpenseAllocationsByUnitId(unitId: string): Promise<ExpenseAllocation[]> {
+        return await db
+            .select()
+            .from(schema.expenseAllocations)
+            .where(
+                and(
+                    eq(schema.expenseAllocations.unitId, unitId),
+                    isNull(schema.expenseAllocations.deletedAt)
+                )
+            )
+            .orderBy(desc(schema.expenseAllocations.createdAt));
+    }
+
+    async deleteExpenseAllocationsByExpenseId(expenseId: string): Promise<void> {
+        await db
+            .update(schema.expenseAllocations)
+            .set({ deletedAt: new Date() })
+            .where(eq(schema.expenseAllocations.expenseId, expenseId));
     }
 
     // ==================== FACILITIES & BOOKINGS ====================

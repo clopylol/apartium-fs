@@ -133,3 +133,36 @@ export function getGuestVisitStatusLabel(visit: {
             return 'Bilinmiyor';
     }
 }
+
+/**
+ * Converts display date string (DD.MM.YYYY - HH:mm) to ISO datetime string (YYYY-MM-DDTHH:mm:ss)
+ * @param displayDate - Date string in format "DD.MM.YYYY - HH:mm" or "DD.MM.YYYY"
+ * @returns ISO datetime string or empty string if invalid
+ */
+export function parseDisplayDateToISO(displayDate: string): string {
+    if (!displayDate || displayDate === '-') return '';
+    
+    try {
+        // Handle "DD.MM.YYYY - HH:mm" format
+        const parts = displayDate.split(' - ');
+        const datePart = parts[0]; // "DD.MM.YYYY"
+        const timePart = parts[1] || '00:00'; // "HH:mm" or default
+        
+        const [day, month, year] = datePart.split('.');
+        const [hours, minutes] = timePart.split(':');
+        
+        if (!day || !month || !year) return '';
+        
+        // Validate time parts
+        const hoursNum = hours ? parseInt(hours, 10) : 0;
+        const minutesNum = minutes ? parseInt(minutes, 10) : 0;
+        
+        if (isNaN(hoursNum) || hoursNum < 0 || hoursNum > 23) return '';
+        if (isNaN(minutesNum) || minutesNum < 0 || minutesNum > 59) return '';
+        
+        // Create ISO string: YYYY-MM-DDTHH:mm:ss
+        return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${String(hoursNum).padStart(2, '0')}:${String(minutesNum).padStart(2, '0')}:00`;
+    } catch {
+        return '';
+    }
+}

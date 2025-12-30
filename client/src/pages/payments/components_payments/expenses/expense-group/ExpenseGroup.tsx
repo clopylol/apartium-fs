@@ -8,10 +8,11 @@ interface ExpenseGroupProps {
     expenses: ExpenseRecord[];
     onDelete: (id: string) => void;
     onEdit?: (expense: ExpenseRecordLegacy) => void;
+    onViewDetail?: (expense: ExpenseRecordLegacy) => void;
     isPeriodPast?: boolean;
 }
 
-export const ExpenseGroup: FC<ExpenseGroupProps> = ({ category, expenses, onDelete, onEdit, isPeriodPast = false }) => {
+export const ExpenseGroup: FC<ExpenseGroupProps> = ({ category, expenses, onDelete, onEdit, onViewDetail, isPeriodPast = false }) => {
     const { t } = useTranslation();
     if (expenses.length === 0) return null;
 
@@ -54,7 +55,7 @@ export const ExpenseGroup: FC<ExpenseGroupProps> = ({ category, expenses, onDele
                         key={expense.id}
                         expense={expense}
                         onDelete={onDelete}
-                        onClick={() => onEdit?.(expense as ExpenseRecordLegacy)}
+                        onClick={() => onViewDetail?.(expense as ExpenseRecordLegacy)}
                         isPeriodPast={isPeriodPast}
                     />
                 ))}

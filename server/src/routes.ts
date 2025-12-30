@@ -702,36 +702,56 @@ export function createRoutes(storage: IStorage): Router {
                 return res.status(400).json({ error: 'Tutar pozitif bir sayı olmalıdır' });
             }
             
-            // Handle expenseDate: validate format YYYY-MM-DD
-            let expenseDate: string;
+            // Handle expenseDate: validate format YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss
+            let expenseDate: Date;
             if (req.body.expenseDate instanceof Date) {
-                expenseDate = req.body.expenseDate.toISOString().split('T')[0];
-            } else if (typeof req.body.expenseDate === 'string') {
-                // Validate date format YYYY-MM-DD
-                if (!/^\d{4}-\d{2}-\d{2}$/.test(req.body.expenseDate)) {
-                    return res.status(400).json({ error: 'Tarih formatı YYYY-MM-DD olmalıdır' });
-                }
                 expenseDate = req.body.expenseDate;
+            } else if (typeof req.body.expenseDate === 'string') {
+                // Validate date format: YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss
+                const dateOnlyPattern = /^\d{4}-\d{2}-\d{2}$/;
+                const dateTimePattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/;
+                
+                if (!dateOnlyPattern.test(req.body.expenseDate) && !dateTimePattern.test(req.body.expenseDate)) {
+                    return res.status(400).json({ error: 'Tarih formatı YYYY-MM-DD veya YYYY-MM-DDTHH:mm:ss olmalıdır' });
+                }
+                
+                // Parse to Date object
+                expenseDate = new Date(req.body.expenseDate);
+                
+                // Validate date is valid
+                if (isNaN(expenseDate.getTime())) {
+                    return res.status(400).json({ error: 'Geçersiz tarih değeri' });
+                }
             } else {
                 return res.status(400).json({ error: 'Tarih geçerli bir değer olmalıdır' });
             }
             
             // Handle siteId and buildingId: empty string or undefined should be null
+            // IMPORTANT: If buildingId is provided, siteId should be null (building belongs to a site)
+            // If only siteId is provided (no buildingId), use siteId
             const hasBuildingId = req.body.buildingId && req.body.buildingId !== "" && req.body.buildingId !== null;
             const hasSiteId = req.body.siteId && req.body.siteId !== "" && req.body.siteId !== null;
             const buildingId = hasBuildingId ? req.body.buildingId : null;
-            const siteId = hasSiteId ? req.body.siteId : null;
+            // If buildingId exists, siteId should be null (building already has siteId via FK)
+            // If buildingId is null but siteId exists, use siteId
+            const siteId = hasBuildingId ? null : (hasSiteId ? req.body.siteId : null);
             
             // Prepare data for validation
             // Convert null values to undefined for validation (schema expects undefined for optional fields)
+            // IMPORTANT: expenseDate must be string for Zod validation (override will transform to Date)
             const dataToValidate = {
                 ...req.body,
                 amount,
-                expenseDate,
+                expenseDate: expenseDate instanceof Date ? expenseDate.toISOString() : (typeof req.body.expenseDate === 'string' ? req.body.expenseDate : expenseDate),
                 buildingId: buildingId || undefined, // Use undefined instead of null for validation
                 siteId: siteId || undefined, // Use undefined instead of null for validation
                 description: req.body.description || undefined, // Convert null to undefined
                 attachmentUrl: req.body.attachmentUrl || undefined, // Convert null to undefined
+                // Ensure periodMonth and periodYear are strings/numbers as expected
+                periodMonth: req.body.periodMonth,
+                periodYear: typeof req.body.periodYear === 'string' ? parseInt(req.body.periodYear) : req.body.periodYear,
+                // Handle distributionType: default to 'equal' if not provided
+                distributionType: req.body.distributionType || 'equal',
             };
             
             // Parse with schema
@@ -740,19 +760,44 @@ export function createRoutes(storage: IStorage): Router {
                // Ensure buildingId and siteId are explicitly null (not undefined) for database insert
                // IMPORTANT: Use the original buildingId and siteId values from req.body, not from validatedData
                // because validatedData might have undefined for optional fields
-               const finalData = {
+               // Zod transform may not work correctly, so manually convert expenseDate to Date if needed
+               const finalExpenseDate = validatedData.expenseDate instanceof Date 
+                   ? validatedData.expenseDate 
+                   : (typeof validatedData.expenseDate === 'string' 
+                       ? new Date(validatedData.expenseDate) 
+                       : expenseDate);
+               
+               // Prepare final data for database insert
+               // Drizzle ORM expects Date objects for timestamp columns
+               const finalData: any = {
                    ...validatedData,
                    amount,
-                   expenseDate: expenseDate, // Date object for timestamp column
+                   expenseDate: finalExpenseDate, // Date object for timestamp column
                    buildingId: buildingId ?? null, // Use nullish coalescing to preserve null
                    siteId: siteId ?? null, // Use nullish coalescing to preserve null
+                   distributionType: validatedData.distributionType || 'equal', // Ensure distributionType is set
                };
+               
+               // Remove undefined fields (Drizzle doesn't like undefined)
+               Object.keys(finalData).forEach(key => {
+                   if (finalData[key] === undefined) {
+                       delete finalData[key];
+                   }
+               });
             
+            console.log('Creating expense with data:', JSON.stringify(finalData, null, 2));
             const expense = await storage.createExpenseRecord(finalData);
+            console.log('Expense created successfully:', expense.id);
             res.status(201).json({ expense });
         } catch (error: any) {
-            if (error.name === 'ZodError') return res.status(400).json({ error: 'Geçersiz veri', details: error.errors });
-            res.status(500).json({ error: 'Gider oluşturulamadı' });
+            if (error.name === 'ZodError') {
+                console.error('Zod validation error:', JSON.stringify(error.errors, null, 2));
+                return res.status(400).json({ error: 'Geçersiz veri', details: error.errors });
+            }
+            console.error('Expense create error:', error);
+            console.error('Error stack:', error.stack);
+            console.error('Error message:', error.message);
+            res.status(500).json({ error: 'Gider oluşturulamadı', message: error.message });
         }
     });
 
@@ -774,6 +819,78 @@ export function createRoutes(storage: IStorage): Router {
         } catch (error) {
             console.error('Expense update error:', error);
             res.status(500).json({ error: 'Gider kaydı güncellenemedi' });
+        }
+    });
+
+    // GET /api/expenses/:id/allocations - Get allocations for an expense
+    router.get('/expenses/:id/allocations', requireAuth, async (req, res) => {
+        try {
+            // UUID validation
+            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+            if (!uuidRegex.test(req.params.id)) {
+                return res.status(400).json({ error: 'Geçersiz gider ID' });
+            }
+
+            const allocations = await storage.getExpenseAllocationsByExpenseId(req.params.id);
+            
+            // Join with units and buildings for better data
+            const allocationsWithDetails = await Promise.all(
+                allocations.map(async (allocation) => {
+                    const unit = await storage.getUnitById(allocation.unitId);
+                    if (!unit) {
+                        return {
+                            ...allocation,
+                            unitNumber: null,
+                            buildingName: null,
+                        };
+                    }
+                    
+                    const building = unit.buildingId ? await storage.getBuildingById(unit.buildingId) : null;
+                    
+                    return {
+                        ...allocation,
+                        unitNumber: unit.number,
+                        buildingName: building?.name || null,
+                    };
+                })
+            );
+
+            res.json({ allocations: allocationsWithDetails });
+        } catch (error) {
+            console.error('Get expense allocations error:', error);
+            res.status(500).json({ error: 'Gider dağıtımları alınamadı' });
+        }
+    });
+
+    // GET /api/units/:id/expense-allocations - Get expense allocations for a unit
+    router.get('/units/:id/expense-allocations', requireAuth, async (req, res) => {
+        try {
+            // UUID validation
+            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+            if (!uuidRegex.test(req.params.id)) {
+                return res.status(400).json({ error: 'Geçersiz daire ID' });
+            }
+
+            const allocations = await storage.getExpenseAllocationsByUnitId(req.params.id);
+            
+            // Join with expenses for better data
+            const allocationsWithDetails = await Promise.all(
+                allocations.map(async (allocation) => {
+                    const expense = await storage.getExpenseRecordById(allocation.expenseId);
+                    
+                    return {
+                        ...allocation,
+                        expenseTitle: expense?.title || null,
+                        expenseCategory: expense?.category || null,
+                        expenseDate: expense?.expenseDate || null,
+                    };
+                })
+            );
+
+            res.json({ allocations: allocationsWithDetails });
+        } catch (error) {
+            console.error('Get unit expense allocations error:', error);
+            res.status(500).json({ error: 'Daire gider dağıtımları alınamadı' });
         }
     });
 

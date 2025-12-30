@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { api } from '@/lib/api';
 import { showSuccess, showError } from '@/utils/toast';
 import { formatDateShort } from '@/utils/date';
+import { parsePlaceholderId } from '@/utils/payments';
 
 // Format payment date with time for display
 const formatPaymentDateTime = (dateString: string | null | undefined): string | undefined => {
@@ -216,40 +217,43 @@ export const usePayments = (
         
         // Check if this is a placeholder payment record
         if (id.startsWith('placeholder-')) {
-            // Extract residentId and unitId from placeholder ID
-            const parts = id.split('-');
-            if (parts.length >= 3) {
-                const residentId = parts[1];
-                const unitId = parts[2];
-                
-                // Find the original payment data to get amount and type
-                const originalPayment = data?.payments.find(p => 
-                    p.residentId === residentId && p.unitId === unitId
-                );
-                
-                if (originalPayment) {
-                    // Payment bilgisini bul (toast mesajı için)
-                    const paymentInfo = payment ? {
-                        residentName: payment.residentName,
-                        amount: payment.amount
-                    } : undefined;
-                    
-                    // Create new payment record
-                    createPaymentMutation.mutate({
-                        residentId: originalPayment.residentId,
-                        unitId: originalPayment.unitId,
-                        amount: typeof originalPayment.amount === 'string' ? originalPayment.amount : originalPayment.amount.toString(),
-                        type: originalPayment.type,
-                        status,
-                        paymentDate,
-                        periodMonth: month,
-                        periodYear: parseInt(year),
-                        paymentInfo,
-                    });
-                    return;
-                }
+            // Parse placeholder ID safely
+            const parsed = parsePlaceholderId(id);
+            if (!parsed) {
+                showError(t('payments.messages.invalidPlaceholderId') || 'Geçersiz placeholder payment ID formatı');
+                return;
             }
-            showError('Placeholder payment record bilgileri bulunamadı');
+            
+            const { residentId, unitId } = parsed;
+            
+            // Find the original payment data to get amount and type
+            const originalPayment = data?.payments.find(p => 
+                p.residentId === residentId && p.unitId === unitId
+            );
+            
+            if (originalPayment) {
+                // Payment bilgisini bul (toast mesajı için)
+                const paymentInfo = payment ? {
+                    residentName: payment.residentName,
+                    amount: payment.amount
+                } : undefined;
+                
+                // Create new payment record
+                createPaymentMutation.mutate({
+                    residentId: originalPayment.residentId,
+                    unitId: originalPayment.unitId,
+                    amount: typeof originalPayment.amount === 'string' ? originalPayment.amount : originalPayment.amount.toString(),
+                    type: originalPayment.type,
+                    status,
+                    paymentDate,
+                    periodMonth: month,
+                    periodYear: parseInt(year),
+                    paymentInfo,
+                });
+                return;
+            }
+            
+            showError(t('payments.messages.placeholderNotFound') || 'Placeholder payment record bilgileri bulunamadı');
             return;
         }
         

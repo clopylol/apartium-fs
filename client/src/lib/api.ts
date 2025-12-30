@@ -159,6 +159,10 @@ export const api = {
             apiClient(`/expenses/${id}`, { method: 'PATCH', data }),
         delete: (id: string) =>
             apiClient(`/expenses/${id}`, { method: 'DELETE' }),
+        getAllocations: (expenseId: string) =>
+            apiClient(`/expenses/${expenseId}/allocations`),
+        getUnitAllocations: (unitId: string) =>
+            apiClient(`/units/${unitId}/expense-allocations`),
     },
 
     // Sites

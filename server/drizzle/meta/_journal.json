@@ -64,6 +64,27 @@
       "when": 1735097000000,
       "tag": "0014_change_expense_date_to_timestamp",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1735098000000,
+      "tag": "0015_add_expense_allocations",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1735099000000,
+      "tag": "0016_add_distribution_type_to_expenses",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1735100000000,
+      "tag": "0017_add_area_to_units",
+      "breakpoints": true
     }
   ]
 }

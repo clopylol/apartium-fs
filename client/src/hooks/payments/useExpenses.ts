@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { api } from '@/lib/api';
 import { showSuccess, showError } from '@/utils/toast';
-import { formatDateShort } from '@/utils/date';
+import { formatDateShort, parseDisplayDateToISO } from '@/utils/date';
 import type { ExpenseRecord, ExpenseRecordLegacy, ExpensesApiResponse, ExpenseFormData } from '@/types/payments';
 
 // Format expense date with time for display
@@ -96,8 +96,9 @@ export const useExpenses = (
     const createMutation = useMutation({
         mutationFn: (data: ExpenseFormData) => api.expenses.create(data),
         onSuccess: (response: any) => {
+            console.log('Expense create success response:', response);
             queryClient.invalidateQueries({ queryKey: ['expenses', month, year] });
-            
+
             // Response'dan expense bilgisini al (API'den dönen expense objesi)
             const expense = response?.expense || response;
             const title = expense?.title || '';
@@ -157,16 +158,16 @@ export const useExpenses = (
         // Değilse ExpenseRecordLegacy formatındadır, activeSiteId ve activeBuildingId'yi kullan
         const expenseData: ExpenseFormData = {
             title: newExpense.title || '',
-            category: (newExpense.category as any) || 'utilities',
+            category: (newExpense.category as ExpenseFormData['category']) || 'utilities',
             amount: typeof newExpense.amount === 'string' ? parseFloat(newExpense.amount) : (newExpense.amount || 0),
-            expenseDate: (newExpense as any).expenseDate || (newExpense as any).date || new Date().toISOString().split('T')[0],
-            status: (newExpense.status as any) || 'pending',
-            description: (newExpense as any).description,
-            siteId: (newExpense as any).siteId !== undefined 
-                ? (newExpense as any).siteId 
+            expenseDate: (newExpense as ExpenseRecord).expenseDate || (newExpense as ExpenseRecordLegacy).date || new Date().toISOString().split('T')[0],
+            status: (newExpense.status as ExpenseFormData['status']) || 'pending',
+            description: (newExpense as ExpenseRecord).description || (newExpense as ExpenseRecordLegacy).description,
+            siteId: (newExpense as ExpenseRecord).siteId !== undefined 
+                ? (newExpense as ExpenseRecord).siteId 
                 : (activeBuildingId ? undefined : (activeSiteId || undefined)),
-            buildingId: (newExpense as any).buildingId !== undefined 
-                ? (newExpense as any).buildingId 
+            buildingId: (newExpense as ExpenseRecord).buildingId !== undefined 
+                ? (newExpense as ExpenseRecord).buildingId 
                 : (activeBuildingId || undefined),
             periodMonth: month,
             periodYear: parseInt(year),
@@ -179,14 +180,17 @@ export const useExpenses = (
         // Transform legacy format to API format
         const expenseData: Partial<ExpenseFormData> = {};
         if (newExpense.title !== undefined) expenseData.title = newExpense.title;
-        if (newExpense.category !== undefined) expenseData.category = newExpense.category as any;
+        if (newExpense.category !== undefined) expenseData.category = newExpense.category as ExpenseFormData['category'];
         if (newExpense.amount !== undefined) expenseData.amount = Number(newExpense.amount);
-        if (newExpense.date !== undefined) expenseData.expenseDate = newExpense.date;
-        if (newExpense.status !== undefined) expenseData.status = newExpense.status as any;
+        if (newExpense.date !== undefined) {
+            // Convert display date (DD.MM.YYYY - HH:mm) to ISO datetime (YYYY-MM-DDTHH:mm:ss)
+            expenseData.expenseDate = parseDisplayDateToISO(newExpense.date);
+        }
+        if (newExpense.status !== undefined) expenseData.status = newExpense.status as ExpenseFormData['status'];
         if (newExpense.description !== undefined) expenseData.description = newExpense.description;
 
         updateMutation.mutate({ id, data: expenseData });
-    }, [updateMutation, t]);
+    }, [updateMutation]);
 
     const deleteExpense = useCallback((id: string) => {
         deleteMutation.mutate(id);

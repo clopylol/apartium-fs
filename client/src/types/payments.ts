@@ -43,6 +43,7 @@ export interface ExpenseRecord {
     attachmentUrl: string | null;
     siteId: string | null;
     buildingId: string | null;
+    distributionType?: 'equal' | 'area_based'; // Dağıtım tipi
     periodMonth: string;
     periodYear: number;
     createdAt: string;
@@ -60,6 +61,8 @@ export interface ExpenseRecordLegacy {
     status: 'paid' | 'pending';
     description?: string;
     attachment?: string;
+    siteId?: string | null;
+    buildingId?: string | null;
 }
 
 export interface ExpenseCategory {
@@ -112,6 +115,12 @@ export interface BulkAmountUpdateData {
     amount: number;
 }
 
+export interface BulkDuesItem {
+    month: string;
+    year: string;
+    amount: number;
+}
+
 export interface ExpenseFormData {
     title: string;
     category: 'utilities' | 'maintenance' | 'personnel' | 'general';
@@ -123,4 +132,20 @@ export interface ExpenseFormData {
     buildingId?: string;
     periodMonth: string;
     periodYear: number;
+}
+
+export interface ExpenseAllocation {
+    id: string;
+    expenseId: string;
+    unitId: string;
+    allocatedAmount: number | string;
+    createdAt: string;
+    updatedAt: string;
+    deletedAt: string | null;
+    // JOIN data from API
+    unitNumber?: string | null;
+    buildingName?: string | null;
+    expenseTitle?: string | null;
+    expenseCategory?: 'utilities' | 'maintenance' | 'personnel' | 'general' | null;
+    expenseDate?: string | null;
 }

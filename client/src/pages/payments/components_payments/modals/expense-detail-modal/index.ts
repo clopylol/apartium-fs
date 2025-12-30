@@ -1,0 +1,2 @@
+export { ExpenseDetailModal } from './ExpenseDetailModal';
+

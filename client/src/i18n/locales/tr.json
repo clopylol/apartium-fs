@@ -363,7 +363,9 @@
           "attachment": "Fatura / Fiş Görseli",
           "notes": "Notlar",
           "date": "Tarih",
-          "time": "Saat"
+          "time": "Saat",
+          "scope": "Kapsam",
+          "distributionType": "Dağıtım Tipi"
         },
         "placeholders": {
           "description": "Örn: Ekstra Tamirat",
@@ -381,6 +383,19 @@
           "paid": "Ödendi",
           "pending": "Ödenecek"
         },
+        "scope": {
+          "site": "Tüm Site",
+          "building": "Spesifik Blok",
+          "siteDesc": "Bu gider tüm siteyi kapsar",
+          "buildingDesc": "Bu gider sadece seçili bloğu kapsar"
+        },
+        "distributionType": {
+          "equal": "Eşit Dağıtım",
+          "areaBased": "Metrekareye Göre",
+          "equalDesc": "Gider tüm dairelere eşit olarak dağıtılır",
+          "areaBasedDesc": "Gider dairelerin metrekarelerine göre dağıtılır (metrekare bilgisi gerekli)",
+          "siteWideInfo": "Site geneli giderler otomatik olarak eşit dağıtılır"
+        },
         "buttons": {
           "cancel": "İptal",
           "save": "Kaydet"
@@ -394,6 +409,16 @@
           "confirm": "Onayla",
           "cancel": "İptal"
         }
+      },
+      "expenseDetail": {
+        "title": "Gider Dağıtım Detayları",
+        "totalAmount": "Toplam Tutar",
+        "loading": "Yükleniyor...",
+        "noAllocations": "Bu gider için dağıtım yapılmamış",
+        "totalAllocated": "Toplam Dağıtılan",
+        "mismatch": "Eşleşmiyor",
+        "allocationCount": "{{count}} daireye dağıtıldı",
+        "unknownUnit": "Bilinmeyen Daire"
       },
       "expenseDelete": {
         "labels": {
