@@ -1,11 +1,12 @@
 import { useTranslation } from "react-i18next";
 import type { Janitor, JanitorRequest } from "@/types/janitor.types";
 import type { StaffFormData } from "./useJanitorModals";
+import { useJanitorMutations } from "./useJanitorMutations";
+
+import type { ConfirmationVariant } from "@/components/shared/modals";
 
 export interface UseJanitorActionsProps {
   janitors: Janitor[];
-  setJanitors: React.Dispatch<React.SetStateAction<Janitor[]>>;
-  setRequests: React.Dispatch<React.SetStateAction<JanitorRequest[]>>;
   isEditing: boolean;
   selectedRequest: JanitorRequest | null;
   setSelectedRequest: (request: JanitorRequest | null) => void;
@@ -14,7 +15,7 @@ export interface UseJanitorActionsProps {
       isOpen: boolean;
       title: string;
       message: string;
-      type: "approve" | "danger";
+      variant: ConfirmationVariant;
       onConfirm: () => void;
     }>
   >;
@@ -27,13 +28,11 @@ export interface UseJanitorActionsReturn {
   handleBlockToggle: (block: string) => void;
   handleSaveClick: (formData: StaffFormData) => void;
   handleDeleteClick: (id: string, name: string) => void;
-  handleCompleteRequest: (id: string) => void;
+  handleCompleteRequest: (id: string, request?: JanitorRequest | null) => void;
 }
 
 export function useJanitorActions({
   janitors,
-  setJanitors,
-  setRequests,
   isEditing,
   selectedRequest,
   setSelectedRequest,
@@ -42,31 +41,36 @@ export function useJanitorActions({
   closeConfirmModal,
 }: UseJanitorActionsProps): UseJanitorActionsReturn {
   const { t } = useTranslation();
+  const mutations = useJanitorMutations();
 
   const getJanitor = (id?: string): Janitor | undefined => {
     return janitors.find((j) => j.id === id);
   };
 
   const handleBlockToggle = (_block: string) => {
-    // This will be handled by parent component
+    // This will be handled by parent component or form state
   };
 
   const processSave = (data: StaffFormData) => {
     if (isEditing && data.id) {
-      setJanitors((prev) =>
-        prev.map((j) => (j.id === data.id ? { ...j, ...data } : j))
-      );
-    } else {
-      const newJanitor: Janitor = {
-        id: `j-${Date.now()}`,
+      const updateData = {
         name: data.name,
         phone: data.phone,
         assignedBlocks: data.assignedBlocks,
         status: data.status,
-        tasksCompleted: 0,
-        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name)}&background=random&color=fff`,
       };
-      setJanitors((prev) => [...prev, newJanitor]);
+      mutations.updateJanitor.mutate({
+        id: data.id,
+        data: updateData
+      });
+    } else {
+      const createData = {
+        name: data.name,
+        phone: data.phone,
+        status: data.status,
+        assignedBlocks: data.assignedBlocks,
+      };
+      mutations.createJanitor.mutate(createData);
     }
     closeAddModal();
     closeConfirmModal();
@@ -83,13 +87,13 @@ export function useJanitorActions({
       message: isEditing
         ? t("janitor.staff.modals.confirmations.edit.message", { name: data.name })
         : t("janitor.staff.modals.confirmations.add.message", { name: data.name }),
-      type: "approve",
+      variant: "success",
       onConfirm: () => processSave(data),
     });
   };
 
   const processDelete = (id: string) => {
-    setJanitors((prev) => prev.filter((j) => j.id !== id));
+    mutations.deleteJanitor.mutate(id);
     closeConfirmModal();
   };
 
@@ -98,39 +102,23 @@ export function useJanitorActions({
       isOpen: true,
       title: t("janitor.staff.modals.confirmations.delete.title"),
       message: t("janitor.staff.modals.confirmations.delete.message", { name }),
-      type: "danger",
+      variant: "danger",
       onConfirm: () => processDelete(id),
     });
   };
 
-  const handleCompleteRequest = (id: string) => {
-    setRequests((prev) =>
-      prev.map((r) =>
-        r.id === id
-          ? {
-              ...r,
-              status: "completed",
-              completedAt: new Date().toLocaleTimeString("tr-TR", {
-                hour: "2-digit",
-                minute: "2-digit",
-              }),
-              assignedJanitorId: "j1",
-            }
-          : r
-      )
+  const handleCompleteRequest = (id: string, request?: JanitorRequest | null) => {
+    // We assume backend sets tasksCompleted increment
+    mutations.updateRequestStatus.mutate(
+      { id, status: "completed" },
+      {
+        onSuccess: () => {
+          if (request && selectedRequest && selectedRequest.id === id) {
+            setSelectedRequest(null);
+          }
+        }
+      }
     );
-
-    if (selectedRequest && selectedRequest.id === id) {
-      setSelectedRequest({
-        ...selectedRequest,
-        status: "completed",
-        completedAt: new Date().toLocaleTimeString("tr-TR", {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-        assignedJanitorId: "j1",
-      });
-    }
   };
 
   return {

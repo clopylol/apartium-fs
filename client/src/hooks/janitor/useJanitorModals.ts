@@ -1,6 +1,8 @@
 import { useState } from "react";
 import type { Janitor, JanitorRequest } from "@/types/janitor.types";
 
+import type { ConfirmationVariant } from "@/components/shared/modals";
+
 export interface StaffFormData {
   id: string;
   name: string;
@@ -22,7 +24,7 @@ export interface UseJanitorModalsReturn {
     isOpen: boolean;
     title: string;
     message: string;
-    type: "approve" | "danger";
+    variant: ConfirmationVariant;
     onConfirm: () => void;
   };
   setConfirmModal: React.Dispatch<
@@ -30,7 +32,7 @@ export interface UseJanitorModalsReturn {
       isOpen: boolean;
       title: string;
       message: string;
-      type: "approve" | "danger";
+      variant: ConfirmationVariant;
       onConfirm: () => void;
     }>
   >;
@@ -69,14 +71,14 @@ export function useJanitorModals(): UseJanitorModalsReturn {
     isOpen: boolean;
     title: string;
     message: string;
-    type: "approve" | "danger";
+    variant: ConfirmationVariant;
     onConfirm: () => void;
   }>({
     isOpen: false,
     title: "",
     message: "",
-    type: "approve",
-    onConfirm: () => {},
+    variant: "success",
+    onConfirm: () => { },
   });
   const [completeRequestConfirm, setCompleteRequestConfirm] = useState<{
     isOpen: boolean;
@@ -106,7 +108,10 @@ export function useJanitorModals(): UseJanitorModalsReturn {
       id: janitor.id,
       name: janitor.name,
       phone: janitor.phone,
-      assignedBlocks: janitor.assignedBlocks,
+      // assignedBlocks is now an array of {id, name} objects, extract IDs
+      assignedBlocks: Array.isArray(janitor.assignedBlocks)
+        ? janitor.assignedBlocks.map((block: any) => typeof block === 'string' ? block : block.id)
+        : [],
       status: janitor.status,
     });
     setShowAddModal(true);

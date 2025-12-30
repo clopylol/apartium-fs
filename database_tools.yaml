@@ -1,0 +1,7 @@
+tools:
+  - name: postgres_query
+    description: "PostgreSQL veritabanında sorgu çalıştırır ve şemayı okur."
+    driver: postgres
+    connection_string: "postgresql://berkay@localhost/apartium?statusColor=005392&env=local&name=Apartium&tLSMode=0&usePrivateKey=false&safeModeLevel=0&advancedSafeModeLevel=0&driverVersion=0&lazyload=false"
+
+    

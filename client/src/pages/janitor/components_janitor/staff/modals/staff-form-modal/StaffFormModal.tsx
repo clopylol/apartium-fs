@@ -4,8 +4,10 @@ import { UserCog } from "lucide-react";
 import { FormModal } from "@/components/shared/modals";
 import { ToggleSwitch, MultiSelect } from "@/components/shared/inputs";
 import type { StaffFormData } from "@/hooks/janitor";
-import { BLOCKS } from "@/constants/janitor";
+import type { Building } from "@/types/residents.types";
 import { Button } from "@/components/shared/button";
+import { formatPhoneNumber } from "@/utils/validation";
+import { useState, useEffect } from "react";
 
 interface StaffFormModalProps {
   isOpen: boolean;
@@ -14,6 +16,7 @@ interface StaffFormModalProps {
   onClose: () => void;
   onSave: (data: StaffFormData) => void;
   onChange: (data: StaffFormData) => void;
+  buildings: Building[];
 }
 
 export const StaffFormModal: FC<StaffFormModalProps> = ({
@@ -23,8 +26,21 @@ export const StaffFormModal: FC<StaffFormModalProps> = ({
   onClose,
   onSave,
   onChange,
+  buildings,
 }) => {
   const { t } = useTranslation();
+  const [displayPhone, setDisplayPhone] = useState(formatPhoneNumber(formData.phone || ""));
+
+  // Sync display phone when formData.phone changes externally
+  useEffect(() => {
+    setDisplayPhone(formatPhoneNumber(formData.phone || ""));
+  }, [formData.phone]);
+
+  const handlePhoneChange = (value: string) => {
+    const digits = value.replace(/\D/g, "").slice(0, 10);
+    setDisplayPhone(formatPhoneNumber(digits));
+    onChange({ ...formData, phone: digits });
+  };
 
   const handleSave = () => {
     if (!formData.name || formData.assignedBlocks.length === 0) return;
@@ -44,7 +60,9 @@ export const StaffFormModal: FC<StaffFormModalProps> = ({
       <Button
         onClick={handleSave}
         fullWidth
-        className="bg-[#3B82F6] hover:bg-[#2563EB] text-white shadow-lg shadow-blue-500/20"
+        className={!isEditing
+          ? "bg-ds-success hover:bg-ds-success/90 text-white shadow-lg shadow-ds-success/20"
+          : "bg-ds-action hover:bg-ds-action-hover text-white shadow-lg shadow-ds-action/20"}
       >
         {t("common.buttons.save")}
       </Button>
@@ -58,7 +76,7 @@ export const StaffFormModal: FC<StaffFormModalProps> = ({
       title={isEditing
         ? t("janitor.staff.modals.edit.title")
         : t("janitor.staff.modals.add.title")}
-      titleIcon={<UserCog className="w-5 h-5" />}
+      titleIcon={<UserCog className={`w-5 h-5 ${!isEditing ? "text-ds-success" : "text-ds-action"}`} />}
       footer={footer}
       maxWidth="md"
       zIndex={50}
@@ -72,7 +90,7 @@ export const StaffFormModal: FC<StaffFormModalProps> = ({
             type="text"
             value={formData.name}
             onChange={(e) => onChange({ ...formData, name: e.target.value })}
-            className="w-full bg-[#151821] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#3B82F6] transition-colors"
+            className={`w-full bg-[#151821] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none transition-colors ${!isEditing ? "focus:border-ds-success" : "focus:border-ds-action"}`}
             placeholder={t("janitor.staff.modals.labels.fullName")}
           />
         </div>
@@ -83,9 +101,9 @@ export const StaffFormModal: FC<StaffFormModalProps> = ({
           </label>
           <input
             type="text"
-            value={formData.phone}
-            onChange={(e) => onChange({ ...formData, phone: e.target.value })}
-            className="w-full bg-[#151821] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#3B82F6] transition-colors"
+            value={displayPhone}
+            onChange={(e) => handlePhoneChange(e.target.value)}
+            className={`w-full bg-[#151821] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none transition-colors ${!isEditing ? "focus:border-ds-success" : "focus:border-ds-action"}`}
             placeholder={t("janitor.staff.modals.labels.phonePlaceholder")}
           />
         </div>
@@ -95,7 +113,7 @@ export const StaffFormModal: FC<StaffFormModalProps> = ({
             {t("janitor.staff.modals.labels.assignedBlocks")}
           </label>
           <MultiSelect
-            options={BLOCKS.map((block) => ({ value: block, label: block }))}
+            options={buildings.map((block) => ({ value: block.id, label: block.name }))}
             selectedValues={formData.assignedBlocks}
             onChange={(values) => {
               const newFormData = { ...formData, assignedBlocks: values };

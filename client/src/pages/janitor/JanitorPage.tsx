@@ -1,6 +1,5 @@
 import { useState } from "react";
 import type { FC } from "react";
-import { INITIAL_JANITORS, INITIAL_REQUESTS } from "@/constants/janitor";
 import type { JanitorRequest } from "@/types/janitor.types";
 import {
   useJanitorState,
@@ -21,15 +20,11 @@ import { useTranslation } from "react-i18next";
 export const JanitorPage: FC = () => {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<"staff" | "requests">("staff");
-  const [janitors, setJanitors] = useState(INITIAL_JANITORS);
-  const [requests, setRequests] = useState(INITIAL_REQUESTS);
 
-  const state = useJanitorState(janitors, requests);
+  const state = useJanitorState();
   const modals = useJanitorModals();
   const actions = useJanitorActions({
-    janitors,
-    setJanitors,
-    setRequests,
+    janitors: state.janitors,
     isEditing: modals.isEditing,
     selectedRequest: modals.selectedRequest,
     setSelectedRequest: modals.setSelectedRequest,
@@ -63,6 +58,9 @@ export const JanitorPage: FC = () => {
         searchTerm={state.searchTerm}
         onSearchChange={state.setSearchTerm}
         activeRequestsCount={state.stats.activeRequests}
+        sites={state.sites}
+        activeSiteId={state.activeSiteId}
+        onSiteChange={state.setActiveSiteId}
       />
 
       <div className="flex-1 overflow-y-auto custom-scrollbar p-8">
@@ -88,6 +86,9 @@ export const JanitorPage: FC = () => {
               totalItems={state.filteredJanitors.length}
               currentPage={state.staffPage}
               onPageChange={state.setStaffPage}
+              buildings={state.buildings}
+              activeBlockId={state.activeBlockId}
+              onBlockChange={state.setActiveBlockId}
             />
           )}
 
@@ -119,6 +120,7 @@ export const JanitorPage: FC = () => {
         onClose={modals.closeAddModal}
         onSave={handleSave}
         onChange={modals.setFormData}
+        buildings={state.buildings}
       />
 
       <RequestDetailModal
@@ -135,7 +137,7 @@ export const JanitorPage: FC = () => {
         onConfirm={modals.confirmModal.onConfirm}
         title={modals.confirmModal.title}
         message={<p>{modals.confirmModal.message}</p>}
-        variant="danger"
+        variant={modals.confirmModal.variant}
       />
 
       <ConfirmationModal

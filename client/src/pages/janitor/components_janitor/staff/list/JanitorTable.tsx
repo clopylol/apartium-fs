@@ -86,12 +86,12 @@ export const JanitorTable: FC<JanitorTableProps> = ({
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex flex-wrap gap-1">
-                      {janitor.assignedBlocks.map((block) => (
+                      {janitor.assignedBlocks.map((block: any) => (
                         <span
-                          key={block}
+                          key={typeof block === 'string' ? block : block.id}
                           className="text-[10px] bg-ds-background-light dark:bg-ds-background-dark border border-ds-border-light dark:border-ds-border-dark px-2 py-0.5 rounded text-ds-secondary-light dark:text-ds-secondary-dark"
                         >
-                          {block}
+                          {typeof block === 'string' ? block : block.name}
                         </span>
                       ))}
                     </div>

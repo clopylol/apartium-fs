@@ -2,6 +2,8 @@ import type { FC } from "react";
 import { useTranslation } from "react-i18next";
 import { Search, UserCog, Bell } from "lucide-react";
 import { ButtonGroup } from "@/components/shared/button";
+import { SiteSelector } from "@/components/residents/site-selector";
+import type { Site } from "@/types/residents.types";
 
 interface JanitorHeaderProps {
   activeTab: "staff" | "requests";
@@ -9,6 +11,9 @@ interface JanitorHeaderProps {
   searchTerm: string;
   onSearchChange: (value: string) => void;
   activeRequestsCount: number;
+  sites: Site[];
+  activeSiteId: string | null;
+  onSiteChange: (siteId: string) => void;
 }
 
 export const JanitorHeader: FC<JanitorHeaderProps> = ({
@@ -17,6 +22,9 @@ export const JanitorHeader: FC<JanitorHeaderProps> = ({
   searchTerm,
   onSearchChange,
   activeRequestsCount,
+  sites,
+  activeSiteId,
+  onSiteChange,
 }) => {
   const { t } = useTranslation();
 
@@ -40,6 +48,13 @@ export const JanitorHeader: FC<JanitorHeaderProps> = ({
         <h1 className="text-2xl font-bold font-heading text-ds-primary-light dark:text-ds-primary-dark">
           {t("janitor.header.title")}
         </h1>
+
+        {/* Site Selector */}
+        <SiteSelector
+          sites={sites}
+          activeSiteId={activeSiteId}
+          onSiteChange={onSiteChange}
+        />
       </div>
 
       <div className="flex items-center gap-4">

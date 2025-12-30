@@ -1,14 +1,14 @@
-export interface Janitor {
+export type Janitor = {
   id: string;
   name: string;
   phone: string;
   avatar: string;
-  assignedBlocks: string[];
+  assignedBlocks: { id: string; name: string }[];
   status: "on-duty" | "off-duty" | "passive";
   tasksCompleted: number;
-}
+};
 
-export interface JanitorRequest {
+export type JanitorRequest = {
   id: string;
   residentName: string;
   phone: string;
@@ -20,7 +20,7 @@ export interface JanitorRequest {
   completedAt?: string;
   assignedJanitorId?: string;
   note?: string;
-}
+};
 
 export type JanitorRequestType = JanitorRequest["type"];
 export type JanitorRequestStatus = JanitorRequest["status"];

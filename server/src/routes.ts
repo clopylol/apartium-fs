@@ -46,7 +46,7 @@ export function createRoutes(storage: IStorage): Router {
                 storage.getRecentMaintenanceRequests(4),
                 storage.getTodayBookings()
             ]);
-            
+
             res.json({ payments, maintenance, bookings });
         } catch (error) {
             res.status(500).json({ error: 'Dashboard verileri yüklenirken hata oluştu' });
@@ -257,7 +257,7 @@ export function createRoutes(storage: IStorage): Router {
         } catch (error: any) {
             console.error('Building full data error:', error);
             console.error('Error stack:', error.stack);
-            res.status(500).json({ 
+            res.status(500).json({
                 error: error.message || 'Building data yüklenirken hata oluştu',
                 details: process.env.NODE_ENV === 'development' ? error.stack : undefined
             });
@@ -436,9 +436,9 @@ export function createRoutes(storage: IStorage): Router {
     router.get('/payments', requireAuth, async (req, res) => {
         try {
             const { month, year, page = '1', limit = '20', search, status, siteId, buildingId } = req.query;
-            
+
             console.log('Payment fetch request:', { month, year, page, limit, search, status, siteId, buildingId });
-            
+
             // Validation
             if (!month || !year) {
                 return res.status(400).json({ error: 'month ve year parametreleri gerekli' });
@@ -491,18 +491,18 @@ export function createRoutes(storage: IStorage): Router {
                 filters
             );
 
-            console.log('Payment fetch result:', { 
-                paymentCount: result.payments.length, 
+            console.log('Payment fetch result:', {
+                paymentCount: result.payments.length,
                 total: result.total,
-                stats: result.stats 
+                stats: result.stats
             });
 
             res.json(result);
         } catch (error: any) {
             console.error('Payment fetch error:', error);
-            res.status(500).json({ 
+            res.status(500).json({
                 error: 'Ödemeler yüklenirken hata oluştu',
-                message: error.message 
+                message: error.message
             });
         }
     });
@@ -523,7 +523,7 @@ export function createRoutes(storage: IStorage): Router {
         try {
             const { id } = req.params;
             const { status, paymentDate } = req.body;
-            
+
             // Validation
             if (!['paid', 'unpaid'].includes(status)) {
                 return res.status(400).json({ error: 'Geçersiz status değeri' });
@@ -671,18 +671,18 @@ export function createRoutes(storage: IStorage): Router {
                 filters
             );
 
-            console.log('Expense fetch result:', { 
-                expenseCount: result.expenses.length, 
+            console.log('Expense fetch result:', {
+                expenseCount: result.expenses.length,
                 total: result.total,
-                stats: result.stats 
+                stats: result.stats
             });
 
             res.json(result);
         } catch (error: any) {
             console.error('Expense fetch error:', error);
-            res.status(500).json({ 
+            res.status(500).json({
                 error: 'Giderler yüklenirken hata oluştu',
-                message: error.message 
+                message: error.message
             });
         }
     });
@@ -692,7 +692,7 @@ export function createRoutes(storage: IStorage): Router {
         try {
             // Announcements pattern: Handle amount and expenseDate transforms manually
             // Convert null values to undefined for validation (schema expects undefined for optional fields)
-            
+
             // Handle amount: convert to string if number
             let amount: string;
             if (typeof req.body.amount === 'number') {
@@ -702,12 +702,12 @@ export function createRoutes(storage: IStorage): Router {
             } else {
                 return res.status(400).json({ error: 'Tutar geçerli bir sayı olmalıdır' });
             }
-            
+
             // Validate amount is positive
             if (parseFloat(amount) <= 0) {
                 return res.status(400).json({ error: 'Tutar pozitif bir sayı olmalıdır' });
             }
-            
+
             // Handle expenseDate: validate format YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss
             let expenseDate: Date;
             if (req.body.expenseDate instanceof Date) {
@@ -716,14 +716,14 @@ export function createRoutes(storage: IStorage): Router {
                 // Validate date format: YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss
                 const dateOnlyPattern = /^\d{4}-\d{2}-\d{2}$/;
                 const dateTimePattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/;
-                
+
                 if (!dateOnlyPattern.test(req.body.expenseDate) && !dateTimePattern.test(req.body.expenseDate)) {
                     return res.status(400).json({ error: 'Tarih formatı YYYY-MM-DD veya YYYY-MM-DDTHH:mm:ss olmalıdır' });
                 }
-                
+
                 // Parse to Date object
                 expenseDate = new Date(req.body.expenseDate);
-                
+
                 // Validate date is valid
                 if (isNaN(expenseDate.getTime())) {
                     return res.status(400).json({ error: 'Geçersiz tarih değeri' });
@@ -731,7 +731,7 @@ export function createRoutes(storage: IStorage): Router {
             } else {
                 return res.status(400).json({ error: 'Tarih geçerli bir değer olmalıdır' });
             }
-            
+
             // Handle siteId and buildingId: empty string or undefined should be null
             // IMPORTANT: If buildingId is provided, siteId should be null (building belongs to a site)
             // If only siteId is provided (no buildingId), use siteId
@@ -741,7 +741,7 @@ export function createRoutes(storage: IStorage): Router {
             // If buildingId exists, siteId should be null (building already has siteId via FK)
             // If buildingId is null but siteId exists, use siteId
             const siteId = hasBuildingId ? null : (hasSiteId ? req.body.siteId : null);
-            
+
             // Prepare data for validation
             // Convert null values to undefined for validation (schema expects undefined for optional fields)
             // Schema expects amount as string (decimal column) and expenseDate as Date object
@@ -759,35 +759,35 @@ export function createRoutes(storage: IStorage): Router {
                 // Handle distributionType: default to 'equal' if not provided
                 distributionType: req.body.distributionType || 'equal',
             };
-            
+
             // Parse with schema (no override - schema expects string amount and Date expenseDate)
             const validatedData = insertExpenseRecordSchema.parse(dataToValidate);
-            
-               // Ensure buildingId and siteId are explicitly null (not undefined) for database insert
-               // validatedData already has correct types (amount as string, expenseDate as Date)
-               // Prepare final data for database insert
-               // Drizzle ORM expects Date objects for timestamp columns and string for decimal
-               // IMPORTANT: Use validatedData.expenseDate if it's a Date, otherwise use expenseDate variable
-               const finalExpenseDate = validatedData.expenseDate instanceof Date 
-                   ? validatedData.expenseDate 
-                   : (expenseDate instanceof Date ? expenseDate : new Date(expenseDate));
-               
-               const finalData: any = {
-                   ...validatedData,
-                   amount: String(amount), // Ensure string for decimal column
-                   expenseDate: finalExpenseDate, // Date object for timestamp column
-                   buildingId: buildingId ?? null, // Use nullish coalescing to preserve null
-                   siteId: siteId ?? null, // Use nullish coalescing to preserve null
-                   distributionType: validatedData.distributionType || 'equal', // Ensure distributionType is set
-               };
-               
-               // Remove undefined fields (Drizzle doesn't like undefined)
-               Object.keys(finalData).forEach(key => {
-                   if (finalData[key] === undefined) {
-                       delete finalData[key];
-                   }
-               });
-            
+
+            // Ensure buildingId and siteId are explicitly null (not undefined) for database insert
+            // validatedData already has correct types (amount as string, expenseDate as Date)
+            // Prepare final data for database insert
+            // Drizzle ORM expects Date objects for timestamp columns and string for decimal
+            // IMPORTANT: Use validatedData.expenseDate if it's a Date, otherwise use expenseDate variable
+            const finalExpenseDate = validatedData.expenseDate instanceof Date
+                ? validatedData.expenseDate
+                : (expenseDate instanceof Date ? expenseDate : new Date(expenseDate));
+
+            const finalData: any = {
+                ...validatedData,
+                amount: String(amount), // Ensure string for decimal column
+                expenseDate: finalExpenseDate, // Date object for timestamp column
+                buildingId: buildingId ?? null, // Use nullish coalescing to preserve null
+                siteId: siteId ?? null, // Use nullish coalescing to preserve null
+                distributionType: validatedData.distributionType || 'equal', // Ensure distributionType is set
+            };
+
+            // Remove undefined fields (Drizzle doesn't like undefined)
+            Object.keys(finalData).forEach(key => {
+                if (finalData[key] === undefined) {
+                    delete finalData[key];
+                }
+            });
+
             console.log('Creating expense with data:', JSON.stringify(finalData, null, 2));
             const expense = await storage.createExpenseRecord(finalData);
             console.log('Expense created successfully:', expense.id);
@@ -813,7 +813,7 @@ export function createRoutes(storage: IStorage): Router {
             }
 
             const expense = await storage.updateExpenseRecord(req.params.id, req.body);
-            
+
             if (!expense) {
                 return res.status(404).json({ error: 'Gider kaydı bulunamadı' });
             }
@@ -835,7 +835,7 @@ export function createRoutes(storage: IStorage): Router {
             }
 
             const allocations = await storage.getExpenseAllocationsByExpenseId(req.params.id);
-            
+
             // Join with units and buildings for better data
             const allocationsWithDetails = await Promise.all(
                 allocations.map(async (allocation) => {
@@ -847,9 +847,9 @@ export function createRoutes(storage: IStorage): Router {
                             buildingName: null,
                         };
                     }
-                    
+
                     const building = unit.buildingId ? await storage.getBuildingById(unit.buildingId) : null;
-                    
+
                     return {
                         ...allocation,
                         unitNumber: unit.number,
@@ -875,12 +875,12 @@ export function createRoutes(storage: IStorage): Router {
             }
 
             const allocations = await storage.getExpenseAllocationsByUnitId(req.params.id);
-            
+
             // Join with expenses for better data
             const allocationsWithDetails = await Promise.all(
                 allocations.map(async (allocation) => {
                     const expense = await storage.getExpenseRecordById(allocation.expenseId);
-                    
+
                     return {
                         ...allocation,
                         expenseTitle: expense?.title || null,
@@ -1152,18 +1152,18 @@ export function createRoutes(storage: IStorage): Router {
             const page = parseInt(req.query.page as string) || 1;
             const limit = parseInt(req.query.limit as string) || 10;
             const userId = (req.user as any)?.id; // Get authenticated user ID
-            
+
             if (!userId) {
                 return res.status(401).json({ error: 'Kullanıcı bilgisi bulunamadı' });
             }
-            
+
             // Filter announcements by user's authorized sites
             const result = await storage.getAnnouncementsPaginated(page, limit, userId);
             res.json(result);
         } catch (error: any) {
             console.error('Announcements fetch error:', error);
             console.error('Error stack:', error.stack);
-            res.status(500).json({ 
+            res.status(500).json({
                 error: 'Duyurular yüklenirken hata oluştu',
                 message: process.env.NODE_ENV === 'development' ? error.message : undefined
             });
@@ -1226,8 +1226,8 @@ export function createRoutes(storage: IStorage): Router {
                     );
 
                     if (!hasAccess) {
-                        return res.status(403).json({ 
-                            error: 'Bu bina için yetkiniz bulunmamaktadır' 
+                        return res.status(403).json({
+                            error: 'Bu bina için yetkiniz bulunmamaktadır'
                         });
                     }
                 }
@@ -1249,68 +1249,78 @@ export function createRoutes(storage: IStorage): Router {
                     );
 
                     if (!hasAccess) {
-                        return res.status(403).json({ 
-                            error: 'Bu site için yetkiniz bulunmamaktadır' 
+                        return res.status(403).json({
+                            error: 'Bu site için yetkiniz bulunmamaktadır'
                         });
                     }
                 }
             }
-            
+
             // Convert publishDate string to Date if provided
             const publishDate = req.body.publishDate ? new Date(req.body.publishDate) : null;
-            
+
             // Handle buildingId and siteId: empty string or undefined should be null
             const buildingId = hasBuildingId ? req.body.buildingId : null;
             const siteId = hasSiteId ? req.body.siteId : null;
-            
+
             // Debug: Log the values before validation
             console.log('[POST /announcements] Before validation - buildingId:', buildingId, 'siteId:', siteId);
             console.log('[POST /announcements] req.body:', JSON.stringify(req.body, null, 2));
-            
-            // Prepare data for validation
-            // Convert null values to undefined for validation (schema expects undefined for optional fields)
-            const dataToValidate = {
-                ...req.body,
-                authorId,
-                publishDate,
-                buildingId: buildingId || undefined, // Use undefined instead of null for validation
-                siteId: siteId || undefined, // Use undefined instead of null for validation
-            };
-            
-            console.log('[POST /announcements] dataToValidate:', JSON.stringify(dataToValidate, null, 2));
-            
-            // Parse with schema
-            const validatedData = insertAnnouncementSchema.parse(dataToValidate);
-            
-            console.log('[POST /announcements] validatedData:', JSON.stringify(validatedData, null, 2));
-            
-            // Ensure buildingId and siteId are explicitly null (not undefined) for database insert
-            // IMPORTANT: Use the original buildingId and siteId values from req.body, not from validatedData
-            // because validatedData might have undefined for optional fields
-            const finalData = {
-                ...validatedData,
-                buildingId: buildingId ?? null, // Use nullish coalescing to preserve null
-                siteId: siteId ?? null, // Use nullish coalescing to preserve null
-            };
-            
-            // Debug log
-            console.log('[POST /announcements] finalData:', JSON.stringify(finalData, null, 2));
-            
-            const announcement = await storage.createAnnouncement(finalData);
-            res.status(201).json({ announcement });
-        } catch (error: any) {
-            console.error('Announcement creation error:', error);
-            console.error('Error stack:', error.stack);
-            if (error.name === 'ZodError') {
-                console.error('Zod validation errors:', JSON.stringify(error.errors, null, 2));
-                console.error('Data that failed validation:', JSON.stringify(dataToValidate, null, 2));
-                return res.status(400).json({ error: 'Geçersiz veri', details: error.errors });
+
+            let dataToValidate: any = {};
+            try {
+                // Get buildingId and siteId from req.body or author
+                const { buildingId, siteId } = req.body;
+
+                // Prepare data for validation
+                // Convert null values to undefined for validation (schema expects undefined for optional fields)
+                dataToValidate = {
+                    ...req.body,
+                    authorId,
+                    publishDate,
+                    buildingId: buildingId || undefined,
+                    siteId: siteId || undefined,
+                };
+
+                console.log('[POST /announcements] dataToValidate:', JSON.stringify(dataToValidate, null, 2));
+
+                // Parse with schema
+                const validatedData = insertAnnouncementSchema.parse(dataToValidate);
+
+                console.log('[POST /announcements] validatedData:', JSON.stringify(validatedData, null, 2));
+
+                // Ensure buildingId and siteId are explicitly null (not undefined) for database insert
+                // IMPORTANT: Use the original buildingId and siteId values from req.body, not from validatedData
+                // because validatedData might have undefined for optional fields
+                const finalData = {
+                    ...validatedData,
+                    buildingId: buildingId ?? null, // Use nullish coalescing to preserve null
+                    siteId: siteId ?? null, // Use nullish coalescing to preserve null
+                };
+
+                // Debug log
+                console.log('[POST /announcements] finalData:', JSON.stringify(finalData, null, 2));
+
+                const announcement = await storage.createAnnouncement(finalData);
+                res.status(201).json({ announcement });
+            } catch (error: any) {
+                console.error('Announcement creation error:', error);
+                console.error('Error stack:', error.stack);
+                if (error.name === 'ZodError') {
+                    console.error('Zod validation errors:', JSON.stringify(error.errors, null, 2));
+                    console.error('Data that failed validation:', JSON.stringify(dataToValidate, null, 2));
+                    return res.status(400).json({ error: 'Geçersiz veri', details: error.errors });
+                }
+                res.status(500).json({
+                    error: 'Duyuru oluşturulamadı',
+                    details: error.message,
+                    stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+                });
             }
-            res.status(500).json({ 
-                error: 'Duyuru oluşturulamadı', 
-                details: error.message,
-                stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-            });
+        } catch (error) {
+            // General catch for internal server errors
+            console.error('Internal route error:', error);
+            res.status(500).json({ error: 'Sunucu hatası' });
         }
     });
 
@@ -1333,20 +1343,20 @@ export function createRoutes(storage: IStorage): Router {
             if (updateData.publishDate) {
                 updateData.publishDate = new Date(updateData.publishDate);
             }
-            
+
             // Handle buildingId and siteId: empty string or undefined should be null
             const hasBuildingId = updateData.buildingId !== undefined;
             const hasSiteId = updateData.siteId !== undefined;
 
             if (hasBuildingId) {
-                updateData.buildingId = updateData.buildingId && updateData.buildingId !== "" 
-                    ? updateData.buildingId 
+                updateData.buildingId = updateData.buildingId && updateData.buildingId !== ""
+                    ? updateData.buildingId
                     : null;
             }
 
             if (hasSiteId) {
-                updateData.siteId = updateData.siteId && updateData.siteId !== "" 
-                    ? updateData.siteId 
+                updateData.siteId = updateData.siteId && updateData.siteId !== ""
+                    ? updateData.siteId
                     : null;
             }
 
@@ -1372,8 +1382,8 @@ export function createRoutes(storage: IStorage): Router {
                     );
 
                     if (!hasAccess) {
-                        return res.status(403).json({ 
-                            error: 'Bu bina için yetkiniz bulunmamaktadır' 
+                        return res.status(403).json({
+                            error: 'Bu bina için yetkiniz bulunmamaktadır'
                         });
                     }
                 }
@@ -1393,13 +1403,13 @@ export function createRoutes(storage: IStorage): Router {
                     );
 
                     if (!hasAccess) {
-                        return res.status(403).json({ 
-                            error: 'Bu site için yetkiniz bulunmamaktadır' 
+                        return res.status(403).json({
+                            error: 'Bu site için yetkiniz bulunmamaktadır'
                         });
                     }
                 }
             }
-            
+
             const announcement = await storage.updateAnnouncement(req.params.id, updateData);
             res.json({ announcement });
         } catch (error) {
@@ -1440,9 +1450,45 @@ export function createRoutes(storage: IStorage): Router {
         }
     });
 
+    router.get('/janitor-requests', requireAuth, async (req, res) => {
+        try {
+            // Import validation utilities on demand if needed, or implement inline validation
+            const page = parseInt(req.query.page as string) || 1;
+            const limit = parseInt(req.query.limit as string) || 10;
+            const search = req.query.search as string | undefined;
+            const status = req.query.status as string | undefined;
+            const siteId = req.query.siteId as string | undefined;
+            const buildingId = req.query.buildingId as string | undefined;
+
+            // TODO: Validate filters properly?
+
+            const result = await storage.getJanitorRequestsPaginated(page, limit, {
+                search,
+                status,
+                siteId,
+                buildingId
+            });
+
+            res.json(result);
+        } catch (error) {
+            console.error('Janitor requests error:', error);
+            res.status(500).json({ error: 'Kapıcı talepleri yüklenirken hata oluştu' });
+        }
+    });
+
+    router.get('/janitors/stats', requireAuth, async (req, res) => {
+        try {
+            const stats = await storage.getJanitorStats();
+            res.json(stats);
+        } catch (error) {
+            res.status(500).json({ error: 'İstatistikler yüklenirken hata oluştu' });
+        }
+    });
+
     router.get('/janitors', requireAuth, async (req, res) => {
         try {
-            const janitors = await storage.getAllJanitors();
+            const siteId = req.query.siteId as string | undefined;
+            const janitors = await storage.getJanitorsWithAssignments({ siteId });
             res.json({ janitors });
         } catch (error) {
             res.status(500).json({ error: 'Kapıcılar yüklenirken hata oluştu' });
@@ -1451,21 +1497,67 @@ export function createRoutes(storage: IStorage): Router {
 
     router.post('/janitors', requireAuth, async (req, res) => {
         try {
-            const validatedData = insertJanitorSchema.parse(req.body);
+            const { assignedBlocks, ...janitorData } = req.body;
+
+            const validatedData = insertJanitorSchema.parse(janitorData);
+
+            // Create janitor
             const janitor = await storage.createJanitor(validatedData);
+
+            // Assign to buildings if provided
+            if (assignedBlocks && Array.isArray(assignedBlocks)) {
+                for (const buildingId of assignedBlocks) {
+                    try {
+                        await storage.assignJanitorToBuilding(janitor.id, buildingId);
+                    } catch (assignError: any) {
+                        console.error('[POST /janitors] Error assigning to building:', buildingId, assignError);
+                        throw assignError;
+                    }
+                }
+            }
+
             res.status(201).json({ janitor });
         } catch (error: any) {
+            console.error('[POST /janitors] Error:', error);
+            console.error('[POST /janitors] Error stack:', error.stack);
             if (error.name === 'ZodError') return res.status(400).json({ error: 'Geçersiz veri', details: error.errors });
-            res.status(500).json({ error: 'Kapıcı oluşturulamadı' });
+            res.status(500).json({ error: 'Kapıcı oluşturulamadı', details: error.message });
         }
     });
 
     router.patch('/janitors/:id', requireAuth, async (req, res) => {
         try {
-            const janitor = await storage.updateJanitor(req.params.id, req.body);
+            const { assignedBlocks, ...janitorData } = req.body;
+
+            // Update janitor basic info
+            const janitor = await storage.updateJanitor(req.params.id, janitorData);
+
+            // Update assignments if provided
+            if (assignedBlocks && Array.isArray(assignedBlocks)) {
+                // Get current assignments
+                const allJanitors = await storage.getJanitorsWithAssignments();
+                const current = allJanitors.find(j => j.id === req.params.id);
+                const currentBlockIds = current?.assignedBlocks.map((b: any) => b.id) || [];
+
+                // Remove old assignments
+                for (const blockId of currentBlockIds) {
+                    if (!assignedBlocks.includes(blockId)) {
+                        await storage.unassignJanitorFromBuilding(req.params.id, blockId);
+                    }
+                }
+
+                // Add new assignments
+                for (const blockId of assignedBlocks) {
+                    if (!currentBlockIds.includes(blockId)) {
+                        await storage.assignJanitorToBuilding(req.params.id, blockId);
+                    }
+                }
+            }
+
             res.json({ janitor });
-        } catch (error) {
-            res.status(500).json({ error: 'Kapıcı güncellenemedi' });
+        } catch (error: any) {
+            console.error('[PATCH /janitors/:id] Error:', error);
+            res.status(500).json({ error: 'Kapıcı güncellenemedi', details: error.message });
         }
     });
 
@@ -1544,22 +1636,22 @@ export function createRoutes(storage: IStorage): Router {
         try {
             // Import validation utilities
             const { sanitizeSearchQuery, validateEnum, validatePagination } = await import('./utils/validation.js');
-            
+
             // Validate pagination
             const rawPage = parseInt(req.query.page as string) || 1;
             const rawLimit = parseInt(req.query.limit as string) || 1000;
             const { page, limit } = validatePagination(rawPage, rawLimit);
-            
+
             // Sanitize search query
             const search = sanitizeSearchQuery(req.query.search as string | undefined);
-            
+
             // Validate enum values
             const status = validateEnum(req.query.status as string | undefined, ['pending', 'in-progress', 'resolved', 'rejected']);
             const type = validateEnum(req.query.type as string | undefined, ['wish', 'suggestion']);
-            
+
             // Get userId from authenticated user
             const userId = (req.user as any)?.id;
-            
+
             const result = await storage.getCommunityRequestsPaginated(page, limit, { search, status, type }, userId);
             res.json(result);
         } catch (error) {
@@ -1582,12 +1674,12 @@ export function createRoutes(storage: IStorage): Router {
             if (!user) {
                 return res.status(401).json({ error: 'Kullanıcı bulunamadı' });
             }
-            
+
             // Get resident to get unitId
             // Note: Admin/staff users are not residents, so we need to handle that case
             let unitId: string | null = null;
             const resident = await storage.getResidentById(authorId);
-            
+
             if (resident) {
                 // User is a resident, use their unitId
                 unitId = resident.unitId;
@@ -1628,8 +1720,8 @@ export function createRoutes(storage: IStorage): Router {
                     );
 
                     if (!hasAccess) {
-                        return res.status(403).json({ 
-                            error: 'Bu bina için yetkiniz bulunmamaktadır' 
+                        return res.status(403).json({
+                            error: 'Bu bina için yetkiniz bulunmamaktadır'
                         });
                     }
                 }
@@ -1654,21 +1746,21 @@ export function createRoutes(storage: IStorage): Router {
                     );
 
                     if (!hasAccess) {
-                        return res.status(403).json({ 
-                            error: 'Bu site için yetkiniz bulunmamaktadır' 
+                        return res.status(403).json({
+                            error: 'Bu site için yetkiniz bulunmamaktadır'
                         });
                     }
                 }
             }
-            
+
             // If user is not a resident (admin/staff), we need to get a unitId from the building/site
             if (!resident && !unitId) {
                 if (selectedBuildingId) {
                     // Get first unit from the selected building
                     const units = await storage.getUnitsByBuildingId(selectedBuildingId);
                     if (units.length === 0) {
-                        return res.status(400).json({ 
-                            error: 'Seçilen binada daire bulunamadı. Lütfen başka bir bina seçin.' 
+                        return res.status(400).json({
+                            error: 'Seçilen binada daire bulunamadı. Lütfen başka bir bina seçin.'
                         });
                     }
                     unitId = units[0].id;
@@ -1676,27 +1768,27 @@ export function createRoutes(storage: IStorage): Router {
                     // Get first building from the site, then first unit from that building
                     const buildings = await storage.getBuildingsBySiteId(selectedSiteId);
                     if (buildings.length === 0) {
-                        return res.status(400).json({ 
-                            error: 'Seçilen sitede bina bulunamadı.' 
+                        return res.status(400).json({
+                            error: 'Seçilen sitede bina bulunamadı.'
                         });
                     }
                     const units = await storage.getUnitsByBuildingId(buildings[0].id);
                     if (units.length === 0) {
-                        return res.status(400).json({ 
-                            error: 'Seçilen sitede daire bulunamadı.' 
+                        return res.status(400).json({
+                            error: 'Seçilen sitede daire bulunamadı.'
                         });
                     }
                     unitId = units[0].id;
                 }
             }
-            
+
             // Final check: unitId must be set
             if (!unitId) {
-                return res.status(400).json({ 
-                    error: 'Daire bilgisi belirlenemedi. Lütfen tekrar deneyin.' 
+                return res.status(400).json({
+                    error: 'Daire bilgisi belirlenemedi. Lütfen tekrar deneyin.'
                 });
             }
-            
+
             const buildingId = hasBuildingId ? req.body.buildingId : null;
             const siteId = hasSiteId ? req.body.siteId : null;
 
@@ -1760,21 +1852,21 @@ export function createRoutes(storage: IStorage): Router {
         try {
             // Import validation utilities
             const { sanitizeSearchQuery, validateEnum, validatePagination } = await import('./utils/validation.js');
-            
+
             // Validate pagination
             const rawPage = parseInt(req.query.page as string) || 1;
             const rawLimit = parseInt(req.query.limit as string) || 1000;
             const { page, limit } = validatePagination(rawPage, rawLimit);
-            
+
             // Sanitize search query
             const search = sanitizeSearchQuery(req.query.search as string | undefined);
-            
+
             // Validate enum values
             const status = validateEnum(req.query.status as string | undefined, ['active', 'closed']);
-            
+
             // Get userId from authenticated user
             const userId = (req.user as any)?.id;
-            
+
             const result = await storage.getPollsPaginated(page, limit, { search, status }, userId);
             res.json(result);
         } catch (error) {
@@ -1826,8 +1918,8 @@ export function createRoutes(storage: IStorage): Router {
                     );
 
                     if (!hasAccess) {
-                        return res.status(403).json({ 
-                            error: 'Bu bina için yetkiniz bulunmamaktadır' 
+                        return res.status(403).json({
+                            error: 'Bu bina için yetkiniz bulunmamaktadır'
                         });
                     }
                 }
@@ -1849,17 +1941,17 @@ export function createRoutes(storage: IStorage): Router {
                     );
 
                     if (!hasAccess) {
-                        return res.status(403).json({ 
-                            error: 'Bu site için yetkiniz bulunmamaktadır' 
+                        return res.status(403).json({
+                            error: 'Bu site için yetkiniz bulunmamaktadır'
                         });
                     }
                 }
             }
-            
+
             // Convert date strings to timestamps
             const startDate = req.body.startDate ? new Date(req.body.startDate) : new Date();
             const endDate = req.body.endDate ? new Date(req.body.endDate) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-            
+
             const buildingId = hasBuildingId ? req.body.buildingId : null;
             const siteId = hasSiteId ? req.body.siteId : null;
 
@@ -1902,11 +1994,11 @@ export function createRoutes(storage: IStorage): Router {
             if (!authorId) {
                 return res.status(401).json({ error: 'Kullanıcı bilgisi bulunamadı' });
             }
-            
+
             // Convert date strings to timestamps
             const startDate = req.body.startDate ? new Date(req.body.startDate) : new Date();
             const endDate = req.body.endDate ? new Date(req.body.endDate) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-            
+
             const validatedData = insertPollSchema.parse({
                 ...req.body,
                 authorId,
@@ -1950,7 +2042,7 @@ export function createRoutes(storage: IStorage): Router {
             const hasVoted = await storage.hasResidentVotedInPoll(residentId, req.params.id);
             if (hasVoted) return res.status(400).json({ error: 'Zaten oy kullandınız' });
 
-            const validatedData = insertPollVoteSchema.parse({ 
+            const validatedData = insertPollVoteSchema.parse({
                 pollId: req.params.id,
                 residentId,
                 choice,
@@ -2013,13 +2105,13 @@ export function createRoutes(storage: IStorage): Router {
     router.get('/sites', requireAuth, async (req, res) => {
         try {
             const userId = (req.user as any)?.id;
-            
+
             if (!userId) {
                 return res.status(401).json({ error: 'Kullanıcı bilgisi bulunamadı' });
             }
 
             const user = await storage.getUserById(userId);
-            
+
             if (!user) {
                 return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
             }
@@ -2178,11 +2270,11 @@ export function createRoutes(storage: IStorage): Router {
             const dateTo = req.query.dateTo as string | undefined;
             const sortBy = req.query.sortBy as string | undefined;
             const sortOrder = req.query.sortOrder as 'asc' | 'desc' | undefined;
-            
-            const result = await storage.getGuestVisitsPaginated(page, limit, { 
-                status, 
-                search, 
-                dateFrom, 
+
+            const result = await storage.getGuestVisitsPaginated(page, limit, {
+                status,
+                search,
+                dateFrom,
                 dateTo,
                 sortBy,
                 sortOrder

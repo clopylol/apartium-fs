@@ -2,12 +2,15 @@ import type { FC } from "react";
 import { useTranslation } from "react-i18next";
 import { UserPlus, LayoutGrid, List } from "lucide-react";
 import type { Janitor } from "@/types/janitor.types";
+import type { Building } from "@/types/residents.types";
 import { JanitorCard } from "./grid";
 import { JanitorTable } from "./list";
 import { JanitorCardSkeleton } from "../skeletons";
 import { Pagination } from "@/components/shared/pagination";
 import { ITEMS_PER_PAGE } from "@/constants/janitor";
 import { Button, ButtonGroup } from "@/components/shared/button";
+import { Dropdown } from "@/components/shared/inputs";
+import { Filter } from "lucide-react";
 
 interface JanitorStaffViewProps {
   janitors: Janitor[];
@@ -20,6 +23,9 @@ interface JanitorStaffViewProps {
   totalItems: number;
   currentPage: number;
   onPageChange: (page: number) => void;
+  buildings: Building[];
+  activeBlockId: string | null;
+  onBlockChange: (id: string | null) => void;
 }
 
 export const JanitorStaffView: FC<JanitorStaffViewProps> = ({
@@ -33,6 +39,9 @@ export const JanitorStaffView: FC<JanitorStaffViewProps> = ({
   totalItems,
   currentPage,
   onPageChange,
+  buildings,
+  activeBlockId,
+  onBlockChange,
 }) => {
   const { t } = useTranslation();
 
@@ -44,6 +53,19 @@ export const JanitorStaffView: FC<JanitorStaffViewProps> = ({
         </h2>
 
         <div className="flex items-center gap-4">
+          <Dropdown
+            icon={Filter}
+            options={[
+              { value: "all", label: "All Blocks" },
+              ...buildings.map((building) => ({
+                value: building.id,
+                label: building.name,
+              })),
+            ]}
+            value={activeBlockId || "all"}
+            onChange={(value) => onBlockChange(value === "all" ? null : value)}
+          />
+
           <ButtonGroup
             items={[
               { id: "grid", label: "", icon: <LayoutGrid className="w-4 h-4" /> },

@@ -38,9 +38,9 @@ export async function apiClient<T = any>(
     }
 
     try {
-    const response = await fetch(`${API_BASE_URL}/api${endpoint}`, config);
+        const response = await fetch(`${API_BASE_URL}/api${endpoint}`, config);
 
-    if (!response.ok) {
+        if (!response.ok) {
             // 401 Unauthorized - Oturum geçersiz, logout yap
             if (response.status === 401) {
                 // Auth endpoint'leri hariç (login, logout, me) - bunlar zaten auth işlemleri
@@ -54,11 +54,11 @@ export async function apiClient<T = any>(
                 }
             }
 
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `API Error: ${response.status}`);
-    }
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || `API Error: ${response.status}`);
+        }
 
-    return await response.json();
+        return await response.json();
     } catch (error) {
         // Network error veya fetch hatası
         if (error instanceof TypeError && error.message === 'Failed to fetch') {
@@ -208,7 +208,7 @@ export const api = {
         // Full building data (JOIN ile)
         getBuildingData: (buildingId: string) =>
             apiClient(`/residents/building-data/${buildingId}`),
-        
+
         // CRUD - Residents
         createResident: (data: any) =>
             apiClient('/residents', { method: 'POST', data }),
@@ -216,7 +216,7 @@ export const api = {
             apiClient(`/residents/${id}`, { method: 'PATCH', data }),
         deleteResident: (id: string) =>
             apiClient(`/residents/${id}`, { method: 'DELETE' }),
-        
+
         // CRUD - Vehicles
         getVehiclesByResidentId: (residentId: string) =>
             apiClient(`/residents/${residentId}/vehicles`),
@@ -226,7 +226,7 @@ export const api = {
             apiClient(`/vehicles/${id}`, { method: 'PATCH', data }),
         deleteVehicle: (id: string) =>
             apiClient(`/vehicles/${id}`, { method: 'DELETE' }),
-        
+
         // CRUD - Parking Spots
         createParkingSpot: (data: any) =>
             apiClient('/parking-spots', { method: 'POST', data }),
@@ -234,7 +234,7 @@ export const api = {
             apiClient(`/parking-spots/${id}`, { method: 'PATCH', data }),
         deleteParkingSpot: (id: string) =>
             apiClient(`/parking-spots/${id}`, { method: 'DELETE' }),
-        
+
         // Guest Visits
         getGuestVisits: (page: number, limit: number, filters?: { status?: string; search?: string; dateFrom?: string; dateTo?: string; sortBy?: string; sortOrder?: 'asc' | 'desc' }) => {
             const params = new URLSearchParams();
@@ -255,9 +255,9 @@ export const api = {
         deleteGuestVisit: (id: string) =>
             apiClient(`/guest-visits/${id}`, { method: 'DELETE' }),
         updateGuestVisitStatus: (id: string, status: string, timestamp?: Date) =>
-            apiClient(`/guest-visits/${id}/status`, { 
-                method: 'PATCH', 
-                data: { status, timestamp: timestamp?.toISOString() } 
+            apiClient(`/guest-visits/${id}/status`, {
+                method: 'PATCH',
+                data: { status, timestamp: timestamp?.toISOString() }
             }),
     },
 
@@ -265,37 +265,37 @@ export const api = {
     dashboard: {
         getStats: () => apiClient('/stats'),
         getRecentData: () => apiClient('/dashboard/recent-data'),
-        getMonthlyIncome: (year: number) => 
+        getMonthlyIncome: (year: number) =>
             apiClient(`/dashboard/monthly-income?year=${year}`),
     },
 
     // Announcements
     announcements: {
-        getStats: () => 
+        getStats: () =>
             apiClient('/announcements/stats'),
-        getAll: (page: number, limit: number) => 
+        getAll: (page: number, limit: number) =>
             apiClient(`/announcements?page=${page}&limit=${limit}`),
-        getById: (id: string) => 
+        getById: (id: string) =>
             apiClient(`/announcements/${id}`),
-        create: (data: any) => 
-            apiClient('/announcements', { 
-                method: 'POST', 
-                data 
+        create: (data: any) =>
+            apiClient('/announcements', {
+                method: 'POST',
+                data
             }),
-        update: (id: string, data: any) => 
-            apiClient(`/announcements/${id}`, { 
-                method: 'PATCH', 
-                data 
+        update: (id: string, data: any) =>
+            apiClient(`/announcements/${id}`, {
+                method: 'PATCH',
+                data
             }),
-        delete: (id: string) => 
+        delete: (id: string) =>
             apiClient(`/announcements/${id}`, { method: 'DELETE' }),
     },
 
     // Community
     community: {
-        getStats: () => 
+        getStats: () =>
             apiClient('/community/stats'),
-        
+
         // Requests
         getRequests: (page: number, limit: number, filters?: { search?: string; status?: string; type?: 'wish' | 'suggestion' }) => {
             const params = new URLSearchParams();
@@ -306,7 +306,7 @@ export const api = {
             if (filters?.type) params.append('type', filters.type);
             return apiClient(`/community/requests?${params.toString()}`);
         },
-        getAllRequests: () => 
+        getAllRequests: () =>
             apiClient('/community/requests?page=1&limit=1000'),
         createRequest: (data: any) =>
             apiClient('/community/requests', { method: 'POST', data }),
@@ -316,7 +316,7 @@ export const api = {
             apiClient(`/community/requests/${id}/status`, { method: 'PATCH', data: { status } }),
         deleteRequest: (id: string) =>
             apiClient(`/community/requests/${id}`, { method: 'DELETE' }),
-        
+
         // Polls
         getPolls: (page: number, limit: number, filters?: { search?: string; status?: 'active' | 'closed' }) => {
             const params = new URLSearchParams();
@@ -326,7 +326,7 @@ export const api = {
             if (filters?.status) params.append('status', filters.status);
             return apiClient(`/community/polls?${params.toString()}`);
         },
-        getAllPolls: () => 
+        getAllPolls: () =>
             apiClient('/community/polls?page=1&limit=1000'),
         createPoll: (data: any) =>
             apiClient('/community/polls', { method: 'POST', data }),
@@ -336,5 +336,66 @@ export const api = {
             apiClient(`/community/polls/${id}`, { method: 'DELETE' }),
         vote: (pollId: string, residentId: string, choice: 'yes' | 'no') =>
             apiClient(`/community/polls/${pollId}/vote`, { method: 'POST', data: { residentId, choice } }),
+    },
+    // Janitor
+    janitor: {
+        getStats: () =>
+            apiClient('/janitors/stats'),
+
+        getJanitors: (filters?: { siteId?: string }) => {
+            const params = new URLSearchParams();
+            if (filters?.siteId) params.append('siteId', filters.siteId);
+            return apiClient(`/janitors?${params.toString()}`);
+        },
+
+        getRequests: (
+            page: number,
+            limit: number,
+            filters?: {
+                search?: string;
+                status?: string;
+                siteId?: string;
+                buildingId?: string
+            }
+        ) => {
+            const params = new URLSearchParams();
+            params.append('page', page.toString());
+            params.append('limit', limit.toString());
+            if (filters?.search) params.append('search', filters.search);
+            if (filters?.status) params.append('status', filters.status);
+            if (filters?.buildingId) {
+                params.append('buildingId', filters.buildingId);
+            } else if (filters?.siteId) {
+                params.append('siteId', filters.siteId);
+            }
+            return apiClient(`/janitor-requests?${params.toString()}`);
+        },
+
+        createJanitor: (data: any) =>
+            apiClient('/janitors', { method: 'POST', data }),
+
+        updateJanitor: (id: string, data: any) =>
+            apiClient(`/janitors/${id}`, { method: 'PATCH', data }),
+
+        deleteJanitor: (id: string) =>
+            apiClient(`/janitors/${id}`, { method: 'DELETE' }),
+
+        createRequest: (data: any) =>
+            apiClient('/janitor-requests', { method: 'POST', data }),
+
+        updateRequestStatus: (id: string, status: string, completedAt?: string) =>
+            apiClient(`/janitor-requests/${id}/status`, {
+                method: 'PATCH',
+                data: { status, completedAt }
+            }),
+
+        deleteRequest: (id: string) =>
+            apiClient(`/janitor-requests/${id}`, { method: 'DELETE' }),
+
+        assignToBuilding: (janitorId: string, buildingId: string) =>
+            apiClient('/janitors/assignments', { method: 'POST', data: { janitorId, buildingId } }),
+
+        unassignFromBuilding: (janitorId: string, buildingId: string) =>
+            apiClient('/janitors/assignments', { method: 'DELETE', data: { janitorId, buildingId } }),
     },
 };

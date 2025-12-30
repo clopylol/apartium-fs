@@ -96,6 +96,6 @@ export const CHART_DATA_OCCUPANCY = [
   { value: 95 }, { value: 92 }, { value: 96 }, { value: 85 }, { value: 90 }, { value: 88 }, { value: 70 }
 ];
 
-export { ITEMS_PER_PAGE, BLOCKS, INITIAL_JANITORS, INITIAL_REQUESTS } from './janitor';
+export { ITEMS_PER_PAGE, BLOCKS } from './janitor';
 export { ITEMS_PER_PAGE as CARGO_ITEMS_PER_PAGE, MOCK_RESIDENTS, INITIAL_CARGO, INITIAL_EXPECTED, INITIAL_COURIERS, CARRIERS, COURIER_COMPANIES } from './cargo';
 export { ITEMS_PER_PAGE as BOOKINGS_ITEMS_PER_PAGE, INITIAL_FACILITIES, INITIAL_BOOKINGS, BASE_BOOKINGS, getTodayString, addDays } from './bookings';

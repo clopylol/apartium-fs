@@ -1,6 +1,12 @@
-import { useState, useEffect, useMemo } from "react";
-import type { Janitor, JanitorRequest } from "@/types/janitor.types";
+import { useState, useMemo, useEffect } from "react";
 import { ITEMS_PER_PAGE } from "@/constants/janitor";
+import { useJanitors } from "./useJanitors";
+import { useJanitorRequests } from "./useJanitorRequests";
+import { useJanitorStats } from "./useJanitorStats";
+import { useSites } from "@/hooks/residents/site";
+import { useBuildings } from "@/hooks/residents/api";
+import type { Janitor, JanitorRequest } from "@/types/janitor.types";
+import type { Building, Site } from "@/types/residents.types";
 
 export interface UseJanitorStateReturn {
   isLoading: boolean;
@@ -29,13 +35,17 @@ export interface UseJanitorStateReturn {
     activeRequests: number;
     totalStaff: number;
   };
+  // New props for dynamic location data
+  sites: Site[];
+  activeSiteId: string | null;
+  setActiveSiteId: (id: string) => void;
+  buildings: Building[];
+  activeBlockId: string | null;
+  setActiveBlockId: (id: string | null) => void;
 }
 
-export function useJanitorState(
-  janitors: Janitor[],
-  requests: JanitorRequest[]
-): UseJanitorStateReturn {
-  const [isLoading, setIsLoading] = useState(true);
+export function useJanitorState(): UseJanitorStateReturn {
+  // UI State
   const [searchTerm, setSearchTerm] = useState("");
   const [staffPage, setStaffPage] = useState(1);
   const [requestPage, setRequestPage] = useState(1);
@@ -48,70 +58,101 @@ export function useJanitorState(
     "pending_first" | "completed_first"
   >("pending_first");
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, []);
+  // Location State
+  const [activeSiteId, setActiveSiteId] = useState<string | null>(null);
+  const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
 
   useEffect(() => {
     setStaffPage(1);
-  }, [searchTerm]);
+  }, [searchTerm, activeSiteId, activeBlockId]);
 
   useEffect(() => {
     setRequestPage(1);
   }, [searchTerm, requestTypeFilter, requestStatusSort]);
 
+  // Data Fetching
+  const { sites, isLoading: isLoadingSites } = useSites();
+  const { data: buildingsData, isLoading: isLoadingBuildings } = useBuildings();
+  const allBuildings = buildingsData?.buildings || [];
+
+  // Set default site
+  useEffect(() => {
+    if (sites.length > 0 && !activeSiteId) {
+      setActiveSiteId(sites[0].id);
+    }
+  }, [sites, activeSiteId]);
+
+  // Compute buildings for active site
+  const buildings = useMemo(() => {
+    if (!activeSiteId) return [];
+    return allBuildings.filter((b: Building) => b.siteId === activeSiteId);
+  }, [allBuildings, activeSiteId]);
+
+  // Reset active block when site changes
+  useEffect(() => {
+    setActiveBlockId(null);
+  }, [activeSiteId]);
+
+  // Fetch Janitors filtered by Site
+  // Assuming useJanitors hook handles the filters.siteId logic
+  const { data: janitors = [], isLoading: isLoadingJanitors } = useJanitors({
+    siteId: activeSiteId || undefined
+  });
+
+  const { data: requestsData, isLoading: isLoadingRequests } = useJanitorRequests({
+    page: requestPage,
+    limit: ITEMS_PER_PAGE,
+    search: searchTerm,
+    status: requestStatusSort === 'pending_first' ? 'pending' : undefined,
+  });
+
+  const { data: statsData, isLoading: isLoadingStats } = useJanitorStats();
+
+  const requests = (requestsData?.requests || []) as JanitorRequest[];
+
+  // Derived State for Janitors (Client-side filtering for Block & Search)
   const filteredJanitors = useMemo(() => {
-    return janitors.filter((j) =>
-      j.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [janitors, searchTerm]);
+    let result = janitors;
+
+    // Filter by Block
+    if (activeBlockId) {
+      const activeBlock = buildings.find((b: Building) => b.id === activeBlockId);
+      if (activeBlock) {
+        result = result.filter((j: Janitor) =>
+          j.assignedBlocks.some((b: any) => b.id === activeBlockId)
+        );
+      }
+    }
+
+    // Filter by Search
+    if (searchTerm) {
+      result = result.filter((j: Janitor) =>
+        j.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    return result;
+  }, [janitors, searchTerm, activeBlockId, buildings]);
 
   const paginatedJanitors = useMemo(() => {
     const startIndex = (staffPage - 1) * ITEMS_PER_PAGE;
     return filteredJanitors.slice(startIndex, startIndex + ITEMS_PER_PAGE);
   }, [filteredJanitors, staffPage]);
 
-  const filteredRequests = useMemo(() => {
-    let result = requests.filter(
-      (r) =>
-        r.residentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.unit.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-
-    if (requestTypeFilter !== "all") {
-      result = result.filter((r) => r.type === requestTypeFilter);
-    }
-
-    result.sort((a, b) => {
-      if (requestStatusSort === "pending_first") {
-        const statusA = a.status === "pending" ? 0 : 1;
-        const statusB = b.status === "pending" ? 0 : 1;
-        return statusA - statusB;
-      } else {
-        const statusA = a.status === "completed" ? 0 : 1;
-        const statusB = b.status === "completed" ? 0 : 1;
-        return statusA - statusB;
-      }
-    });
-
-    return result;
-  }, [requests, searchTerm, requestTypeFilter, requestStatusSort]);
-
-  const paginatedRequests = useMemo(() => {
-    const startIndex = (requestPage - 1) * ITEMS_PER_PAGE;
-    return filteredRequests.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [filteredRequests, requestPage]);
+  // Derived State for Requests API
+  const paginatedRequests = requests;
+  const filteredRequests = requests;
 
   const stats = useMemo(() => {
+    if (statsData) return statsData;
     return {
-      onDuty: janitors.filter((j) => j.status === "on-duty").length,
-      activeRequests: requests.filter((r) => r.status === "pending").length,
-      totalStaff: janitors.length,
+      onDuty: 0,
+      activeRequests: 0,
+      totalStaff: 0,
     };
-  }, [janitors, requests]);
+  }, [statsData]);
+
+  const isLoading = isLoadingJanitors || isLoadingRequests || isLoadingStats || isLoadingSites || isLoadingBuildings;
 
   return {
     isLoading,
@@ -136,6 +177,12 @@ export function useJanitorState(
     filteredRequests,
     paginatedRequests,
     stats,
+    // Location Data
+    sites,
+    activeSiteId,
+    setActiveSiteId,
+    buildings,
+    activeBlockId,
+    setActiveBlockId,
   };
 }
-

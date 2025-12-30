@@ -82,10 +82,10 @@ export const JanitorCard: FC<JanitorCardProps> = ({ janitor, onEdit, onDelete })
           <div className="flex flex-wrap gap-2">
             {janitor.assignedBlocks.map((block) => (
               <span
-                key={block}
+                key={typeof block === 'string' ? block : block.id}
                 className="bg-ds-background-light dark:bg-ds-background-dark border border-ds-border-light dark:border-ds-border-dark text-ds-primary-light dark:text-ds-primary-dark px-3 py-1 rounded-lg text-xs font-medium"
               >
-                {block}
+                {typeof block === 'string' ? block : block.name}
               </span>
             ))}
           </div>

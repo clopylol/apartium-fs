@@ -81,11 +81,11 @@ export interface IStorage {
     createVehicle(vehicle: InsertVehicle): Promise<Vehicle>;
     updateVehicle(id: string, vehicle: Partial<InsertVehicle>): Promise<Vehicle>;
     deleteVehicle(id: string): Promise<void>;
-    
+
     // Vehicle Brands & Models
     getAllVehicleBrands(): Promise<VehicleBrand[]>;
     getVehicleModelsByBrandId(brandId: string): Promise<VehicleModel[]>;
-    
+
     getParkingSpotsByBuildingId(buildingId: string): Promise<ParkingSpot[]>;
     createParkingSpot(spot: InsertParkingSpot): Promise<ParkingSpot>;
     updateParkingSpot(id: string, spot: Partial<InsertParkingSpot>): Promise<ParkingSpot>;
@@ -190,7 +190,32 @@ export interface IStorage {
 
     // Janitor
     getAllJanitors(): Promise<Janitor[]>;
+    getJanitorsWithAssignments(filters?: { siteId?: string }): Promise<(Janitor & { assignedBlocks: { id: string, name: string }[] })[]>;
+    getJanitorStats(): Promise<{
+        totalStaff: number;
+        onDuty: number;
+        activeRequests: number;
+    }>;
     getJanitorRequestsByUnitId(unitId: string): Promise<JanitorRequest[]>;
+    getJanitorRequestsPaginated(
+        page: number,
+        limit: number,
+        filters?: {
+            search?: string;
+            status?: string;
+            siteId?: string;
+            buildingId?: string
+        }
+    ): Promise<{
+        requests: (JanitorRequest & {
+            residentName: string;
+            residentPhone: string;
+            unitNumber: string;
+            buildingName: string;
+            assignedJanitorName: string | null;
+        })[];
+        total: number;
+    }>;
     getJanitorsByBuildingId(buildingId: string): Promise<Janitor[]>;
     createJanitor(janitor: InsertJanitor): Promise<Janitor>;
     updateJanitor(id: string, janitor: Partial<InsertJanitor>): Promise<Janitor>;
@@ -242,7 +267,7 @@ export interface IStorage {
 
     // Stats
     getDashboardStats(): Promise<any>;
-    
+
     // Dashboard
     getRecentPayments(limit?: number): Promise<PaymentRecord[]>;
     getRecentMaintenanceRequests(limit?: number): Promise<MaintenanceRequest[]>;
@@ -254,6 +279,13 @@ export interface IStorage {
     getGuestVisitsPaginated(
         page: number,
         limit: number,
-        filters?: { status?: string; search?: string }
+        filters?: {
+            status?: string;
+            search?: string;
+            dateFrom?: string;
+            dateTo?: string;
+            sortBy?: string;
+            sortOrder?: 'asc' | 'desc';
+        }
     ): Promise<{ visits: GuestVisit[]; total: number; page: number; limit: number }>;
 }

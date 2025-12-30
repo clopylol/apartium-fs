@@ -1,4 +1,4 @@
-import { eq, and, or, desc, asc, gte, lte, count, isNull, ilike, sql, inArray } from 'drizzle-orm';
+import { eq, and, or, desc, asc, gte, lte, count, isNull, ilike, sql, inArray, type SQL } from 'drizzle-orm';
 import { db } from './db/index.js';
 import type { IStorage } from './storage.js';
 import * as schema from 'apartium-shared';
@@ -439,7 +439,7 @@ export class DatabaseStorage implements IStorage {
     }
 
     // ==================== VEHICLE BRANDS & MODELS ====================
-    
+
     async getAllVehicleBrands(): Promise<VehicleBrand[]> {
         return await db
             .select()
@@ -577,7 +577,7 @@ export class DatabaseStorage implements IStorage {
                 .select({ id: schema.buildings.id })
                 .from(schema.buildings)
                 .where(eq(schema.buildings.siteId, filters.siteId));
-            
+
             if (buildings.length === 0) {
                 return {
                     payments: [],
@@ -585,7 +585,7 @@ export class DatabaseStorage implements IStorage {
                     stats: { total: 0, collected: 0, pending: 0, rate: 0 },
                 };
             }
-            
+
             unitConditions.push(inArray(schema.units.buildingId, buildings.map(b => b.id)));
         }
 
@@ -680,7 +680,7 @@ export class DatabaseStorage implements IStorage {
                 }
 
                 const paymentRecord = residentToPaymentMap.get(firstResident.id);
-                
+
                 // Apply search filter if provided
                 if (filters?.search && filters.search.trim().length >= 3) {
                     const searchTerm = filters.search.trim().toLowerCase();
@@ -830,7 +830,7 @@ export class DatabaseStorage implements IStorage {
                 )
             )
             .returning({ id: schema.paymentRecords.id, residentId: schema.paymentRecords.residentId });
-        
+
         // Get all units and their first residents
         const allUnits = await db
             .select({
@@ -996,7 +996,7 @@ export class DatabaseStorage implements IStorage {
                 or(
                     ilike(schema.expenseRecords.title, searchTerm),
                     ilike(schema.expenseRecords.description, searchTerm)
-                )
+                )!
             );
         }
 
@@ -1011,12 +1011,12 @@ export class DatabaseStorage implements IStorage {
         console.log('filters?.buildingId:', filters?.buildingId);
         console.log('filters?.siteId:', filters?.siteId);
         console.log('Conditions before siteId/buildingId filter:', conditions.length);
-        
+
         if (filters?.buildingId) {
             // First, get the building to find its siteId
             const building = await this.getBuildingById(filters.buildingId);
             console.log('Building found:', building ? { id: building.id, name: building.name, siteId: building.siteId } : 'NOT FOUND');
-            
+
             if (building) {
                 // Show both building-specific and site-wide expenses
                 conditions.push(
@@ -1025,8 +1025,8 @@ export class DatabaseStorage implements IStorage {
                         and(
                             eq(schema.expenseRecords.siteId, building.siteId),
                             isNull(schema.expenseRecords.buildingId)
-                        )
-                    )
+                        ) as SQL
+                    ) as SQL
                 );
                 console.log('Added building filter condition (building-specific + site-wide)');
             } else {
@@ -1045,14 +1045,14 @@ export class DatabaseStorage implements IStorage {
         } else {
             console.log('No siteId or buildingId filter - showing all expenses');
         }
-        
+
         console.log('Final conditions count:', conditions.length);
 
         // Get total count
         const [{ count: totalCount }] = await db
             .select({ count: count() })
             .from(schema.expenseRecords)
-            .where(and(...conditions));
+            .where(and(...conditions) as SQL);
 
         console.log('Total count from query:', totalCount);
 
@@ -1065,11 +1065,11 @@ export class DatabaseStorage implements IStorage {
             .orderBy(desc(schema.expenseRecords.expenseDate))
             .limit(limit)
             .offset(offset);
-        
+
         // Fetch building names for expenses that have buildingId
         const buildingIds = [...new Set(expenses.filter(e => e.buildingId).map(e => e.buildingId!))];
         const buildingNameMap = new Map<string, string>();
-        
+
         if (buildingIds.length > 0) {
             const buildings = await db
                 .select({
@@ -1078,18 +1078,18 @@ export class DatabaseStorage implements IStorage {
                 })
                 .from(schema.buildings)
                 .where(inArray(schema.buildings.id, buildingIds));
-            
+
             buildings.forEach(building => {
                 buildingNameMap.set(building.id, building.name);
             });
         }
-        
+
         // Add buildingName to expenses
         const expensesWithBuildingNames = expenses.map(e => ({
             ...e,
             buildingName: e.buildingId ? (buildingNameMap.get(e.buildingId) || null) : null,
         })) as (ExpenseRecord & { buildingName: string | null })[];
-        
+
         console.log('Expenses fetched:', expensesWithBuildingNames.length);
         console.log('Expenses details:', expensesWithBuildingNames.map(e => ({
             id: e.id,
@@ -1179,15 +1179,15 @@ export class DatabaseStorage implements IStorage {
         distributionType: 'equal' | 'area_based'
     ): Array<{ unitId: string; allocatedAmount: string }> {
         const allocations: Array<{ unitId: string; allocatedAmount: string }> = [];
-        
+
         if (units.length === 0) return allocations;
-        
+
         if (distributionType === 'equal') {
             // Eşit dağıtım
             const unitCount = units.length;
             const baseAmount = Math.floor((totalAmount * 100) / unitCount) / 100; // İki ondalık basamağa yuvarla
             const remainder = totalAmount - (baseAmount * unitCount); // Kalan tutar
-            
+
             // İlk N-1 daireye baseAmount ver
             for (let i = 0; i < unitCount - 1; i++) {
                 allocations.push({
@@ -1195,7 +1195,7 @@ export class DatabaseStorage implements IStorage {
                     allocatedAmount: baseAmount.toFixed(2)
                 });
             }
-            
+
             // Son daireye baseAmount + remainder ver (kalan tutarı ekle)
             const lastAmount = baseAmount + remainder;
             allocations.push({
@@ -1208,14 +1208,14 @@ export class DatabaseStorage implements IStorage {
                 const area = unit.area ? parseFloat(unit.area.toString()) : 0;
                 return sum + area;
             }, 0);
-            
+
             if (totalArea === 0) {
                 // Eğer hiç metrekare bilgisi yoksa, eşit dağıt
                 return this.distributeExpenseAmount(totalAmount, units, 'equal');
             }
-            
+
             let allocatedTotal = 0;
-            
+
             // İlk N-1 daireye metrekare oranına göre dağıt
             for (let i = 0; i < units.length - 1; i++) {
                 const unitArea = units[i].area ? parseFloat(units[i].area.toString()) : 0;
@@ -1226,7 +1226,7 @@ export class DatabaseStorage implements IStorage {
                     allocatedAmount: amount.toFixed(2)
                 });
             }
-            
+
             // Son daireye kalan tutarı ver
             const remainder = totalAmount - allocatedTotal;
             allocations.push({
@@ -1234,13 +1234,13 @@ export class DatabaseStorage implements IStorage {
                 allocatedAmount: remainder.toFixed(2)
             });
         }
-        
+
         // Validation: Toplam kontrolü
         const sum = allocations.reduce((s, a) => s + parseFloat(a.allocatedAmount), 0);
         if (Math.abs(sum - totalAmount) > 0.01) {
             throw new Error(`Dağıtım hatası: Toplam tutar eşleşmiyor. Beklenen: ${totalAmount}, Toplam: ${sum}`);
         }
-        
+
         return allocations;
     }
 
@@ -1249,13 +1249,13 @@ export class DatabaseStorage implements IStorage {
         // Keep expenseDate as Date object if it's already a Date, otherwise convert string to Date
         let expenseForInsert: any = {
             ...expense,
-            expenseDate: expense.expenseDate instanceof Date 
-                ? expense.expenseDate 
-                : (typeof expense.expenseDate === 'string' 
-                    ? new Date(expense.expenseDate) 
+            expenseDate: expense.expenseDate instanceof Date
+                ? expense.expenseDate
+                : (typeof expense.expenseDate === 'string'
+                    ? new Date(expense.expenseDate)
                     : expense.expenseDate),
         };
-        
+
         // IMPORTANT: If buildingId is provided but siteId is null, fetch the building's siteId
         // Building-specific expenses should also have siteId set for proper filtering
         if (expenseForInsert.buildingId && !expenseForInsert.siteId) {
@@ -1265,17 +1265,17 @@ export class DatabaseStorage implements IStorage {
                 console.log(`Auto-set siteId for building-specific expense: buildingId=${expenseForInsert.buildingId}, siteId=${building.siteId}`);
             }
         }
-        
+
         const [newExpense] = await db
             .insert(schema.expenseRecords)
             .values(expenseForInsert)
             .returning();
-        
+
         // Create allocations if expense has siteId or buildingId
         if (newExpense.siteId || newExpense.buildingId) {
             try {
                 let units: Unit[] = [];
-                
+
                 if (newExpense.buildingId) {
                     // Building-specific expense
                     units = await this.getUnitsByBuildingId(newExpense.buildingId);
@@ -1289,13 +1289,13 @@ export class DatabaseStorage implements IStorage {
                     }
                     units = allUnits;
                 }
-                
+
                 if (units.length > 0) {
                     const amount = parseFloat(newExpense.amount.toString());
                     const distributionType = (newExpense.distributionType || 'equal') as 'equal' | 'area_based';
-                    
+
                     const allocations = this.distributeExpenseAmount(amount, units, distributionType);
-                    
+
                     if (allocations.length > 0) {
                         await this.createExpenseAllocations(
                             newExpense.id,
@@ -1316,7 +1316,7 @@ export class DatabaseStorage implements IStorage {
                 // Don't throw - expense is already created successfully
             }
         }
-        
+
         return newExpense;
     }
 
@@ -1326,7 +1326,7 @@ export class DatabaseStorage implements IStorage {
         if (!currentExpense) {
             throw new Error('Expense not found');
         }
-        
+
         // IMPORTANT: If buildingId is provided but siteId is null, fetch the building's siteId
         // Building-specific expenses should also have siteId set for proper filtering
         let expenseForUpdate: any = { ...expense };
@@ -1337,27 +1337,27 @@ export class DatabaseStorage implements IStorage {
                 console.log(`Auto-set siteId for building-specific expense update: buildingId=${expenseForUpdate.buildingId}, siteId=${building.siteId}`);
             }
         }
-        
+
         const [updated] = await db
             .update(schema.expenseRecords)
             .set({ ...expenseForUpdate, updatedAt: new Date() })
             .where(eq(schema.expenseRecords.id, id))
             .returning();
-        
+
         // Recalculate allocations if amount, siteId, buildingId, or distributionType changed
-        const needsRecalculation = 
+        const needsRecalculation =
             (expense.amount !== undefined && expense.amount !== currentExpense.amount) ||
             (expense.siteId !== undefined && expense.siteId !== currentExpense.siteId) ||
             (expense.buildingId !== undefined && expense.buildingId !== currentExpense.buildingId) ||
             (expense.distributionType !== undefined && expense.distributionType !== currentExpense.distributionType);
-        
+
         if (needsRecalculation && (updated.siteId || updated.buildingId)) {
             // Delete existing allocations
             await this.deleteExpenseAllocationsByExpenseId(id);
-            
+
             // Create new allocations
             let units: Unit[] = [];
-            
+
             if (updated.buildingId) {
                 // Building-specific expense
                 units = await this.getUnitsByBuildingId(updated.buildingId);
@@ -1371,17 +1371,17 @@ export class DatabaseStorage implements IStorage {
                 }
                 units = allUnits;
             }
-            
+
             if (units.length > 0) {
                 const amount = parseFloat(updated.amount.toString());
                 const distributionType = (updated.distributionType || 'equal') as 'equal' | 'area_based';
-                
+
                 const allocations = this.distributeExpenseAmount(amount, units, distributionType);
-                
+
                 if (allocations.length > 0) {
-                    await this.createExpenseAllocations(
-                        id,
+                    await db.insert(schema.expenseAllocations).values(
                         allocations.map(a => ({
+                            expenseId: id,
                             unitId: a.unitId,
                             allocatedAmount: a.allocatedAmount,
                         }))
@@ -1389,7 +1389,7 @@ export class DatabaseStorage implements IStorage {
                 }
             }
         }
-        
+
         return updated;
     }
 
@@ -1404,7 +1404,7 @@ export class DatabaseStorage implements IStorage {
 
     async createExpenseAllocations(expenseId: string, allocations: InsertExpenseAllocation[]): Promise<void> {
         if (allocations.length === 0) return;
-        
+
         await db
             .insert(schema.expenseAllocations)
             .values(allocations.map(allocation => ({
@@ -1706,7 +1706,7 @@ export class DatabaseStorage implements IStorage {
         // Filter by user's authorized sites if userId provided
         if (userId) {
             const user = await this.getUserById(userId);
-            
+
             // Admin can see all announcements
             if (user?.role !== 'admin') {
                 // Get user's site assignments
@@ -1735,11 +1735,11 @@ export class DatabaseStorage implements IStorage {
                     // - Building-specific announcements: buildingId matches user's buildings
                     // - Site-wide announcements: siteId matches user's sites
                     const conditions: any[] = [];
-                    
+
                     if (userBuildingIds.length > 0) {
                         conditions.push(inArray(schema.announcements.buildingId, userBuildingIds));
                     }
-                    
+
                     // Check if siteId exists in schema before using it
                     if (userSiteIds.length > 0 && schema.announcements.siteId) {
                         conditions.push(inArray(schema.announcements.siteId, userSiteIds));
@@ -1761,9 +1761,9 @@ export class DatabaseStorage implements IStorage {
 
         // Get paginated announcements with author info
         // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/50ac2de9-6b44-4ca9-86c9-62829607e1e5',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'db-storage.ts:1097',message:'getAnnouncementsPaginated - checking schema.buildingId',data:{buildingIdExists:!!schema.announcements.buildingId,buildingIdType:typeof schema.announcements.buildingId,buildingIdConstructor:schema.announcements.buildingId?.constructor?.name,allColumns:Object.keys(schema.announcements)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+        fetch('http://127.0.0.1:7242/ingest/50ac2de9-6b44-4ca9-86c9-62829607e1e5', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'db-storage.ts:1097', message: 'getAnnouncementsPaginated - checking schema.buildingId', data: { buildingIdExists: !!schema.announcements.buildingId, buildingIdType: typeof schema.announcements.buildingId, buildingIdConstructor: schema.announcements.buildingId?.constructor?.name, allColumns: Object.keys(schema.announcements) }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'A' }) }).catch(() => { });
         // #endregion
-        
+
         // Build select object - check if siteId exists in schema
         const selectObj: any = {
             id: schema.announcements.id,
@@ -1781,17 +1781,17 @@ export class DatabaseStorage implements IStorage {
             authorName: schema.users.name,
             authorEmail: schema.users.email,
         };
-        
+
         // Add siteId if it exists in schema (it should after migration)
         if (schema.announcements.siteId) {
             selectObj.siteId = schema.announcements.siteId;
         }
-        
+
         // #region agent log
-        const safeSelectObj = Object.entries(selectObj).reduce((acc,[k,v])=>{acc[k]={exists:!!v,type:typeof v,isUndefined:v===undefined,isNull:v===null,constructor:v?.constructor?.name};return acc;},{});
-        fetch('http://127.0.0.1:7242/ingest/50ac2de9-6b44-4ca9-86c9-62829607e1e5',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'db-storage.ts:1115',message:'getAnnouncementsPaginated - select object before query',data:{selectKeys:Object.keys(selectObj),buildingIdExists:!!selectObj.buildingId,buildingIdUndefined:selectObj.buildingId===undefined,buildingIdNull:selectObj.buildingId===null,safeSelectObj},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+        const safeSelectObj = Object.entries(selectObj).reduce((acc, [k, v]) => { acc[k] = { exists: !!v, type: typeof v, isUndefined: v === undefined, isNull: v === null, constructor: v?.constructor?.name }; return acc; }, {});
+        fetch('http://127.0.0.1:7242/ingest/50ac2de9-6b44-4ca9-86c9-62829607e1e5', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'db-storage.ts:1115', message: 'getAnnouncementsPaginated - select object before query', data: { selectKeys: Object.keys(selectObj), buildingIdExists: !!selectObj.buildingId, buildingIdUndefined: selectObj.buildingId === undefined, buildingIdNull: selectObj.buildingId === null, safeSelectObj }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'B' }) }).catch(() => { });
         // #endregion
-        
+
         const announcements = await db
             .select(selectObj)
             .from(schema.announcements)
@@ -1855,7 +1855,7 @@ export class DatabaseStorage implements IStorage {
         // Filter by user's authorized sites if userId provided
         if (userId) {
             const user = await this.getUserById(userId);
-            
+
             // Admin can see all announcements
             if (user?.role !== 'admin') {
                 // Get user's site assignments
@@ -1909,12 +1909,12 @@ export class DatabaseStorage implements IStorage {
             buildingId: announcement.buildingId ?? null,
             siteId: announcement.siteId ?? null,
         };
-        
+
         // Debug log
         console.log('[createAnnouncement] insertData:', JSON.stringify(insertData, null, 2));
         console.log('[createAnnouncement] siteId value:', insertData.siteId);
         console.log('[createAnnouncement] siteId type:', typeof insertData.siteId);
-        
+
         // Explicitly return all columns including siteId
         // Check if siteId exists in schema (it should after migration)
         const returningObj: any = {
@@ -1931,26 +1931,26 @@ export class DatabaseStorage implements IStorage {
             updatedAt: schema.announcements.updatedAt,
             deletedAt: schema.announcements.deletedAt,
         };
-        
+
         // Add siteId if it exists in schema
         if (schema.announcements.siteId) {
             returningObj.siteId = schema.announcements.siteId;
         }
-        
+
         const [newAnnouncement] = await db
             .insert(schema.announcements)
             .values(insertData)
             .returning(returningObj);
-        
+
         console.log('[createAnnouncement] returned announcement:', JSON.stringify(newAnnouncement, null, 2));
-        
+
         // If siteId was in insertData but not in returned announcement, add it manually
         // This happens when schema is not rebuilt after adding siteId column
         if (insertData.siteId && !(newAnnouncement as any).siteId) {
             (newAnnouncement as any).siteId = insertData.siteId;
             console.log('[createAnnouncement] Manually added siteId to returned announcement:', insertData.siteId);
         }
-        
+
         return newAnnouncement;
     }
 
@@ -1973,6 +1973,213 @@ export class DatabaseStorage implements IStorage {
     // ==================== JANITOR ====================
     async getAllJanitors(): Promise<Janitor[]> {
         return await db.select().from(schema.janitors).where(isNull(schema.janitors.deletedAt));
+    }
+
+    async getJanitorsWithAssignments(filters?: { siteId?: string }): Promise<(Janitor & { assignedBlocks: { id: string, name: string }[] })[]> {
+        const query = db
+            .select({
+                janitor: schema.janitors,
+                buildingId: schema.janitorBlockAssignments.buildingId,
+                buildingName: schema.buildings.name,
+                siteId: schema.buildings.siteId, // Site filter için gerekli
+            })
+            .from(schema.janitors)
+            .leftJoin(
+                schema.janitorBlockAssignments,
+                eq(schema.janitors.id, schema.janitorBlockAssignments.janitorId)
+            )
+            .leftJoin(
+                schema.buildings,
+                eq(schema.janitorBlockAssignments.buildingId, schema.buildings.id)
+            )
+            .where(isNull(schema.janitors.deletedAt));
+
+        // Filters
+        // Not: Şimdilik siteId filtresi sadece assign edilmiş janitor'ları filtreler
+        // Hiçbir yere assign edilmemiş janitor'lar her zaman listelenmeli mi?
+        // Admin panel mantığında tüm janitorları görmek isteyebiliriz.
+        // Ama site yöneticisi sadece kendi sitesindeki veya boşta olanları görmek isteyebilir.
+
+        const results = await query;
+
+        // Group by janitor
+        const janitorMap = new Map<string, any>();
+
+        for (const row of results) {
+            if (!janitorMap.has(row.janitor.id)) {
+                janitorMap.set(row.janitor.id, {
+                    ...row.janitor,
+                    assignedBlocks: []
+                });
+            }
+
+            const janitor = janitorMap.get(row.janitor.id)!;
+
+            if (row.buildingId && row.buildingName) {
+                if (!filters?.siteId || row.siteId === filters.siteId) {
+                    // Check if this building is already added
+                    const alreadyAdded = janitor.assignedBlocks.some((b: any) => b.id === row.buildingId);
+                    if (!alreadyAdded) {
+                        janitor.assignedBlocks.push({
+                            id: row.buildingId,
+                            name: row.buildingName
+                        });
+                    }
+                }
+            }
+        }
+
+        // If site filter is active, filter out janitors who have NO assignments related to this site?
+        // But maybe we want to see unassigned janitors too?
+        // For now, let's return all janitors but with filtered assignments
+
+        return Array.from(janitorMap.values());
+    }
+
+    async getJanitorStats(): Promise<{
+        totalStaff: number;
+        onDuty: number;
+        activeRequests: number;
+    }> {
+        // Total Staff (Active, not deleted)
+        const [totalStaffResult] = await db
+            .select({ count: count() })
+            .from(schema.janitors)
+            .where(isNull(schema.janitors.deletedAt));
+
+        // On Duty Staff
+        const [onDutyResult] = await db
+            .select({ count: count() })
+            .from(schema.janitors)
+            .where(and(
+                eq(schema.janitors.status, 'on-duty'),
+                isNull(schema.janitors.deletedAt)
+            ));
+
+        // Active Requests (pending)
+        const [activeRequestsResult] = await db
+            .select({ count: count() })
+            .from(schema.janitorRequests)
+            .where(and(
+                eq(schema.janitorRequests.status, 'pending'),
+                isNull(schema.janitorRequests.deletedAt)
+            ));
+
+        return {
+            totalStaff: totalStaffResult.count,
+            onDuty: onDutyResult.count,
+            activeRequests: activeRequestsResult.count
+        };
+    }
+
+    async getJanitorRequestsPaginated(
+        page: number,
+        limit: number,
+        filters?: {
+            search?: string;
+            status?: string;
+            siteId?: string;
+            buildingId?: string
+        }
+    ): Promise<{
+        requests: (JanitorRequest & {
+            residentName: string;
+            residentPhone: string;
+            unitNumber: string;
+            buildingName: string;
+            assignedJanitorName: string | null;
+        })[];
+        total: number;
+    }> {
+        const offset = (page - 1) * limit;
+
+        // Base where conditions
+        const whereConditions = [isNull(schema.janitorRequests.deletedAt)];
+
+        // Status Filter
+        if (filters?.status && filters.status !== 'all') {
+            whereConditions.push(eq(schema.janitorRequests.status, filters.status as any));
+        }
+
+        // Site Filter
+        // We need to join with buildings to filter by siteId (since requests have buildingId)
+        // But the main query below already joins buildings, so we can filter on that.
+        // However, buildingIds in where clause need to be derived if we want to filter BEFORE join?
+        // Actually Drizzle allows filtering on joined tables in the main query.
+
+        // Building Filter
+        if (filters?.buildingId) {
+            whereConditions.push(eq(schema.janitorRequests.buildingId, filters.buildingId));
+        } else if (filters?.siteId) {
+            // If only siteId is provided, we need to filter by buildings in that site
+            // We'll handle this by adding a condition on the joined building table
+            // But we need to make sure the join happens.
+        }
+
+        // Search Filter (Complex - needs joins)
+        // Search in: JanitorRequest.type logic, Resident Name, Unit Number
+
+        // Main Query
+        let query = db
+            .select({
+                request: schema.janitorRequests,
+                residentName: schema.residents.name,
+                residentPhone: schema.residents.phone,
+                unitNumber: schema.units.number,
+                buildingName: schema.buildings.name,
+                buildingSiteId: schema.buildings.siteId,
+                assignedJanitorName: schema.janitors.name,
+            })
+            .from(schema.janitorRequests)
+            .leftJoin(schema.residents, eq(schema.janitorRequests.residentId, schema.residents.id))
+            .leftJoin(schema.units, eq(schema.janitorRequests.unitId, schema.units.id))
+            .leftJoin(schema.buildings, eq(schema.janitorRequests.buildingId, schema.buildings.id))
+            .leftJoin(schema.janitors, eq(schema.janitorRequests.assignedJanitorId, schema.janitors.id));
+
+        // Apply filters
+        // Note: For search and siteId which depend on joins, we need to apply them to the query builder or use 'and' with columns
+
+        const finalConditions = [...whereConditions];
+
+        if (filters?.siteId) {
+            finalConditions.push(eq(schema.buildings.siteId, filters.siteId));
+        }
+
+        if (filters?.search) {
+            finalConditions.push(or(
+                ilike(schema.residents.name, `%${filters.search}%`),
+                ilike(schema.units.number, `%${filters.search}%`),
+                // ilike(schema.janitorRequests.type, `%${filters.search}%`) // Type is enum, might not work with ilike easily?
+            ) as any);
+        }
+
+        const results = await query
+            .where(and(...finalConditions))
+            .orderBy(desc(schema.janitorRequests.createdAt))
+            .limit(limit)
+            .offset(offset);
+
+        // Count Query
+        // For total count we need the same joins to apply filters correctly
+        const [countResult] = await db
+            .select({ count: count() })
+            .from(schema.janitorRequests)
+            .leftJoin(schema.residents, eq(schema.janitorRequests.residentId, schema.residents.id))
+            .leftJoin(schema.units, eq(schema.janitorRequests.unitId, schema.units.id))
+            .leftJoin(schema.buildings, eq(schema.janitorRequests.buildingId, schema.buildings.id))
+            .where(and(...finalConditions));
+
+        return {
+            requests: results.map(row => ({
+                ...row.request,
+                residentName: row.residentName || 'Bilinmeyen',
+                residentPhone: row.residentPhone || '',
+                unitNumber: row.unitNumber || '',
+                buildingName: row.buildingName || '',
+                assignedJanitorName: row.assignedJanitorName,
+            })),
+            total: countResult.count
+        };
     }
 
     async getJanitorRequestsByUnitId(unitId: string): Promise<JanitorRequest[]> {
@@ -2043,6 +2250,19 @@ export class DatabaseStorage implements IStorage {
             })
             .where(eq(schema.janitorRequests.id, id))
             .returning();
+
+        // If completed, increment tasksCompleted for the assigned janitor
+        if (status === 'completed' && updated.assignedJanitorId) {
+            // We need to fetch current tasksCompleted first or can we increment directly?
+            // Drizzle supports sql increment
+            await db
+                .update(schema.janitors)
+                .set({
+                    tasksCompleted: sql`${schema.janitors.tasksCompleted} + 1`
+                })
+                .where(eq(schema.janitors.id, updated.assignedJanitorId));
+        }
+
         return updated;
     }
 
@@ -2054,7 +2274,10 @@ export class DatabaseStorage implements IStorage {
     }
 
     async assignJanitorToBuilding(janitorId: string, buildingId: string): Promise<void> {
-        await db.insert(schema.janitorBlockAssignments).values({ janitorId, buildingId });
+        await db.insert(schema.janitorBlockAssignments).values({
+            janitorId,
+            buildingId,
+        });
     }
 
     async unassignJanitorFromBuilding(janitorId: string, buildingId: string): Promise<void> {
@@ -2168,7 +2391,7 @@ export class DatabaseStorage implements IStorage {
         // Filter by user's authorized sites if userId provided
         if (userId) {
             const user = await this.getUserById(userId);
-            
+
             // Admin can see all requests
             if (user?.role !== 'admin') {
                 // Get user's site assignments
@@ -2191,11 +2414,11 @@ export class DatabaseStorage implements IStorage {
 
                     // Filter requests: Show requests for user's buildings OR user's sites
                     const conditions: any[] = [];
-                    
+
                     if (userBuildingIds.length > 0 && schema.communityRequests.buildingId) {
                         conditions.push(inArray(schema.communityRequests.buildingId, userBuildingIds));
                     }
-                    
+
                     if (userSiteIds.length > 0 && schema.communityRequests.siteId) {
                         conditions.push(inArray(schema.communityRequests.siteId, userSiteIds));
                     }
@@ -2357,7 +2580,7 @@ export class DatabaseStorage implements IStorage {
         // Filter by user's authorized sites if userId provided
         if (userId) {
             const user = await this.getUserById(userId);
-            
+
             // Admin can see all polls
             if (user?.role !== 'admin') {
                 // Get user's site assignments
@@ -2380,11 +2603,11 @@ export class DatabaseStorage implements IStorage {
 
                     // Filter polls: Show polls for user's buildings OR user's sites
                     const conditions: any[] = [];
-                    
+
                     if (userBuildingIds.length > 0 && schema.polls.buildingId) {
                         conditions.push(inArray(schema.polls.buildingId, userBuildingIds));
                     }
-                    
+
                     if (userSiteIds.length > 0 && schema.polls.siteId) {
                         conditions.push(inArray(schema.polls.siteId, userSiteIds));
                     }
@@ -2601,15 +2824,15 @@ export class DatabaseStorage implements IStorage {
             month: sql<number>`EXTRACT(MONTH FROM ${schema.paymentRecords.createdAt})`,
             value: sql<number>`SUM(CAST(${schema.paymentRecords.amount} AS NUMERIC))`
         })
-        .from(schema.paymentRecords)
-        .where(and(
-            eq(schema.paymentRecords.status, 'paid'),
-            sql`EXTRACT(YEAR FROM ${schema.paymentRecords.createdAt}) = ${year}`,
-            isNull(schema.paymentRecords.deletedAt)
-        ))
-        .groupBy(sql`EXTRACT(MONTH FROM ${schema.paymentRecords.createdAt})`)
-        .orderBy(sql`EXTRACT(MONTH FROM ${schema.paymentRecords.createdAt})`);
-        
+            .from(schema.paymentRecords)
+            .where(and(
+                eq(schema.paymentRecords.status, 'paid'),
+                sql`EXTRACT(YEAR FROM ${schema.paymentRecords.createdAt}) = ${year}`,
+                isNull(schema.paymentRecords.deletedAt)
+            ))
+            .groupBy(sql`EXTRACT(MONTH FROM ${schema.paymentRecords.createdAt})`)
+            .orderBy(sql`EXTRACT(MONTH FROM ${schema.paymentRecords.createdAt})`);
+
         // Convert string values to numbers
         return result.map(row => ({
             month: Number(row.month),
@@ -2698,10 +2921,10 @@ export class DatabaseStorage implements IStorage {
      */
     private transformToNestedUnits(rows: any[]): any[] {
         const unitsMap = new Map<string, any>();
-        
+
         rows.forEach(row => {
             const unitId = row.unit.id;
-            
+
             // Unit yoksa ekle
             if (!unitsMap.has(unitId)) {
                 unitsMap.set(unitId, {
@@ -2709,9 +2932,9 @@ export class DatabaseStorage implements IStorage {
                     residents: [],
                 });
             }
-            
+
             const unit = unitsMap.get(unitId)!;
-            
+
             // Resident varsa ekle
             if (row.resident) {
                 let resident = unit.residents.find((r: any) => r.id === row.resident.id);
@@ -2722,7 +2945,7 @@ export class DatabaseStorage implements IStorage {
                     };
                     unit.residents.push(resident);
                 }
-                
+
                 // Vehicle varsa ekle (brand ve model bilgileriyle)
                 if (row.vehicle) {
                     const vehicleExists = resident.vehicles.some((v: any) => v.id === row.vehicle.id);
@@ -2737,7 +2960,7 @@ export class DatabaseStorage implements IStorage {
                 }
             }
         });
-        
+
         return Array.from(unitsMap.values());
     }
 
@@ -2746,10 +2969,10 @@ export class DatabaseStorage implements IStorage {
      */
     private transformToParkingSpots(rows: any[]): any[] {
         const spotsMap = new Map<string, any>();
-        
+
         rows.forEach(row => {
             const spotId = row.spot.id;
-            
+
             if (!spotsMap.has(spotId)) {
                 spotsMap.set(spotId, {
                     ...row.spot,
@@ -2761,7 +2984,7 @@ export class DatabaseStorage implements IStorage {
                 });
             }
         });
-        
+
         return Array.from(spotsMap.values());
     }
 
@@ -2774,14 +2997,14 @@ export class DatabaseStorage implements IStorage {
         filters?: { status?: string; search?: string; dateFrom?: string; dateTo?: string; sortBy?: string; sortOrder?: 'asc' | 'desc' }
     ): Promise<{ visits: GuestVisit[]; total: number; page: number; limit: number }> {
         const offset = (page - 1) * limit;
-        
+
         // Build where conditions
         const conditions = [isNull(schema.guestVisits.deletedAt)];
-        
+
         if (filters?.status) {
             conditions.push(eq(schema.guestVisits.status, filters.status as any));
         }
-        
+
         if (filters?.search) {
             const searchTerm = `%${filters.search}%`;
             const searchCondition = or(
@@ -2797,24 +3020,34 @@ export class DatabaseStorage implements IStorage {
                 conditions.push(searchCondition);
             }
         }
-        
+
         if (filters?.dateFrom) {
             conditions.push(gte(schema.guestVisits.expectedDate, filters.dateFrom));
         }
-        
+
         if (filters?.dateTo) {
             conditions.push(lte(schema.guestVisits.expectedDate, filters.dateTo));
         }
-        
+
         // Build where clause
         const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
-        
+
         // Get total count
         const [{ count: totalCount }] = await db
             .select({ count: count() })
             .from(schema.guestVisits)
+            .leftJoin(schema.units, eq(schema.guestVisits.unitId, schema.units.id))
+            .leftJoin(schema.buildings, eq(schema.units.buildingId, schema.buildings.id))
+            .leftJoin(
+                schema.residents,
+                and(
+                    eq(schema.units.id, schema.residents.unitId),
+                    eq(schema.residents.type, 'owner'),
+                    isNull(schema.residents.deletedAt)
+                )
+            )
             .where(whereClause);
-        
+
         // Get paginated results with JOINs (query builder - no await yet)
         const visitsWithJoinsQuery = db
             .select({
@@ -2855,43 +3088,43 @@ export class DatabaseStorage implements IStorage {
             )
             .leftJoin(schema.parkingSpots, eq(schema.guestVisits.parkingSpotId, schema.parkingSpots.id))
             .where(whereClause);
-        
+
         // Dynamic sorting
         let orderByClause;
         const sortColumn = filters?.sortBy || 'createdAt';
         const order = filters?.sortOrder || 'desc';
-        
+
         switch (sortColumn) {
             case 'plate':
-                orderByClause = order === 'asc' 
-                    ? asc(schema.guestVisits.plate) 
+                orderByClause = order === 'asc'
+                    ? asc(schema.guestVisits.plate)
                     : desc(schema.guestVisits.plate);
                 break;
             case 'expectedDate':
-                orderByClause = order === 'asc' 
-                    ? asc(schema.guestVisits.expectedDate) 
+                orderByClause = order === 'asc'
+                    ? asc(schema.guestVisits.expectedDate)
                     : desc(schema.guestVisits.expectedDate);
                 break;
             case 'status':
-                orderByClause = order === 'asc' 
-                    ? asc(schema.guestVisits.status) 
+                orderByClause = order === 'asc'
+                    ? asc(schema.guestVisits.status)
                     : desc(schema.guestVisits.status);
                 break;
             case 'hostName':
-                orderByClause = order === 'asc' 
-                    ? asc(schema.residents.name) 
+                orderByClause = order === 'asc'
+                    ? asc(schema.residents.name)
                     : desc(schema.residents.name);
                 break;
             default:
                 orderByClause = desc(schema.guestVisits.createdAt);
         }
-        
+
         // Execute query with orderBy, limit, and offset
         const visitsWithJoinsSorted = await visitsWithJoinsQuery
             .orderBy(orderByClause)
             .limit(limit)
             .offset(offset);
-        
+
         // Group by guest visit id to handle multiple residents per unit
         // Take the first owner as hostName
         const visitsMap = new Map<string, any>();
@@ -2909,9 +3142,9 @@ export class DatabaseStorage implements IStorage {
                 }
             }
         }
-        
+
         const visits = Array.from(visitsMap.values()) as GuestVisit[];
-        
+
         return {
             visits,
             total: Number(totalCount),
