@@ -360,10 +360,59 @@
           "description": "Açıklama",
           "amount": "Tutar (₺)",
           "status": "Durum",
-          "attachment": "Fatura / Fiş Görseli"
+          "attachment": "Fatura / Fiş Görseli",
+          "notes": "Notlar",
+          "date": "Tarih",
+          "time": "Saat"
         },
         "placeholders": {
-          "description": "Örn: Ekstra Tamirat"
+          "description": "Örn: Ekstra Tamirat",
+          "notes": "Notlarınızı buraya yazabilirsiniz..."
+        },
+        "hints": {
+          "amount": "Örn: 1500, 2500, 5000"
+        },
+        "upload": {
+          "title": "Görsel Yükle",
+          "formats": "JPG, PNG, PDF",
+          "change": "Değiştir"
+        },
+        "status": {
+          "paid": "Ödendi",
+          "pending": "Ödenecek"
+        },
+        "buttons": {
+          "cancel": "İptal",
+          "save": "Kaydet"
+        }
+      },
+      "editExpense": {
+        "title": "Gider Düzenlemeyi Onayla",
+        "message": "Aşağıdaki değişiklikleri yapmak istediğinize emin misiniz?",
+        "noChanges": "Değişiklik yapılmadı",
+        "buttons": {
+          "confirm": "Onayla",
+          "cancel": "İptal"
+        }
+      },
+      "expenseDelete": {
+        "labels": {
+          "category": "Gider Kategorisi",
+          "title": "Gider Başlığı / Alt Grup",
+          "select": "Seçiniz",
+          "other": "Diğer...",
+          "description": "Açıklama",
+          "amount": "Tutar (₺)",
+          "status": "Durum",
+          "attachment": "Fatura / Fiş Görseli",
+          "notes": "Notlar"
+        },
+        "placeholders": {
+          "description": "Örn: Ekstra Tamirat",
+          "notes": "Notlarınızı buraya yazabilirsiniz..."
+        },
+        "hints": {
+          "amount": "Örn: 1500, 2500, 5000"
         },
         "upload": {
           "title": "Görsel Yükle",
@@ -400,7 +449,11 @@
       "duesUpdated": "{{month}} {{year}} için {{amount}}₺ tutarında aidat kayıtları güncellendi.",
       "duesPlanSaved": "Gelecek 12 ay için aidat planlaması başarıyla kaydedildi.",
       "reportDownloading": "Rapor indiriliyor...",
-      "deleteExpenseConfirm": "Bu gider kaydını silmek istediğinize emin misiniz?"
+      "deleteExpenseConfirm": "Bu gider kaydını silmek istediğinize emin misiniz?",
+      "expenseCreatedDetailed": "\"{{title}}\" gideri (₺{{amount}}) başarıyla oluşturuldu",
+      "statusUpdated": "Ödeme durumu güncellendi",
+      "statusUpdatedDetailed": "{{name}} için ₺{{amount}} tutarındaki ödeme alındı",
+      "statusUpdateFailed": "Ödeme durumu güncellenemedi"
     },
     "pagination": {
       "total": "Toplam",

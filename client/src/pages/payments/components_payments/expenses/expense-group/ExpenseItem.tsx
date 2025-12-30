@@ -6,13 +6,24 @@ import type { ExpenseRecord } from '@/types/payments';
 interface ExpenseItemProps {
     expense: ExpenseRecord;
     onDelete: (id: string) => void;
+    onClick?: () => void;
+    isPeriodPast?: boolean;
 }
 
-export const ExpenseItem: FC<ExpenseItemProps> = ({ expense, onDelete }) => {
+export const ExpenseItem: FC<ExpenseItemProps> = ({ expense, onDelete, onClick, isPeriodPast = false }) => {
     const { t } = useTranslation();
 
     return (
-        <div className="p-4 flex items-center justify-between hover:bg-ds-muted-dark/20 transition-colors group">
+        <div 
+            className={`p-4 flex items-center justify-between transition-colors group ${
+                isPeriodPast 
+                    ? 'opacity-60 cursor-not-allowed' 
+                    : onClick 
+                        ? 'hover:bg-ds-muted-dark/20 cursor-pointer' 
+                        : 'hover:bg-ds-muted-dark/20'
+            }`}
+            onClick={() => !isPeriodPast && onClick?.()}
+        >
             <div className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-full bg-ds-muted-dark flex items-center justify-center text-ds-muted-light overflow-hidden relative">
                     {expense.attachment ? (
@@ -37,8 +48,17 @@ export const ExpenseItem: FC<ExpenseItemProps> = ({ expense, onDelete }) => {
                     </div>
                 </div>
                 <button
-                    onClick={() => onDelete(expense.id)}
-                    className="p-2 text-ds-destructive-light hover:bg-ds-destructive-light/10 rounded-lg transition-all hover:animate-pulse"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        if (!isPeriodPast) onDelete(expense.id);
+                    }}
+                    disabled={isPeriodPast}
+                    className={`p-2 text-ds-destructive-light rounded-lg transition-all ${
+                        isPeriodPast 
+                            ? 'opacity-50 cursor-not-allowed' 
+                            : 'hover:bg-ds-destructive-light/10 hover:animate-pulse'
+                    }`}
+                    title={isPeriodPast ? t('payments.archive.label') || 'Geçmiş dönem - düzenlenemez' : undefined}
                 >
                     <Trash2 className="w-4 h-4" />
                 </button>

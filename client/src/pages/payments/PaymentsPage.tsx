@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useQueryClient } from '@tanstack/react-query';
 import { Wallet, TrendingDown, Lock, ChevronLeft, ChevronRight } from 'lucide-react';
 import {
     PaymentsHeader,
@@ -10,10 +11,12 @@ import {
     BulkActionBar,
     ExpenseGroup,
     AddExpenseButton,
+    ExpenseFilters,
     ConfirmationModal,
     DuesGeneratorModal,
     AddExpenseModal,
     ExpenseConfirmationModal,
+    ExpenseEditConfirmationModal,
     ExpenseGroupSkeleton,
     PaymentsEmptyState,
     ExpensesEmptyState,
@@ -41,6 +44,7 @@ const isDateInPast = (month: string, year: string) => {
 
 export const PaymentsPage = () => {
     const { t } = useTranslation();
+    const queryClient = useQueryClient();
 
     // --- State ---
     const [activeTab, setActiveTab] = useState<'income' | 'expenses'>('income');
@@ -51,6 +55,13 @@ export const PaymentsPage = () => {
     const [showReminderModal, setShowReminderModal] = useState<boolean>(false);
     const [targetReminderPayment, setTargetReminderPayment] = useState<PaymentRecordLegacy | null>(null);
     const [showBulkReminderModal, setShowBulkReminderModal] = useState<boolean>(false);
+    const [expenseStatusFilter, setExpenseStatusFilter] = useState<'all' | 'paid' | 'pending'>('all');
+    const [editingExpense, setEditingExpense] = useState<ExpenseRecordLegacy | null>(null);
+    const [showExpenseEditConfirmation, setShowExpenseEditConfirmation] = useState<boolean>(false);
+    const [pendingExpenseUpdate, setPendingExpenseUpdate] = useState<{
+        oldExpense: ExpenseRecordLegacy;
+        newExpense: Partial<ExpenseRecord>;
+    } | null>(null);
     const ITEMS_PER_PAGE = 20;
 
     // --- Site and Building State ---
@@ -101,6 +112,13 @@ export const PaymentsPage = () => {
         }
     );
 
+    // Expense filters - memoized to prevent unnecessary re-renders
+    const expenseFilters = useMemo(() => ({
+        search: effectiveSearchTerm,
+        buildingId: paymentsState.activeBuildingId || undefined,
+        siteId: paymentsState.activeBuildingId ? undefined : (paymentsState.activeSiteId || undefined)
+    }), [effectiveSearchTerm, paymentsState.activeBuildingId, paymentsState.activeSiteId]);
+
     // Expenses hook with server-side filtering
     const {
         expenses,
@@ -115,13 +133,21 @@ export const PaymentsPage = () => {
         selectedMonth,
         selectedYear,
         1,
-        1000, // Get all expenses for now
-        {
-            search: effectiveSearchTerm,
-            buildingId: paymentsState.activeBuildingId || undefined,
-            siteId: paymentsState.activeBuildingId ? undefined : (paymentsState.activeSiteId || undefined)
-        }
+        100, // Max limit allowed by backend (1-100)
+        expenseFilters,
+        paymentsState.activeSiteId || undefined,
+        paymentsState.activeBuildingId || undefined
     );
+
+    // Site veya building değiştiğinde expenses query'sini invalidate et
+    useEffect(() => {
+        if (activeTab === 'expenses') {
+            // Tüm expenses query'lerini invalidate et (queryKey prefix match)
+            queryClient.invalidateQueries({ 
+                queryKey: ['expenses'] 
+            });
+        }
+    }, [paymentsState.activeSiteId, paymentsState.activeBuildingId, activeTab, queryClient]);
 
     // Server-side pagination and filtering
     const paginatedPayments = payments; // Server already returns paginated data
@@ -148,8 +174,17 @@ export const PaymentsPage = () => {
     const isLoading = activeTab === 'income' ? paymentsLoading : expensesLoading;
     const error = activeTab === 'income' ? paymentsError : expensesError;
 
-    // Expenses are already filtered server-side, no need for client-side filtering
-    const filteredExpenses = expenses;
+    // Expense filtering (client-side for status)
+    const filteredExpenses = expenseStatusFilter === 'all' 
+        ? expenses 
+        : expenses.filter(e => e.status === expenseStatusFilter);
+    
+    // Expense stats for filters
+    const expenseFilterStats = useMemo(() => {
+        const paid = expenses.filter(e => e.status === 'paid').length;
+        const pending = expenses.filter(e => e.status === 'pending').length;
+        return { paid, pending };
+    }, [expenses]);
 
     const isSelectedPeriodPast = isDateInPast(selectedMonth, selectedYear);
 
@@ -323,12 +358,56 @@ export const PaymentsPage = () => {
         closeDuesModal();
     };
 
+    const handleEditExpense = (expense: ExpenseRecordLegacy) => {
+        setEditingExpense(expense);
+        openAddExpenseModal();
+    };
+
+    const handleSaveExpense = (expenseData: Partial<ExpenseRecord>) => {
+        // siteId ve buildingId'yi ekle
+        const expenseDataWithSiteBuilding = {
+            ...expenseData,
+            siteId: paymentsState.activeBuildingId ? undefined : (paymentsState.activeSiteId || undefined),
+            buildingId: paymentsState.activeBuildingId || undefined,
+        };
+        
+        if (editingExpense) {
+            // Edit mode: Confirmation modal aç
+            setPendingExpenseUpdate({
+                oldExpense: editingExpense,
+                newExpense: expenseDataWithSiteBuilding
+            });
+            setShowExpenseEditConfirmation(true);
+            closeAddExpenseModal(); // AddExpenseModal'ı kapat
+        } else {
+            // Add mode: Direkt ekle
+            addExpense(expenseDataWithSiteBuilding);
+            closeAddExpenseModal();
+        }
+    };
+
+    const confirmExpenseUpdate = () => {
+        if (pendingExpenseUpdate) {
+            updateExpense(pendingExpenseUpdate.oldExpense.id, pendingExpenseUpdate.newExpense);
+            setPendingExpenseUpdate(null);
+            setEditingExpense(null);
+        }
+        setShowExpenseEditConfirmation(false);
+    };
+
+    const cancelExpenseUpdate = () => {
+        setPendingExpenseUpdate(null);
+        setEditingExpense(null);
+        setShowExpenseEditConfirmation(false);
+    };
+
     const handleAddExpense = (newExpense: Partial<any>) => {
         addExpense(newExpense);
         closeAddExpenseModal();
     };
 
     const handleDeleteExpense = (id: string) => {
+        if (isSelectedPeriodPast) return; // Geçmiş aylarda silme yapılamaz
         const expense = expenses.find(e => e.id === id);
         if (expense) {
             setTargetExpense({ id: expense.id, title: expense.title, amount: expense.amount });
@@ -543,6 +622,13 @@ export const PaymentsPage = () => {
 
                                     <AddExpenseButton onClick={openAddExpenseModal} />
 
+                                    <ExpenseFilters
+                                        activeFilter={expenseStatusFilter}
+                                        onFilterChange={setExpenseStatusFilter}
+                                        paidCount={expenseFilterStats.paid}
+                                        pendingCount={expenseFilterStats.pending}
+                                    />
+
                                     <div className="space-y-6">
                                         {isLoading ? (
                                             <>
@@ -564,6 +650,8 @@ export const PaymentsPage = () => {
                                                             category={category}
                                                             expenses={categoryExpenses}
                                                             onDelete={handleDeleteExpense}
+                                                            onEdit={handleEditExpense}
+                                                            isPeriodPast={isSelectedPeriodPast}
                                                         />
                                                     );
                                                 })}
@@ -649,8 +737,14 @@ export const PaymentsPage = () => {
                 isOpen={showAddExpenseModal}
                 selectedMonth={selectedMonth}
                 selectedYear={selectedYear}
-                onClose={closeAddExpenseModal}
-                onAdd={handleAddExpense}
+                onClose={() => {
+                    closeAddExpenseModal();
+                    setEditingExpense(null);
+                }}
+                onSave={handleSaveExpense}
+                expense={editingExpense || undefined}
+                isEditMode={!!editingExpense}
+                isPeriodPast={isSelectedPeriodPast}
             />
 
             {targetExpense && (
@@ -666,6 +760,16 @@ export const PaymentsPage = () => {
                     }}
                     onConfirm={confirmDeleteExpense}
                     onCancel={cancelDeleteExpense}
+                />
+            )}
+
+            {pendingExpenseUpdate && (
+                <ExpenseEditConfirmationModal
+                    isOpen={showExpenseEditConfirmation}
+                    oldExpense={pendingExpenseUpdate.oldExpense}
+                    newExpense={pendingExpenseUpdate.newExpense}
+                    onConfirm={confirmExpenseUpdate}
+                    onCancel={cancelExpenseUpdate}
                 />
             )}
         </div>

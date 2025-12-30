@@ -228,10 +228,12 @@ export const expenseRecords = pgTable('expense_records', {
     title: varchar('title', { length: 255 }).notNull(),
     category: expenseCategoryEnum('category').notNull(),
     amount: decimal('amount', { precision: 10, scale: 2 }).notNull(),
-    expenseDate: date('expense_date').notNull(),
+    expenseDate: timestamp('expense_date', { withTimezone: true }).notNull(),
     status: expenseStatusEnum('status').notNull().default('pending'),
     description: text('description'),
     attachmentUrl: text('attachment_url'),
+    siteId: uuid('site_id').references(() => sites.id, { onDelete: 'set null' }),
+    buildingId: uuid('building_id').references(() => buildings.id, { onDelete: 'set null' }),
     periodMonth: varchar('period_month', { length: 20 }).notNull(),
     periodYear: integer('period_year').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -520,19 +522,9 @@ export const insertPaymentRecordSchema = createInsertSchema(paymentRecords, {
 });
 export const selectPaymentRecordSchema = createSelectSchema(paymentRecords);
 
-export const insertExpenseRecordSchema = createInsertSchema(expenseRecords, {
-    amount: z.union([z.string(), z.number()]).transform(val => String(val)),
-    expenseDate: z.union([z.string(), z.date()]).transform(val => {
-        if (typeof val === 'string') {
-            // Validate date format YYYY-MM-DD
-            if (!/^\d{4}-\d{2}-\d{2}$/.test(val)) {
-                throw new Error('expenseDate must be in YYYY-MM-DD format');
-            }
-            return val;
-        }
-        return val.toISOString().split('T')[0];
-    }),
-});
+// Announcements pattern: No override, use createInsertSchema directly
+// Route handler will handle null -> undefined conversion and manual transforms
+export const insertExpenseRecordSchema = createInsertSchema(expenseRecords);
 export const selectExpenseRecordSchema = createSelectSchema(expenseRecords);
 
 // Facilities & Bookings

@@ -100,9 +100,27 @@ export const usePayments = (
     const statusMutation = useMutation({
         mutationFn: ({ id, data }: { id: string; data: PaymentStatusUpdateData }) =>
             api.payments.updateStatus(id, data.status, data.paymentDate),
-        onSuccess: () => {
+        onSuccess: (response, variables) => {
             queryClient.invalidateQueries({ queryKey: ['payments', month, year] });
-            showSuccess(t('payments.messages.statusUpdated') || 'Ödeme durumu güncellendi');
+            
+            if (variables.data.status === 'paid' && variables.data.paymentInfo) {
+                // Ödeme alındı - detaylı mesaj göster
+                const { residentName, amount } = variables.data.paymentInfo;
+                const formattedAmount = amount.toLocaleString('tr-TR', { 
+                    minimumFractionDigits: 0, 
+                    maximumFractionDigits: 0 
+                });
+                showSuccess(
+                    t('payments.messages.statusUpdatedDetailed', { 
+                        name: residentName, 
+                        amount: formattedAmount 
+                    }) || 
+                    `${residentName} için ₺${formattedAmount} tutarındaki ödeme alındı`
+                );
+            } else {
+                // Ödeme iptal edildi - basit mesaj
+                showSuccess(t('payments.messages.statusUpdated') || 'Ödeme durumu güncellendi');
+            }
         },
         onError: (error: Error) => {
             showError(error.message || t('payments.messages.statusUpdateFailed') || 'Ödeme durumu güncellenemedi');
@@ -153,10 +171,32 @@ export const usePayments = (
             paymentDate?: string;
             periodMonth: string;
             periodYear: number;
+            paymentInfo?: {
+                residentName: string;
+                amount: number;
+            };
         }) => api.payments.create(paymentData),
-        onSuccess: () => {
+        onSuccess: (response, variables) => {
             queryClient.invalidateQueries({ queryKey: ['payments', month, year] });
-            showSuccess(t('payments.messages.statusUpdated') || 'Ödeme durumu güncellendi');
+            
+            if (variables.status === 'paid' && variables.paymentInfo) {
+                // Ödeme alındı - detaylı mesaj göster
+                const { residentName, amount } = variables.paymentInfo;
+                const formattedAmount = amount.toLocaleString('tr-TR', { 
+                    minimumFractionDigits: 0, 
+                    maximumFractionDigits: 0 
+                });
+                showSuccess(
+                    t('payments.messages.statusUpdatedDetailed', { 
+                        name: residentName, 
+                        amount: formattedAmount 
+                    }) || 
+                    `${residentName} için ₺${formattedAmount} tutarındaki ödeme alındı`
+                );
+            } else {
+                // Ödeme iptal edildi - basit mesaj
+                showSuccess(t('payments.messages.statusUpdated') || 'Ödeme durumu güncellendi');
+            }
         },
         onError: (error: Error) => {
             showError(error.message || t('payments.messages.statusUpdateFailed') || 'Ödeme durumu güncellenemedi');
@@ -170,6 +210,9 @@ export const usePayments = (
         _year: string
     ) => {
         const paymentDate = status === 'paid' ? new Date().toISOString() : undefined;
+        
+        // Payment bilgisini bul (toast mesajı için)
+        const payment = payments.find(p => p.id === id);
         
         // Check if this is a placeholder payment record
         if (id.startsWith('placeholder-')) {
@@ -185,6 +228,12 @@ export const usePayments = (
                 );
                 
                 if (originalPayment) {
+                    // Payment bilgisini bul (toast mesajı için)
+                    const paymentInfo = payment ? {
+                        residentName: payment.residentName,
+                        amount: payment.amount
+                    } : undefined;
+                    
                     // Create new payment record
                     createPaymentMutation.mutate({
                         residentId: originalPayment.residentId,
@@ -195,6 +244,7 @@ export const usePayments = (
                         paymentDate,
                         periodMonth: month,
                         periodYear: parseInt(year),
+                        paymentInfo,
                     });
                     return;
                 }
@@ -206,9 +256,17 @@ export const usePayments = (
         // Regular payment record update
         statusMutation.mutate({
             id,
-            data: { status, paymentDate },
+            data: { 
+                status, 
+                paymentDate,
+                // Payment bilgisini de geç (toast mesajı için)
+                paymentInfo: payment ? {
+                    residentName: payment.residentName,
+                    amount: payment.amount
+                } : undefined
+            },
         });
-    }, [statusMutation, createPaymentMutation, data, month, year]);
+    }, [statusMutation, createPaymentMutation, data, month, year, payments]);
 
     return {
         payments,

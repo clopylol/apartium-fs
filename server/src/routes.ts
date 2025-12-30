@@ -681,36 +681,78 @@ export function createRoutes(storage: IStorage): Router {
         }
     });
 
+    // POST /api/expenses
     router.post('/expenses', requireAuth, async (req, res) => {
         try {
-            console.log('Expense create request body:', req.body);
+            // Announcements pattern: Handle amount and expenseDate transforms manually
+            // Convert null values to undefined for validation (schema expects undefined for optional fields)
             
-            // Zod validation
-            const validatedData = insertExpenseRecordSchema.parse(req.body);
+            // Handle amount: convert to string if number
+            let amount: string;
+            if (typeof req.body.amount === 'number') {
+                amount = String(req.body.amount);
+            } else if (typeof req.body.amount === 'string') {
+                amount = req.body.amount;
+            } else {
+                return res.status(400).json({ error: 'Tutar geçerli bir sayı olmalıdır' });
+            }
             
-            console.log('Validated expense data:', validatedData);
-            
-            // Additional validation
-            if (validatedData.amount && parseFloat(validatedData.amount as any) <= 0) {
+            // Validate amount is positive
+            if (parseFloat(amount) <= 0) {
                 return res.status(400).json({ error: 'Tutar pozitif bir sayı olmalıdır' });
             }
-
-            const expense = await storage.createExpenseRecord(validatedData);
+            
+            // Handle expenseDate: validate format YYYY-MM-DD
+            let expenseDate: string;
+            if (req.body.expenseDate instanceof Date) {
+                expenseDate = req.body.expenseDate.toISOString().split('T')[0];
+            } else if (typeof req.body.expenseDate === 'string') {
+                // Validate date format YYYY-MM-DD
+                if (!/^\d{4}-\d{2}-\d{2}$/.test(req.body.expenseDate)) {
+                    return res.status(400).json({ error: 'Tarih formatı YYYY-MM-DD olmalıdır' });
+                }
+                expenseDate = req.body.expenseDate;
+            } else {
+                return res.status(400).json({ error: 'Tarih geçerli bir değer olmalıdır' });
+            }
+            
+            // Handle siteId and buildingId: empty string or undefined should be null
+            const hasBuildingId = req.body.buildingId && req.body.buildingId !== "" && req.body.buildingId !== null;
+            const hasSiteId = req.body.siteId && req.body.siteId !== "" && req.body.siteId !== null;
+            const buildingId = hasBuildingId ? req.body.buildingId : null;
+            const siteId = hasSiteId ? req.body.siteId : null;
+            
+            // Prepare data for validation
+            // Convert null values to undefined for validation (schema expects undefined for optional fields)
+            const dataToValidate = {
+                ...req.body,
+                amount,
+                expenseDate,
+                buildingId: buildingId || undefined, // Use undefined instead of null for validation
+                siteId: siteId || undefined, // Use undefined instead of null for validation
+                description: req.body.description || undefined, // Convert null to undefined
+                attachmentUrl: req.body.attachmentUrl || undefined, // Convert null to undefined
+            };
+            
+            // Parse with schema
+            const validatedData = insertExpenseRecordSchema.parse(dataToValidate);
+            
+               // Ensure buildingId and siteId are explicitly null (not undefined) for database insert
+               // IMPORTANT: Use the original buildingId and siteId values from req.body, not from validatedData
+               // because validatedData might have undefined for optional fields
+               const finalData = {
+                   ...validatedData,
+                   amount,
+                   expenseDate: expenseDate, // Date object for timestamp column
+                   buildingId: buildingId ?? null, // Use nullish coalescing to preserve null
+                   siteId: siteId ?? null, // Use nullish coalescing to preserve null
+               };
+            
+            const expense = await storage.createExpenseRecord(finalData);
             res.status(201).json({ expense });
         } catch (error: any) {
-            console.error('Expense create error:', error);
-            if (error.name === 'ZodError') {
-                console.error('Zod validation errors:', JSON.stringify(error.errors, null, 2));
-                return res.status(400).json({ 
-                    error: 'Geçersiz veri', 
-                    details: error.errors,
-                    message: error.message 
-                });
-            }
-            res.status(500).json({ 
-                error: 'Gider oluşturulamadı',
-                message: error.message 
-            });
+            if (error.name === 'ZodError') return res.status(400).json({ error: 'Geçersiz veri', details: error.errors });
+            res.status(500).json({ error: 'Gider oluşturulamadı' });
         }
     });
 

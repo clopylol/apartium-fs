@@ -43,6 +43,27 @@
       "when": 1735090000000,
       "tag": "0005_recreate_announcements_with_building_id",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1735095000000,
+      "tag": "0012_add_vehicle_brand_model_fks",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1735096000000,
+      "tag": "0013_add_site_building_to_expenses",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1735097000000,
+      "tag": "0014_change_expense_date_to_timestamp",
+      "breakpoints": true
     }
   ]
 }

@@ -77,8 +77,7 @@ export function SearchableSelect({
         setSearchTerm("");
     };
 
-    const handleClear = (e: React.MouseEvent) => {
-        e.stopPropagation();
+    const handleClear = () => {
         onChange("");
         setSearchTerm("");
     };
@@ -102,13 +101,25 @@ export function SearchableSelect({
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                     {value && !disabled && (
-                        <button
-                            type="button"
-                            onClick={handleClear}
-                            className="p-0.5 hover:bg-slate-700 rounded transition-colors"
+                        <div
+                            role="button"
+                            tabIndex={0}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleClear();
+                            }}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleClear();
+                                }
+                            }}
+                            className="p-0.5 hover:bg-slate-700 rounded transition-colors cursor-pointer"
+                            aria-label="Clear selection"
                         >
                             <X className="w-3.5 h-3.5 text-slate-400" />
-                        </button>
+                        </div>
                     )}
                     <ChevronDown
                         className={`w-4 h-4 text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`}

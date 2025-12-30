@@ -637,6 +637,9 @@ export class DatabaseStorage implements IStorage {
         const residentIds = firstResidents.map(r => r.id);
 
         // Step 3: Get payment records for these residents
+        // IMPORTANT: Don't filter by status here - we need all payment records
+        // to correctly identify which units have payments and which don't
+        // Status filtering will be applied later to the combined results
         const paymentConditions = [
             eq(schema.paymentRecords.periodMonth, month),
             eq(schema.paymentRecords.periodYear, year),
@@ -644,11 +647,7 @@ export class DatabaseStorage implements IStorage {
             inArray(schema.paymentRecords.residentId, residentIds),
         ];
 
-        if (filters?.status) {
-            paymentConditions.push(eq(schema.paymentRecords.status, filters.status));
-        }
-
-        // Get payment records
+        // Get ALL payment records (status filter will be applied later)
         const paymentRecords = await db
             .select({
                 id: schema.paymentRecords.id,
@@ -711,6 +710,7 @@ export class DatabaseStorage implements IStorage {
                         residentAvatar: firstResident.avatar,
                         unitNumber: unit.number,
                         buildingId: unit.buildingId,
+                        buildingName: unit.buildingName,
                     };
                 } else {
                     // Placeholder payment record (no payment record exists yet)

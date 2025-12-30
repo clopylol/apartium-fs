@@ -1,15 +1,17 @@
 import type { FC } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { ExpenseRecord, ExpenseCategory } from '@/types/payments';
+import type { ExpenseRecord, ExpenseCategory, ExpenseRecordLegacy } from '@/types/payments';
 import { ExpenseItem } from './ExpenseItem';
 
 interface ExpenseGroupProps {
     category: ExpenseCategory;
     expenses: ExpenseRecord[];
     onDelete: (id: string) => void;
+    onEdit?: (expense: ExpenseRecordLegacy) => void;
+    isPeriodPast?: boolean;
 }
 
-export const ExpenseGroup: FC<ExpenseGroupProps> = ({ category, expenses, onDelete }) => {
+export const ExpenseGroup: FC<ExpenseGroupProps> = ({ category, expenses, onDelete, onEdit, isPeriodPast = false }) => {
     const { t } = useTranslation();
     if (expenses.length === 0) return null;
 
@@ -52,6 +54,8 @@ export const ExpenseGroup: FC<ExpenseGroupProps> = ({ category, expenses, onDele
                         key={expense.id}
                         expense={expense}
                         onDelete={onDelete}
+                        onClick={() => onEdit?.(expense as ExpenseRecordLegacy)}
+                        isPeriodPast={isPeriodPast}
                     />
                 ))}
             </div>

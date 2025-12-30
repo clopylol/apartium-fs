@@ -3,7 +3,32 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { api } from '@/lib/api';
 import { showSuccess, showError } from '@/utils/toast';
+import { formatDateShort } from '@/utils/date';
 import type { ExpenseRecord, ExpenseRecordLegacy, ExpensesApiResponse, ExpenseFormData } from '@/types/payments';
+
+// Format expense date with time for display
+const formatExpenseDateTime = (dateString: string | null | undefined): string => {
+    if (!dateString) return '-';
+    
+    try {
+        // expenseDate is in YYYY-MM-DD format, we need to add time if available
+        // If it's a full ISO string with time, use it directly
+        const date = new Date(dateString);
+        const dateStr = date.toLocaleDateString('tr-TR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
+        const timeStr = date.toLocaleTimeString('tr-TR', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+        });
+        return `${dateStr} - ${timeStr}`;
+    } catch {
+        return formatDateShort(dateString);
+    }
+};
 
 // Transform DB data to legacy format for components
 const transformToLegacy = (expense: ExpenseRecord): ExpenseRecordLegacy => {
@@ -12,7 +37,7 @@ const transformToLegacy = (expense: ExpenseRecord): ExpenseRecordLegacy => {
         title: expense.title,
         category: expense.category,
         amount: typeof expense.amount === 'string' ? parseFloat(expense.amount) : expense.amount,
-        date: expense.expenseDate,
+        date: formatExpenseDateTime(expense.expenseDate),
         status: expense.status,
         description: expense.description || undefined,
         attachment: expense.attachmentUrl || undefined,
@@ -38,11 +63,21 @@ export const useExpenses = (
     month: string,
     year: string,
     page: number = 1,
-    limit: number = 1000,
-    filters?: { search?: string; category?: string; siteId?: string; buildingId?: string }
+    limit: number = 100, // Max limit allowed by backend (1-100)
+    filters?: { search?: string; category?: string; siteId?: string; buildingId?: string },
+    activeSiteId?: string,
+    activeBuildingId?: string
 ): UseExpensesReturn => {
     const { t } = useTranslation();
     const queryClient = useQueryClient();
+
+    // Normalize filter values for queryKey (undefined -> null for consistent caching)
+    const normalizedFilters = {
+        search: filters?.search || null,
+        category: filters?.category || null,
+        siteId: filters?.siteId || null,
+        buildingId: filters?.buildingId || null,
+    };
 
     // Fetch expenses with React Query using API client
     const {
@@ -51,18 +86,37 @@ export const useExpenses = (
         error,
         refetch,
     } = useQuery<ExpensesApiResponse>({
-        queryKey: ['expenses', month, year, page, limit, filters],
+        queryKey: ['expenses', month, year, page, limit, normalizedFilters.search, normalizedFilters.category, normalizedFilters.siteId, normalizedFilters.buildingId],
         queryFn: () => api.expenses.getByPeriod(month, parseInt(year), page, limit, filters),
-        staleTime: 30000, // 30 seconds
+        staleTime: 0, // Always refetch when queryKey changes
         enabled: !!(month && year), // Only fetch when month and year are provided
     });
 
     // Mutation: Create expense
     const createMutation = useMutation({
         mutationFn: (data: ExpenseFormData) => api.expenses.create(data),
-        onSuccess: () => {
+        onSuccess: (response: any) => {
             queryClient.invalidateQueries({ queryKey: ['expenses', month, year] });
-            showSuccess(t('payments.messages.expenseCreated') || 'Gider başarıyla oluşturuldu');
+            
+            // Response'dan expense bilgisini al (API'den dönen expense objesi)
+            const expense = response?.expense || response;
+            const title = expense?.title || '';
+            const amount = typeof expense?.amount === 'string' 
+                ? parseFloat(expense.amount) 
+                : expense?.amount || 0;
+            
+            // Detaylı toast mesajı
+            const formattedAmount = amount.toLocaleString('tr-TR', { 
+                minimumFractionDigits: 0, 
+                maximumFractionDigits: 0 
+            });
+            showSuccess(
+                t('payments.messages.expenseCreatedDetailed', { 
+                    title, 
+                    amount: formattedAmount 
+                }) || 
+                `"${title}" gideri (₺${formattedAmount}) başarıyla oluşturuldu`
+            );
         },
         onError: (error: Error) => {
             showError(error.message || t('payments.messages.expenseCreateFailed') || 'Gider oluşturulamadı');
@@ -98,21 +152,28 @@ export const useExpenses = (
     const expenses = data?.expenses.map(transformToLegacy) || [];
 
     // Legacy methods for compatibility
-    const addExpense = useCallback((newExpense: Partial<ExpenseRecordLegacy>) => {
-        // Transform legacy format to API format
+    const addExpense = useCallback((newExpense: Partial<ExpenseRecordLegacy> | Partial<ExpenseRecord>) => {
+        // Eğer ExpenseRecord formatındaysa (siteId ve buildingId varsa) direkt kullan
+        // Değilse ExpenseRecordLegacy formatındadır, activeSiteId ve activeBuildingId'yi kullan
         const expenseData: ExpenseFormData = {
             title: newExpense.title || '',
-            category: newExpense.category as any,
-            amount: Number(newExpense.amount),
-            expenseDate: newExpense.date || new Date().toISOString().split('T')[0],
-            status: newExpense.status as any,
-            description: newExpense.description,
+            category: (newExpense.category as any) || 'utilities',
+            amount: typeof newExpense.amount === 'string' ? parseFloat(newExpense.amount) : (newExpense.amount || 0),
+            expenseDate: (newExpense as any).expenseDate || (newExpense as any).date || new Date().toISOString().split('T')[0],
+            status: (newExpense.status as any) || 'pending',
+            description: (newExpense as any).description,
+            siteId: (newExpense as any).siteId !== undefined 
+                ? (newExpense as any).siteId 
+                : (activeBuildingId ? undefined : (activeSiteId || undefined)),
+            buildingId: (newExpense as any).buildingId !== undefined 
+                ? (newExpense as any).buildingId 
+                : (activeBuildingId || undefined),
             periodMonth: month,
             periodYear: parseInt(year),
         };
 
         createMutation.mutate(expenseData);
-    }, [month, year, createMutation, t]);
+    }, [month, year, createMutation, activeSiteId, activeBuildingId]);
 
     const updateExpense = useCallback((id: string, newExpense: Partial<ExpenseRecordLegacy>) => {
         // Transform legacy format to API format

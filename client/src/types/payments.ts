@@ -41,6 +41,8 @@ export interface ExpenseRecord {
     status: 'paid' | 'pending';
     description: string | null;
     attachmentUrl: string | null;
+    siteId: string | null;
+    buildingId: string | null;
     periodMonth: string;
     periodYear: number;
     createdAt: string;
@@ -98,6 +100,10 @@ export interface ExpensesApiResponse {
 export interface PaymentStatusUpdateData {
     status: 'paid' | 'unpaid';
     paymentDate?: string;
+    paymentInfo?: {
+        residentName: string;
+        amount: number;
+    };
 }
 
 export interface BulkAmountUpdateData {
@@ -113,6 +119,8 @@ export interface ExpenseFormData {
     expenseDate: string;
     status: 'paid' | 'pending';
     description?: string;
+    siteId?: string;
+    buildingId?: string;
     periodMonth: string;
     periodYear: number;
 }

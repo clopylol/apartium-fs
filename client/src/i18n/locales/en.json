@@ -358,10 +358,59 @@
           "description": "Description",
           "amount": "Amount (₺)",
           "status": "Status",
-          "attachment": "Invoice / Receipt Image"
+          "attachment": "Invoice / Receipt Image",
+          "notes": "Notes",
+          "date": "Date",
+          "time": "Time"
         },
         "placeholders": {
-          "description": "e.g.: Extra Repair"
+          "description": "e.g.: Extra Repair",
+          "notes": "Write your notes here..."
+        },
+        "hints": {
+          "amount": "e.g.: 1500, 2500, 5000"
+        },
+        "upload": {
+          "title": "Upload Image",
+          "formats": "JPG, PNG, PDF",
+          "change": "Change"
+        },
+        "status": {
+          "paid": "Paid",
+          "pending": "To Pay"
+        },
+        "buttons": {
+          "cancel": "Cancel",
+          "save": "Save"
+        }
+      },
+      "editExpense": {
+        "title": "Confirm Expense Edit",
+        "message": "Are you sure you want to make the following changes?",
+        "noChanges": "No changes made",
+        "buttons": {
+          "confirm": "Confirm",
+          "cancel": "Cancel"
+        }
+      },
+      "expenseDelete": {
+        "labels": {
+          "category": "Expense Category",
+          "title": "Expense Title / Sub Group",
+          "select": "Select",
+          "other": "Other...",
+          "description": "Description",
+          "amount": "Amount (₺)",
+          "status": "Status",
+          "attachment": "Invoice / Receipt Image",
+          "notes": "Notes"
+        },
+        "placeholders": {
+          "description": "e.g.: Extra Repair",
+          "notes": "Write your notes here..."
+        },
+        "hints": {
+          "amount": "e.g.: 1500, 2500, 5000"
         },
         "upload": {
           "title": "Upload Image",
@@ -398,7 +447,11 @@
       "duesUpdated": "Dues records updated for {{month}} {{year}} with amount {{amount}}₺.",
       "duesPlanSaved": "Dues planning for the next 12 months has been saved successfully.",
       "reportDownloading": "Downloading report...",
-      "deleteExpenseConfirm": "Are you sure you want to delete this expense record?"
+      "deleteExpenseConfirm": "Are you sure you want to delete this expense record?",
+      "expenseCreatedDetailed": "Expense \"{{title}}\" (₺{{amount}}) created successfully",
+      "statusUpdated": "Payment status updated",
+      "statusUpdatedDetailed": "Payment of ₺{{amount}} received for {{name}}",
+      "statusUpdateFailed": "Failed to update payment status"
     },
     "pagination": {
       "total": "Total",
