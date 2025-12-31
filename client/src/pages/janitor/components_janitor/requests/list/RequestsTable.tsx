@@ -14,6 +14,7 @@ import {
 import type { JanitorRequest, Janitor } from "@/types/janitor.types";
 import { RequestRowSkeleton } from "../../skeletons";
 import { IconButton } from "@/components/shared/button";
+import { formatDateTime, formatRelativeTime } from "@/utils/date";
 
 interface RequestsTableProps {
   requests: JanitorRequest[];
@@ -103,15 +104,15 @@ export const RequestsTable: FC<RequestsTableProps> = ({
                     </td>
                     <td className="px-6 py-4">
                       <div className="font-medium text-ds-primary-light dark:text-ds-primary-dark">
-                        {req.residentName}
+                        {req.resident?.name || req.residentName}
                       </div>
                       <div className="text-xs text-ds-muted-light dark:text-ds-muted-dark mt-0.5 flex items-center gap-1 opacity-70">
-                        <Phone className="w-3 h-3" /> {req.phone}
+                        <Phone className="w-3 h-3" /> {req.resident?.phone || req.phone || "-"}
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <span className="bg-ds-background-light dark:bg-ds-background-dark text-ds-secondary-light dark:text-ds-secondary-dark px-2 py-1 rounded border border-ds-border-light dark:border-ds-border-dark text-xs font-mono">
-                        {req.blockId} - {req.unit}
+                        {req.unit?.building?.name || req.blockId || "?"} - {req.unit?.number || req.unitLegacy || "?"}
                       </span>
                     </td>
                     <td className="px-6 py-4">
@@ -126,9 +127,14 @@ export const RequestsTable: FC<RequestsTableProps> = ({
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-ds-in-warning-500/10 text-ds-in-warning-400 border border-ds-in-warning-500/20 text-[10px] font-bold uppercase tracking-wide animate-pulse">
                               {t("janitor.requests.status.pending")}
                             </span>
-                            <span className="text-ds-muted-light dark:text-ds-muted-dark text-xs flex items-center gap-1">
-                              <Clock className="w-3 h-3" /> {req.openedAt}
-                            </span>
+                            <div className="flex flex-col gap-0.5 ml-1">
+                              <span className="text-ds-primary-light dark:text-ds-primary-dark font-semibold text-xs leading-none">
+                                {formatRelativeTime(req.openedAt)}
+                              </span>
+                              <span className="text-[10px] text-ds-muted-light dark:text-ds-muted-dark opacity-60 font-mono">
+                                {formatDateTime(req.openedAt)}
+                              </span>
+                            </div>
                           </div>
                         ) : (
                           <div className="flex flex-col gap-1">
@@ -148,9 +154,14 @@ export const RequestsTable: FC<RequestsTableProps> = ({
                               </div>
                             )}
                             {req.completedAt && (
-                              <span className="text-[10px] text-ds-in-success-400/50 font-mono">
-                                {req.completedAt}
-                              </span>
+                              <div className="flex flex-col gap-0.5 mt-1 border-l border-ds-in-success-500/20 pl-2">
+                                <span className="text-[10px] text-ds-in-success-400 font-medium">
+                                  {formatRelativeTime(req.completedAt)}
+                                </span>
+                                <span className="text-[9px] text-ds-in-success-400/40 font-mono">
+                                  {formatDateTime(req.completedAt)}
+                                </span>
+                              </div>
                             )}
                           </div>
                         )}

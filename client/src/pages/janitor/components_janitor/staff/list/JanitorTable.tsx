@@ -39,6 +39,12 @@ export const JanitorTable: FC<JanitorTableProps> = ({
     }
   };
 
+  const getInitials = (name: string) => {
+    const parts = name.trim().split(" ");
+    if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+    return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+  };
+
   return (
     <div className="bg-ds-card-light dark:bg-ds-card-dark border border-ds-border-light dark:border-ds-border-dark rounded-2xl overflow-hidden shadow-xl">
       <div className="overflow-x-auto">
@@ -68,11 +74,9 @@ export const JanitorTable: FC<JanitorTableProps> = ({
                 >
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <img
-                        src={janitor.avatar}
-                        alt={janitor.name}
-                        className="w-10 h-10 rounded-full object-cover border border-ds-border-light dark:border-ds-border-dark"
-                      />
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center bg-ds-accent-light dark:bg-ds-accent-dark text-ds-primary-light dark:text-ds-primary-dark font-bold text-sm border border-ds-border-light dark:border-ds-border-dark">
+                        {getInitials(janitor.name)}
+                      </div>
                       <span className="font-medium text-ds-primary-light dark:text-ds-primary-dark">
                         {janitor.name}
                       </span>

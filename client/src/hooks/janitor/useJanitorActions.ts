@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import type { Janitor, JanitorRequest } from "@/types/janitor.types";
-import type { StaffFormData } from "./useJanitorModals";
+import type { StaffFormData, RequestFormData } from "./useJanitorModals";
 import { useJanitorMutations } from "./useJanitorMutations";
 
 import type { ConfirmationVariant } from "@/components/shared/modals";
@@ -20,6 +20,7 @@ export interface UseJanitorActionsProps {
     }>
   >;
   closeAddModal: () => void;
+  closeRequestModal: () => void;
   closeConfirmModal: () => void;
 }
 
@@ -29,6 +30,7 @@ export interface UseJanitorActionsReturn {
   handleSaveClick: (formData: StaffFormData) => void;
   handleDeleteClick: (id: string, name: string) => void;
   handleCompleteRequest: (id: string, request?: JanitorRequest | null) => void;
+  handleSaveRequest: (data: RequestFormData) => void;
 }
 
 export function useJanitorActions({
@@ -38,6 +40,7 @@ export function useJanitorActions({
   setSelectedRequest,
   setConfirmModal,
   closeAddModal,
+  closeRequestModal,
   closeConfirmModal,
 }: UseJanitorActionsProps): UseJanitorActionsReturn {
   const { t } = useTranslation();
@@ -120,6 +123,10 @@ export function useJanitorActions({
       }
     );
   };
+  const handleSaveRequest = (data: RequestFormData) => {
+    mutations.createRequest.mutate(data);
+    closeRequestModal();
+  };
 
   return {
     getJanitor,
@@ -127,6 +134,7 @@ export function useJanitorActions({
     handleSaveClick,
     handleDeleteClick,
     handleCompleteRequest,
+    handleSaveRequest,
   };
 }
 

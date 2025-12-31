@@ -35,6 +35,12 @@ export const JanitorCard: FC<JanitorCardProps> = ({ janitor, onEdit, onDelete })
     }
   };
 
+  const getInitials = (name: string) => {
+    const parts = name.trim().split(" ");
+    if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+    return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+  };
+
   return (
     <div className="bg-ds-card-light dark:bg-ds-card-dark border border-ds-border-light dark:border-ds-border-dark rounded-2xl p-6 relative group hover:border-ds-muted-light dark:hover:border-ds-muted-dark transition-all">
       <div className="absolute top-4 right-4 flex gap-1">
@@ -54,11 +60,9 @@ export const JanitorCard: FC<JanitorCardProps> = ({ janitor, onEdit, onDelete })
       </div>
 
       <div className="flex items-start gap-4 mb-6">
-        <img
-          src={janitor.avatar}
-          alt={janitor.name}
-          className="w-16 h-16 rounded-full object-cover border-2 border-ds-border-light dark:border-ds-border-dark"
-        />
+        <div className="w-16 h-16 rounded-full flex items-center justify-center bg-ds-accent-light dark:bg-ds-accent-dark text-ds-primary-light dark:text-ds-primary-dark font-bold text-xl border-2 border-ds-border-light dark:border-ds-border-dark">
+          {getInitials(janitor.name)}
+        </div>
         <div>
           <h3 className="text-lg font-bold text-ds-primary-light dark:text-ds-primary-dark">
             {janitor.name}

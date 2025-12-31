@@ -10,15 +10,34 @@ export type Janitor = {
 
 export type JanitorRequest = {
   id: string;
+  // Legacy fields (will be deprecated)
   residentName: string;
-  phone: string;
-  unit: string;
+  phone: string; // This was on root but backend sends residentPhone now or nested
+  unitLegacy?: string; // Renamed from unit to avoid conflict
   blockId: string;
+
+  // New nested relation fields
+  resident: {
+    id: string;
+    name: string;
+    phone: string;
+  } | null;
+  unit: {
+    id: string;
+    number: string;
+    building: {
+      id: string;
+      name: string;
+    } | null;
+  } | null;
+
   type: "trash" | "market" | "cleaning" | "bread" | "other";
   status: "pending" | "completed";
-  openedAt: string;
+  openedAt: string; // keeping openedAt, mapped from createdAt maybe? check backend mapping if needed, usually createdAt
+  createdAt: string; // Backend likely returns createdAt
   completedAt?: string;
   assignedJanitorId?: string;
+  assignedJanitorName?: string;
   note?: string;
 };
 

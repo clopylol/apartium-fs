@@ -9,7 +9,7 @@
  */
 export function formatDate(date: string | Date | null | undefined): string {
     if (!date) return '-';
-    
+
     try {
         const dateObj = typeof date === 'string' ? new Date(date) : date;
         return dateObj.toLocaleDateString('tr-TR', {
@@ -29,7 +29,7 @@ export function formatDate(date: string | Date | null | undefined): string {
  */
 export function formatDateShort(date: string | Date | null | undefined): string {
     if (!date) return '-';
-    
+
     try {
         const dateObj = typeof date === 'string' ? new Date(date) : date;
         return dateObj.toLocaleDateString('tr-TR');
@@ -45,7 +45,7 @@ export function formatDateShort(date: string | Date | null | undefined): string 
  */
 export function formatDateForInput(date: string | Date | null | undefined): string {
     if (!date) return new Date().toISOString().split('T')[0];
-    
+
     try {
         const dateObj = typeof date === 'string' ? new Date(date) : date;
         return dateObj.toISOString().split('T')[0];
@@ -61,7 +61,7 @@ export function formatDateForInput(date: string | Date | null | undefined): stri
  */
 export function formatRelativeTime(date: string | Date | null | undefined): string {
     if (!date) return '-';
-    
+
     try {
         const dateObj = typeof date === 'string' ? new Date(date) : date;
         const now = new Date();
@@ -70,12 +70,12 @@ export function formatRelativeTime(date: string | Date | null | undefined): stri
         const diffMins = Math.floor(diffSecs / 60);
         const diffHours = Math.floor(diffMins / 60);
         const diffDays = Math.floor(diffHours / 24);
-        
+
         if (diffSecs < 60) return 'Az önce';
         if (diffMins < 60) return `${diffMins} dakika önce`;
         if (diffHours < 24) return `${diffHours} saat önce`;
         if (diffDays < 7) return `${diffDays} gün önce`;
-        
+
         return formatDateShort(dateObj);
     } catch {
         return '-';
@@ -91,7 +91,7 @@ export function formatRelativeTime(date: string | Date | null | undefined): stri
  */
 export function formatGuestVisitTime(date: Date | null | undefined): string {
     if (!date) return '';
-    
+
     return new Intl.DateTimeFormat('tr-TR', {
         hour: '2-digit',
         minute: '2-digit',
@@ -113,7 +113,7 @@ export function formatGuestVisitDate(dateString: string): string {
  * @param visit - Guest visit object
  * @returns Status label with time info
  */
-export function getGuestVisitStatusLabel(visit: { 
+export function getGuestVisitStatusLabel(visit: {
     status: 'pending' | 'active' | 'completed';
     entryTime?: Date | null;
     exitTime?: Date | null;
@@ -122,7 +122,7 @@ export function getGuestVisitStatusLabel(visit: {
         case 'pending':
             return 'Bekleniyor';
         case 'active':
-            return visit.entryTime 
+            return visit.entryTime
                 ? `İçeride (${formatGuestVisitTime(visit.entryTime)})`
                 : 'İçeride';
         case 'completed':
@@ -141,28 +141,63 @@ export function getGuestVisitStatusLabel(visit: {
  */
 export function parseDisplayDateToISO(displayDate: string): string {
     if (!displayDate || displayDate === '-') return '';
-    
+
     try {
         // Handle "DD.MM.YYYY - HH:mm" format
         const parts = displayDate.split(' - ');
         const datePart = parts[0]; // "DD.MM.YYYY"
         const timePart = parts[1] || '00:00'; // "HH:mm" or default
-        
+
         const [day, month, year] = datePart.split('.');
         const [hours, minutes] = timePart.split(':');
-        
+
         if (!day || !month || !year) return '';
-        
+
         // Validate time parts
         const hoursNum = hours ? parseInt(hours, 10) : 0;
         const minutesNum = minutes ? parseInt(minutes, 10) : 0;
-        
+
         if (isNaN(hoursNum) || hoursNum < 0 || hoursNum > 23) return '';
         if (isNaN(minutesNum) || minutesNum < 0 || minutesNum > 59) return '';
-        
+
         // Create ISO string: YYYY-MM-DDTHH:mm:ss
         return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${String(hoursNum).padStart(2, '0')}:${String(minutesNum).padStart(2, '0')}:00`;
     } catch {
         return '';
+    }
+}
+
+/**
+ * Format ISO date string to date and time with "Today/Yesterday" support
+ * @param date - ISO date string or Date object
+ * @returns Formatted date and time (e.g., "Bugün, 23:52" or "30.12.2025 • 23:52")
+ */
+export function formatDateTime(date: string | Date | null | undefined): string {
+    if (!date) return '-';
+
+    try {
+        const dateObj = typeof date === 'string' ? new Date(date) : date;
+        const now = new Date();
+
+        const time = dateObj.toLocaleTimeString('tr-TR', {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+
+        const isToday = dateObj.toDateString() === now.toDateString();
+        const yesterday = new Date(now);
+        yesterday.setDate(now.getDate() - 1);
+        const isYesterday = dateObj.toDateString() === yesterday.toDateString();
+
+        if (isToday) return `Bugün, ${time}`;
+        if (isYesterday) return `Dün, ${time}`;
+
+        const day = String(dateObj.getDate()).padStart(2, '0');
+        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const year = dateObj.getFullYear();
+
+        return `${day}.${month}.${year} • ${time}`;
+    } catch {
+        return '-';
     }
 }

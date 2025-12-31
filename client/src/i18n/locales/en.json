@@ -58,7 +58,20 @@
     "chart": {
       "title": "Annual Income Analysis",
       "description": "Monthly dues and rental income",
-      "months": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+      "months": [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec"
+      ]
     },
     "lists": {
       "recentPayments": "Recent Payments",
@@ -1033,6 +1046,7 @@
     "staff": {
       "title": "Staff List",
       "addButton": "Add Staff",
+      "allBlocks": "All Blocks",
       "status": {
         "onDuty": "On Duty",
         "offDuty": "Off Duty",
@@ -1085,6 +1099,8 @@
       }
     },
     "requests": {
+      "title": "Service Requests",
+      "addButton": "Add Request",
       "filters": {
         "all": "All",
         "trash": "Trash",
@@ -1126,8 +1142,24 @@
         "note": "Note"
       },
       "modals": {
+        "add": {
+          "title": "Create New Request"
+        },
         "detail": {
           "title": "Request Details"
+        },
+        "labels": {
+          "building": "Building",
+          "unit": "Unit",
+          "resident": "Resident",
+          "type": "Request Type",
+          "note": "Description / Note"
+        },
+        "placeholders": {
+          "selectBuilding": "Select Building",
+          "selectUnit": "Select Unit",
+          "selectResident": "Select Resident",
+          "note": "You can write request details here..."
         },
         "actions": {
           "complete": "Complete",
@@ -1390,4 +1422,3 @@
     }
   }
 }
-

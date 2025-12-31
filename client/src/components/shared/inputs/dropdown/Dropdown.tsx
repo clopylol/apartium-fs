@@ -11,6 +11,7 @@ interface DropdownProps {
     icon?: ElementType;
     placeholder?: string;
     className?: string;
+    disabled?: boolean;
 }
 
 export const Dropdown: FC<DropdownProps> = ({
@@ -19,7 +20,8 @@ export const Dropdown: FC<DropdownProps> = ({
     onChange,
     icon: Icon,
     placeholder,
-    className = ""
+    className = "",
+    disabled = false
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -48,10 +50,13 @@ export const Dropdown: FC<DropdownProps> = ({
     return (
         <div className={`relative ${className}`} ref={dropdownRef}>
             <button
-                onClick={() => setIsOpen(!isOpen)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all duration-200 min-w-[140px] justify-between w-full ${isOpen
-                    ? 'bg-ds-muted-light dark:bg-ds-muted-dark border-ds-in-indigo-500 dark:border-ds-in-indigo-400 text-ds-primary-light dark:text-ds-secondary-dark shadow-lg shadow-ds-in-indigo-500/20 dark:shadow-ds-in-indigo-900/20'
-                    : 'bg-ds-card-light dark:bg-ds-card-dark border-ds-border-light dark:border-ds-border-dark text-ds-primary-light dark:text-ds-secondary-dark hover:border-ds-muted-light dark:hover:border-ds-muted-light hover:bg-ds-muted-light/50 dark:hover:bg-ds-muted-dark'
+                onClick={() => !disabled && setIsOpen(!isOpen)}
+                disabled={disabled}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all duration-200 min-w-[140px] justify-between w-full ${disabled
+                    ? 'bg-ds-muted-light/20 dark:bg-ds-muted-dark/20 border-ds-border-light/50 dark:border-ds-border-dark/50 text-ds-muted-light/50 dark:text-ds-muted-dark/50 cursor-not-allowed opacity-60'
+                    : isOpen
+                        ? 'bg-ds-muted-light dark:bg-ds-muted-dark border-ds-in-indigo-500 dark:border-ds-in-indigo-400 text-ds-primary-light dark:text-ds-secondary-dark shadow-lg shadow-ds-in-indigo-500/20 dark:shadow-ds-in-indigo-900/20'
+                        : 'bg-ds-card-light dark:bg-ds-card-dark border-ds-border-light dark:border-ds-border-dark text-ds-primary-light dark:text-ds-secondary-dark hover:border-ds-muted-light dark:hover:border-ds-muted-light hover:bg-ds-muted-light/50 dark:hover:bg-ds-muted-dark'
                     }`}
             >
                 <div className="flex items-center gap-2">

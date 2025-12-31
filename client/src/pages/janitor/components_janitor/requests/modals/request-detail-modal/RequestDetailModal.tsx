@@ -5,6 +5,8 @@ import type { JanitorRequest, Janitor } from "@/types/janitor.types";
 import { Button, IconButton } from "@/components/shared/button";
 import { InfoBanner } from "@/components/shared/info-banner";
 
+import { formatDateTime, formatRelativeTime } from "@/utils/date";
+
 interface RequestDetailModalProps {
   isOpen: boolean;
   request: JanitorRequest | null;
@@ -87,9 +89,14 @@ export const RequestDetailModal: FC<RequestDetailModalProps> = ({
               <p className="text-xs text-ds-muted-light dark:text-ds-muted-dark font-medium uppercase mb-1">
                 {t("janitor.requests.labels.requestTime")}
               </p>
-              <p className="text-ds-primary-light dark:text-ds-primary-dark font-mono text-sm">
-                {request.openedAt}
-              </p>
+              <div className="flex flex-col items-end">
+                <p className="text-ds-primary-light dark:text-ds-primary-dark font-bold text-sm">
+                  {formatRelativeTime(request.openedAt)}
+                </p>
+                <p className="text-ds-muted-light dark:text-ds-muted-dark text-[10px] font-mono opacity-60 mt-0.5">
+                  {formatDateTime(request.openedAt)}
+                </p>
+              </div>
             </div>
           </div>
 
@@ -99,13 +106,13 @@ export const RequestDetailModal: FC<RequestDetailModalProps> = ({
             </div>
             <div>
               <h3 className="text-ds-primary-light dark:text-ds-primary-dark font-bold text-base">
-                {request.residentName}
+                {request.resident?.name || request.residentName || "Bilinmeyen Sakin"}
               </h3>
               <p className="text-ds-secondary-light dark:text-ds-secondary-dark text-sm font-mono">
-                {request.blockId} - {request.unit}
+                {request.unit?.building?.name || request.blockId || "?"} - {request.unit?.number || request.unitLegacy || "?"}
               </p>
               <p className="text-ds-muted-light dark:text-ds-muted-dark text-xs mt-1 flex items-center gap-1">
-                <Phone className="w-3 h-3" /> {request.phone}
+                <Phone className="w-3 h-3" /> {request.resident?.phone || request.phone || "-"}
               </p>
             </div>
           </div>
@@ -125,7 +132,10 @@ export const RequestDetailModal: FC<RequestDetailModalProps> = ({
                 <p className="text-xs font-bold text-ds-in-success-500 uppercase mb-1">
                   {t("janitor.requests.labels.completedAt")}
                 </p>
-                <p className="text-sm text-ds-in-success-100 font-mono">{request.completedAt}</p>
+                <div className="flex flex-col items-start gap-0.5">
+                  <p className="text-sm text-ds-in-success-100 font-bold">{formatRelativeTime(request.completedAt)}</p>
+                  <p className="text-[10px] text-ds-in-success-400/50 font-mono">{formatDateTime(request.completedAt)}</p>
+                </div>
               </div>
               {assignedJanitor && (
                 <div className="text-right">

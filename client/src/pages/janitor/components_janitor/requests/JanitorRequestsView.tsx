@@ -7,6 +7,8 @@ import { RequestsTable } from "./list";
 import { RequestCardSkeleton } from "../skeletons";
 import { Pagination } from "@/components/shared/pagination";
 import { ITEMS_PER_PAGE } from "@/constants/janitor";
+import { Button } from "@/components/shared/button";
+import { SquarePlus } from "lucide-react";
 
 interface JanitorRequestsViewProps {
   requests: JanitorRequest[];
@@ -23,6 +25,7 @@ interface JanitorRequestsViewProps {
   totalItems: number;
   currentPage: number;
   onPageChange: (page: number) => void;
+  onAddRequest: () => void;
 }
 
 export const JanitorRequestsView: FC<JanitorRequestsViewProps> = ({
@@ -40,11 +43,25 @@ export const JanitorRequestsView: FC<JanitorRequestsViewProps> = ({
   totalItems,
   currentPage,
   onPageChange,
+  onAddRequest,
 }) => {
   const { t } = useTranslation();
 
   return (
     <div className="space-y-6">
+      <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+        <h2 className="text-lg font-bold text-ds-primary-light dark:text-ds-primary-dark">
+          {t("janitor.requests.title")}
+        </h2>
+        <Button
+          onClick={onAddRequest}
+          leftIcon={<SquarePlus className="w-4 h-4" />}
+          className="bg-ds-in-sky-600 hover:bg-ds-in-sky-500 shadow-lg shadow-ds-in-sky-900/20"
+        >
+          {t("janitor.requests.addButton")}
+        </Button>
+      </div>
+
       <RequestFilters
         typeFilter={typeFilter}
         onTypeFilterChange={onTypeFilterChange}

@@ -58,7 +58,20 @@
     "chart": {
       "title": "Yıllık Gelir Analizi",
       "description": "Aylık aidat ve kira gelirleri",
-      "months": ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"]
+      "months": [
+        "Oca",
+        "Şub",
+        "Mar",
+        "Nis",
+        "May",
+        "Haz",
+        "Tem",
+        "Ağu",
+        "Eyl",
+        "Eki",
+        "Kas",
+        "Ara"
+      ]
     },
     "lists": {
       "recentPayments": "Son Ödemeler",
@@ -433,40 +446,7 @@
         "allocationCount": "{{count}} daireye dağıtıldı",
         "unknownUnit": "Bilinmeyen Daire"
       },
-      "expenseDelete": {
-        "labels": {
-          "category": "Gider Kategorisi",
-          "title": "Gider Başlığı / Alt Grup",
-          "select": "Seçiniz",
-          "other": "Diğer...",
-          "description": "Açıklama",
-          "amount": "Tutar (₺)",
-          "status": "Durum",
-          "attachment": "Fatura / Fiş Görseli",
-          "notes": "Notlar"
-        },
-        "placeholders": {
-          "description": "Örn: Ekstra Tamirat",
-          "notes": "Notlarınızı buraya yazabilirsiniz..."
-        },
-        "hints": {
-          "amount": "Örn: 1500, 2500, 5000"
-        },
-        "upload": {
-          "title": "Görsel Yükle",
-          "formats": "JPG, PNG, PDF",
-          "change": "Değiştir"
-        },
-        "status": {
-          "paid": "Ödendi",
-          "pending": "Ödenecek"
-        },
-        "buttons": {
-          "cancel": "İptal",
-          "save": "Kaydet"
-        }
-      },
-      "expenseDelete": {
+      "deleteExpense": {
         "title": "Gider Silme Onayı",
         "message": "Bu gider kaydını silmek istediğinize emin misiniz?",
         "buttons": {
@@ -515,20 +495,6 @@
     "errorState": {
       "title": "Veri Yüklenemedi",
       "retryButton": "Tekrar Dene"
-    },
-    "expenses": {
-      "total": "Top:",
-      "noExpenses": "Bu dönem için kayıtlı gider bulunmuyor.",
-      "addButton": "Yeni Gider Ekle",
-      "status": {
-        "paid": "Ödendi",
-        "pending": "Bekliyor"
-      },
-      "emptyState": {
-        "title": "Henüz Gider Kaydı Yok",
-        "description": "Bu dönem için henüz gider kaydı bulunmuyor. Yeni gider ekleyerek başlayabilirsiniz.",
-        "addButton": "İlk Gideri Ekle"
-      }
     }
   },
   "residents": {
@@ -552,6 +518,22 @@
         "contact": "İletişim",
         "vehicles": "Araç / Park",
         "actions": "İşlemler"
+      },
+      "columnsUppercase": {
+        "unit": "DAİRE",
+        "status": "DURUM",
+        "residents": "SAKİNLER",
+        "contact": "İLETİŞİM",
+        "vehicles": "ARAÇ / PARK",
+        "actions": "İŞLEMLER"
+      },
+      "statusUppercase": {
+        "occupied": "DOLU",
+        "empty": "BOŞ"
+      },
+      "typeUppercase": {
+        "owner": "EV SAHİBİ",
+        "tenant": "KİRACI"
       },
       "noRecords": "Kayıt bulunamadı."
     },
@@ -736,25 +718,6 @@
         "editButton": "Düzenle",
         "tab": "Sekme"
       }
-    },
-    "table": {
-      "columnsUppercase": {
-        "unit": "DAİRE",
-        "status": "DURUM",
-        "residents": "SAKİNLER",
-        "contact": "İLETİŞİM",
-        "vehicles": "ARAÇ / PARK",
-        "actions": "İŞLEMLER"
-      },
-      "statusUppercase": {
-        "occupied": "DOLU",
-        "empty": "BOŞ"
-      },
-      "typeUppercase": {
-        "owner": "EV SAHİBİ",
-        "tenant": "KİRACI"
-      },
-      "noRecords": "Kayıt bulunamadı."
     },
     "parking": {
       "floorManagement": {
@@ -1032,6 +995,7 @@
     "staff": {
       "title": "Görevli Listesi",
       "addButton": "Personel Ekle",
+      "allBlocks": "Tüm Bloklar",
       "status": {
         "onDuty": "Mesaide",
         "offDuty": "İzinli",
@@ -1084,6 +1048,8 @@
       }
     },
     "requests": {
+      "title": "Hizmet Talepleri",
+      "addButton": "Talep Ekle",
       "filters": {
         "all": "Tümü",
         "trash": "Çöp",
@@ -1125,8 +1091,24 @@
         "note": "Not"
       },
       "modals": {
+        "add": {
+          "title": "Yeni Talep Oluştur"
+        },
         "detail": {
           "title": "Talep Detayları"
+        },
+        "labels": {
+          "building": "Bina",
+          "unit": "Daire",
+          "resident": "Sakin",
+          "type": "Talep Tipi",
+          "note": "Açıklama / Not"
+        },
+        "placeholders": {
+          "selectBuilding": "Bina Seçiniz",
+          "selectUnit": "Daire Seçiniz",
+          "selectResident": "Sakin Seçiniz",
+          "note": "Talep detaylarını buraya yazabilirsiniz..."
         },
         "actions": {
           "complete": "Tamamla",
@@ -1389,4 +1371,3 @@
     }
   }
 }
-

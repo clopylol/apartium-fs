@@ -2172,11 +2172,25 @@ export class DatabaseStorage implements IStorage {
         return {
             requests: results.map(row => ({
                 ...row.request,
+                resident: row.residentName ? {
+                    id: row.request.residentId,
+                    name: row.residentName,
+                    phone: row.residentPhone || '',
+                } : null,
+                unit: row.unitNumber ? {
+                    id: row.request.unitId,
+                    number: row.unitNumber,
+                    building: row.buildingName ? {
+                        id: row.request.buildingId,
+                        name: row.buildingName,
+                    } : null
+                } : null,
+                assignedJanitorName: row.assignedJanitorName,
+                // Keep flat fields for backward compatibility if needed, or remove them
                 residentName: row.residentName || 'Bilinmeyen',
                 residentPhone: row.residentPhone || '',
                 unitNumber: row.unitNumber || '',
                 buildingName: row.buildingName || '',
-                assignedJanitorName: row.assignedJanitorName,
             })),
             total: countResult.count
         };

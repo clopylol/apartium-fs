@@ -13,7 +13,7 @@ import {
   JanitorRequestsView,
 } from "./components_janitor";
 import { StaffFormModal } from "./components_janitor/staff/modals";
-import { RequestDetailModal } from "./components_janitor/requests/modals";
+import { RequestDetailModal, AddRequestModal } from "./components_janitor/requests/modals";
 import { ConfirmationModal } from "@/components/shared/modals";
 import { useTranslation } from "react-i18next";
 
@@ -30,6 +30,7 @@ export const JanitorPage: FC = () => {
     setSelectedRequest: modals.setSelectedRequest,
     setConfirmModal: modals.setConfirmModal,
     closeAddModal: modals.closeAddModal,
+    closeRequestModal: modals.closeRequestModal,
     closeConfirmModal: modals.closeConfirmModal,
   });
 
@@ -108,6 +109,7 @@ export const JanitorPage: FC = () => {
               totalItems={state.filteredRequests.length}
               currentPage={state.requestPage}
               onPageChange={state.setRequestPage}
+              onAddRequest={modals.openRequestModal}
             />
           )}
         </div>
@@ -129,6 +131,14 @@ export const JanitorPage: FC = () => {
         assignedJanitor={actions.getJanitor(modals.selectedRequest?.assignedJanitorId)}
         onClose={() => modals.setSelectedRequest(null)}
         onComplete={handleCompleteRequest}
+      />
+      <AddRequestModal
+        isOpen={modals.showRequestModal}
+        onClose={modals.closeRequestModal}
+        onSave={actions.handleSaveRequest}
+        formData={modals.requestFormData}
+        onChange={modals.setRequestFormData}
+        buildings={state.buildings}
       />
 
       <ConfirmationModal

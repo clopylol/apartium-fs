@@ -56,7 +56,7 @@ export const JanitorStaffView: FC<JanitorStaffViewProps> = ({
           <Dropdown
             icon={Filter}
             options={[
-              { value: "all", label: "All Blocks" },
+              { value: "all", label: t("janitor.staff.allBlocks") },
               ...buildings.map((building) => ({
                 value: building.id,
                 label: building.name,

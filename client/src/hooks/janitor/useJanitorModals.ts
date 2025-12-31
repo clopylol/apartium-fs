@@ -11,6 +11,15 @@ export interface StaffFormData {
   status: "on-duty" | "off-duty" | "passive";
 }
 
+export interface RequestFormData {
+  residentId: string;
+  unitId: string;
+  buildingId: string;
+  type: "trash" | "market" | "cleaning" | "bread" | "other";
+  note: string;
+  assignedJanitorId?: string;
+}
+
 export interface UseJanitorModalsReturn {
   showAddModal: boolean;
   setShowAddModal: (show: boolean) => void;
@@ -54,6 +63,13 @@ export interface UseJanitorModalsReturn {
   openEditModal: (janitor: Janitor) => void;
   closeAddModal: () => void;
   closeConfirmModal: () => void;
+  // Request Modal
+  showRequestModal: boolean;
+  setShowRequestModal: (show: boolean) => void;
+  requestFormData: RequestFormData;
+  setRequestFormData: React.Dispatch<React.SetStateAction<RequestFormData>>;
+  openRequestModal: () => void;
+  closeRequestModal: () => void;
 }
 
 export function useJanitorModals(): UseJanitorModalsReturn {
@@ -88,6 +104,16 @@ export function useJanitorModals(): UseJanitorModalsReturn {
     isOpen: false,
     requestId: null,
     requestName: "",
+  });
+
+  // Request State
+  const [showRequestModal, setShowRequestModal] = useState(false);
+  const [requestFormData, setRequestFormData] = useState<RequestFormData>({
+    residentId: "",
+    unitId: "",
+    buildingId: "",
+    type: "trash",
+    note: "",
   });
 
   const openAddModal = () => {
@@ -141,6 +167,21 @@ export function useJanitorModals(): UseJanitorModalsReturn {
     });
   };
 
+  const openRequestModal = () => {
+    setRequestFormData({
+      residentId: "",
+      unitId: "",
+      buildingId: "",
+      type: "trash",
+      note: "",
+    });
+    setShowRequestModal(true);
+  };
+
+  const closeRequestModal = () => {
+    setShowRequestModal(false);
+  };
+
   return {
     showAddModal,
     setShowAddModal,
@@ -160,6 +201,11 @@ export function useJanitorModals(): UseJanitorModalsReturn {
     closeConfirmModal,
     openCompleteRequestConfirm,
     closeCompleteRequestConfirm,
+    showRequestModal,
+    setShowRequestModal,
+    requestFormData,
+    setRequestFormData,
+    openRequestModal,
+    closeRequestModal,
   };
 }
-

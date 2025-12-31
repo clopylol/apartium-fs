@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Trash2, ShoppingBag, Coffee, Sparkles, Bell, Phone, Clock, CheckCircle, MoreVertical } from "lucide-react";
 import type { JanitorRequest, Janitor } from "@/types/janitor.types";
 import { Button, IconButton } from "@/components/shared/button";
+import { formatDateTime, formatRelativeTime } from "@/utils/date";
 
 interface RequestCardProps {
   request: JanitorRequest;
@@ -93,15 +94,15 @@ export const RequestCard: FC<RequestCardProps> = ({
         </h3>
         <div className="flex items-center gap-2 text-sm text-ds-secondary-light dark:text-ds-secondary-dark">
           <span className="font-medium text-ds-primary-light dark:text-ds-primary-dark">
-            {request.residentName}
+            {request.resident?.name || request.residentName || "Bilinmeyen Sakin"}
           </span>
           <span className="w-1 h-1 rounded-full bg-ds-muted-light dark:bg-ds-muted-dark"></span>
           <span className="bg-ds-background-light dark:bg-ds-background-dark px-1.5 rounded border border-ds-border-light dark:border-ds-border-dark text-xs font-mono">
-            {request.blockId} - {request.unit}
+            {request.unit?.building?.name || request.blockId || "?"} - {request.unit?.number || request.unitLegacy || "?"}
           </span>
         </div>
         <div className="text-xs text-ds-muted-light dark:text-ds-muted-dark mt-1 flex items-center gap-1">
-          <Phone className="w-3 h-3" /> {request.phone}
+          <Phone className="w-3 h-3" /> {request.resident?.phone || request.phone || "-"}
         </div>
       </div>
 
@@ -109,14 +110,19 @@ export const RequestCard: FC<RequestCardProps> = ({
         <div className="flex flex-col gap-1.5 text-xs">
           <div className="flex items-center gap-1.5 text-ds-secondary-light dark:text-ds-secondary-dark">
             <Clock className="w-3 h-3" />{" "}
-            <span className="text-ds-primary-light dark:text-ds-primary-dark font-mono">
-              {request.openedAt}
-            </span>
+            <div className="flex flex-col">
+              <span className="text-ds-primary-light dark:text-ds-primary-dark font-bold leading-none">
+                {formatRelativeTime(request.openedAt)}
+              </span>
+              <span className="text-[10px] text-ds-muted-light dark:text-ds-muted-dark opacity-60 mt-0.5">
+                {formatDateTime(request.openedAt)}
+              </span>
+            </div>
           </div>
           {request.status === "completed" && request.completedAt && (
-            <div className="text-[9px] text-ds-in-success-400/70 leading-tight pl-4.5">
-              {request.completedAt}
-            </div>
+            <span className="text-[9px] text-ds-in-success-400/40 leading-tight pl-4.5 font-mono">
+              {formatDateTime(request.completedAt)}
+            </span>
           )}
         </div>
 
