@@ -7,9 +7,11 @@ import {
   Sparkles,
   Bell,
   Phone,
-  Clock,
   CheckCircle,
   MoreVertical,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import type { JanitorRequest, Janitor } from "@/types/janitor.types";
 import { RequestRowSkeleton } from "../../skeletons";
@@ -22,6 +24,9 @@ interface RequestsTableProps {
   getJanitor: (id?: string) => Janitor | undefined;
   onSelect: (request: JanitorRequest) => void;
   onCompleteRequest: (request: JanitorRequest) => void;
+  sortField: string | null;
+  sortDirection: "asc" | "desc";
+  onSort: (field: string) => void;
 }
 
 const getRequestIcon = (type: string) => {
@@ -54,12 +59,28 @@ const getRequestIconColors = (type: string) => {
   }
 };
 
+const getPriorityColors = (priority: string) => {
+  switch (priority) {
+    case "High":
+      return "bg-ds-in-destructive-500/10 border-ds-in-destructive-500/30 text-ds-in-destructive-400";
+    case "Medium":
+      return "bg-ds-in-warning-500/10 border-ds-in-warning-500/30 text-ds-in-warning-400";
+    case "Low":
+      return "bg-ds-in-success-500/10 border-ds-in-success-500/30 text-ds-in-success-400";
+    default:
+      return "bg-ds-in-indigo-500/10 border-ds-in-indigo-500/30 text-ds-in-indigo-400";
+  }
+};
+
 export const RequestsTable: FC<RequestsTableProps> = ({
   requests,
   isLoading,
   getJanitor,
   onSelect,
   onCompleteRequest,
+  sortField,
+  sortDirection,
+  onSort,
 }) => {
   const { t } = useTranslation();
 
@@ -67,17 +88,59 @@ export const RequestsTable: FC<RequestsTableProps> = ({
     return t(`janitor.requests.types.${type}` as any);
   };
 
+  const renderSortIcon = (field: string) => {
+    if (sortField !== field) {
+      return <ArrowUpDown className="w-3 h-3 ml-1 opacity-30" />;
+    }
+    return sortDirection === "asc"
+      ? <ArrowUp className="w-3 h-3 ml-1 text-ds-in-sky-400 animate-in fade-in zoom-in duration-200" />
+      : <ArrowDown className="w-3 h-3 ml-1 text-ds-in-sky-400 animate-in fade-in zoom-in duration-200" />;
+  };
+
   return (
     <div className="bg-ds-card-light dark:bg-ds-card-dark border border-ds-border-light dark:border-ds-border-dark rounded-2xl overflow-hidden shadow-xl">
       <div className="overflow-x-auto">
         <table className="w-full text-left">
           <thead>
-            <tr className="border-b border-ds-border-light dark:border-ds-border-dark bg-ds-background-light/50 dark:bg-ds-background-dark/50 text-xs uppercase text-ds-muted-light dark:text-ds-muted-dark font-semibold tracking-wider">
+            <tr className="border-b border-ds-border-light dark:border-ds-border-dark bg-ds-background-light/50 dark:bg-ds-background-dark/50 text-xs uppercase text-ds-muted-light dark:text-ds-muted-dark font-bold tracking-wider">
               <th className="px-6 py-4 w-16">{t("janitor.requests.table.columns.type")}</th>
-              <th className="px-6 py-4">{t("janitor.requests.table.columns.resident")}</th>
-              <th className="px-6 py-4">{t("janitor.requests.table.columns.blockUnit")}</th>
-              <th className="px-6 py-4">{t("janitor.requests.table.columns.subject")}</th>
-              <th className="px-6 py-4">{t("janitor.requests.table.columns.timeStatus")}</th>
+              <th className="px-6 py-4 w-24 text-center">{t("janitor.requests.priority")}</th>
+              <th
+                className="px-6 py-4 cursor-pointer hover:text-ds-primary-light dark:hover:text-ds-primary-dark transition-colors select-none group"
+                onClick={() => onSort("residentName")}
+              >
+                <div className="flex items-center">
+                  {t("janitor.requests.table.columns.resident")}
+                  {renderSortIcon("residentName")}
+                </div>
+              </th>
+              <th
+                className="px-6 py-4 cursor-pointer hover:text-ds-primary-light dark:hover:text-ds-primary-dark transition-colors select-none group"
+                onClick={() => onSort("blockId")}
+              >
+                <div className="flex items-center">
+                  {t("janitor.requests.table.columns.blockUnit")}
+                  {renderSortIcon("blockId")}
+                </div>
+              </th>
+              <th
+                className="px-6 py-4 cursor-pointer hover:text-ds-primary-light dark:hover:text-ds-primary-dark transition-colors select-none group"
+                onClick={() => onSort("type")}
+              >
+                <div className="flex items-center">
+                  {t("janitor.requests.table.columns.subject")}
+                  {renderSortIcon("type")}
+                </div>
+              </th>
+              <th
+                className="px-6 py-4 cursor-pointer hover:text-ds-primary-light dark:hover:text-ds-primary-dark transition-colors select-none group"
+                onClick={() => onSort("openedAt")}
+              >
+                <div className="flex items-center">
+                  {t("janitor.requests.table.columns.timeStatus")}
+                  {renderSortIcon("openedAt")}
+                </div>
+              </th>
               <th className="px-6 py-4 text-right">{t("janitor.requests.table.columns.actions")}</th>
             </tr>
           </thead>
@@ -109,6 +172,15 @@ export const RequestsTable: FC<RequestsTableProps> = ({
                       <div className="text-xs text-ds-muted-light dark:text-ds-muted-dark mt-0.5 flex items-center gap-1 opacity-70">
                         <Phone className="w-3 h-3" /> {req.resident?.phone || req.phone || "-"}
                       </div>
+                    </td>
+                    <td className="px-4 py-4 w-24 text-center">
+                      <span
+                        className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium border ${getPriorityColors(
+                          req.priority
+                        )}`}
+                      >
+                        {t(`janitor.requests.priorities.${req.priority}` as any)}
+                      </span>
                     </td>
                     <td className="px-6 py-4">
                       <span className="bg-ds-background-light dark:bg-ds-background-dark text-ds-secondary-light dark:text-ds-secondary-dark px-2 py-1 rounded border border-ds-border-light dark:border-ds-border-dark text-xs font-mono">

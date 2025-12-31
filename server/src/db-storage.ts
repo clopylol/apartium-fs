@@ -1,4 +1,4 @@
-import { eq, and, or, desc, asc, gte, lte, count, isNull, ilike, sql, inArray, type SQL } from 'drizzle-orm';
+import { eq, and, or, desc, asc, gte, lte, count, isNull, isNotNull, ilike, sql, inArray, type SQL } from 'drizzle-orm';
 import { db } from './db/index.js';
 import type { IStorage } from './storage.js';
 import * as schema from 'apartium-shared';
@@ -2040,6 +2040,7 @@ export class DatabaseStorage implements IStorage {
         totalStaff: number;
         onDuty: number;
         activeRequests: number;
+        averageCompletionTime: number;
     }> {
         // Total Staff (Active, not deleted)
         const [totalStaffResult] = await db
@@ -2057,6 +2058,7 @@ export class DatabaseStorage implements IStorage {
             ));
 
         // Active Requests (pending)
+        // Active Requests (pending)
         const [activeRequestsResult] = await db
             .select({ count: count() })
             .from(schema.janitorRequests)
@@ -2065,10 +2067,39 @@ export class DatabaseStorage implements IStorage {
                 isNull(schema.janitorRequests.deletedAt)
             ));
 
+        // Average Completion Time calculation
+        let averageCompletionTime = 0;
+        try {
+            const completedRequests = await db
+                .select({
+                    openedAt: schema.janitorRequests.openedAt,
+                    completedAt: schema.janitorRequests.completedAt,
+                })
+                .from(schema.janitorRequests)
+                .where(and(
+                    eq(schema.janitorRequests.status, 'completed'),
+                    isNotNull(schema.janitorRequests.completedAt),
+                    isNull(schema.janitorRequests.deletedAt)
+                ));
+
+            if (completedRequests.length > 0) {
+                const totalMinutes = completedRequests.reduce((acc, req) => {
+                    if (!req.completedAt) return acc;
+                    const start = new Date(req.openedAt).getTime();
+                    const end = new Date(req.completedAt).getTime();
+                    return acc + (end - start) / (1000 * 60);
+                }, 0);
+                averageCompletionTime = Math.round(totalMinutes / completedRequests.length);
+            }
+        } catch (error) {
+            console.error('Error calculating average completion time:', error);
+        }
+
         return {
             totalStaff: totalStaffResult.count,
             onDuty: onDutyResult.count,
-            activeRequests: activeRequestsResult.count
+            activeRequests: activeRequestsResult.count,
+            averageCompletionTime
         };
     }
 
@@ -2079,7 +2110,11 @@ export class DatabaseStorage implements IStorage {
             search?: string;
             status?: string;
             siteId?: string;
-            buildingId?: string
+            buildingId?: string;
+            type?: string;
+            priority?: string;
+            sortBy?: string;
+            sortOrder?: 'asc' | 'desc';
         }
     ): Promise<{
         requests: (JanitorRequest & {
@@ -2101,23 +2136,20 @@ export class DatabaseStorage implements IStorage {
             whereConditions.push(eq(schema.janitorRequests.status, filters.status as any));
         }
 
-        // Site Filter
-        // We need to join with buildings to filter by siteId (since requests have buildingId)
-        // But the main query below already joins buildings, so we can filter on that.
-        // However, buildingIds in where clause need to be derived if we want to filter BEFORE join?
-        // Actually Drizzle allows filtering on joined tables in the main query.
-
         // Building Filter
         if (filters?.buildingId) {
             whereConditions.push(eq(schema.janitorRequests.buildingId, filters.buildingId));
-        } else if (filters?.siteId) {
-            // If only siteId is provided, we need to filter by buildings in that site
-            // We'll handle this by adding a condition on the joined building table
-            // But we need to make sure the join happens.
         }
 
-        // Search Filter (Complex - needs joins)
-        // Search in: JanitorRequest.type logic, Resident Name, Unit Number
+        // Type Filter
+        if (filters?.type && filters.type !== 'all') {
+            whereConditions.push(eq(schema.janitorRequests.type, filters.type as any));
+        }
+
+        // Priority Filter
+        if (filters?.priority && filters.priority !== 'all') {
+            whereConditions.push(eq(schema.janitorRequests.priority, filters.priority as any));
+        }
 
         // Main Query
         let query = db
@@ -2136,9 +2168,6 @@ export class DatabaseStorage implements IStorage {
             .leftJoin(schema.buildings, eq(schema.janitorRequests.buildingId, schema.buildings.id))
             .leftJoin(schema.janitors, eq(schema.janitorRequests.assignedJanitorId, schema.janitors.id));
 
-        // Apply filters
-        // Note: For search and siteId which depend on joins, we need to apply them to the query builder or use 'and' with columns
-
         const finalConditions = [...whereConditions];
 
         if (filters?.siteId) {
@@ -2149,13 +2178,33 @@ export class DatabaseStorage implements IStorage {
             finalConditions.push(or(
                 ilike(schema.residents.name, `%${filters.search}%`),
                 ilike(schema.units.number, `%${filters.search}%`),
-                // ilike(schema.janitorRequests.type, `%${filters.search}%`) // Type is enum, might not work with ilike easily?
             ) as any);
+        }
+
+        // Handle Sorting
+        let orderClause;
+        const sortOrder = filters?.sortOrder === 'asc' ? asc : desc;
+
+        switch (filters?.sortBy) {
+            case 'residentName':
+                orderClause = sortOrder(schema.residents.name);
+                break;
+            case 'blockId':
+                orderClause = sortOrder(schema.buildings.name);
+                break;
+            case 'type':
+                orderClause = sortOrder(schema.janitorRequests.type);
+                break;
+            case 'openedAt':
+                orderClause = sortOrder(schema.janitorRequests.openedAt);
+                break;
+            default:
+                orderClause = desc(schema.janitorRequests.openedAt);
         }
 
         const results = await query
             .where(and(...finalConditions))
-            .orderBy(desc(schema.janitorRequests.createdAt))
+            .orderBy(orderClause)
             .limit(limit)
             .offset(offset);
 
@@ -2253,15 +2302,17 @@ export class DatabaseStorage implements IStorage {
     async updateJanitorRequestStatus(
         id: string,
         status: string,
-        completedAt?: Date
+        completedAt?: Date,
+        completionNote?: string
     ): Promise<JanitorRequest> {
         const [updated] = await db
             .update(schema.janitorRequests)
             .set({
                 status: status as any,
-                completedAt: completedAt || (status === 'completed' ? new Date() : null),
+                completedAt: completedAt || null,
+                completionNote: completionNote || null,
                 updatedAt: new Date(),
-            })
+            } as any)
             .where(eq(schema.janitorRequests.id, id))
             .returning();
 

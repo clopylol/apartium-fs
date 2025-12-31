@@ -236,14 +236,25 @@ export const api = {
             apiClient(`/parking-spots/${id}`, { method: 'DELETE' }),
 
         // Guest Visits
-        getGuestVisits: (page: number, limit: number, filters?: { status?: string; search?: string; dateFrom?: string; dateTo?: string; sortBy?: string; sortOrder?: 'asc' | 'desc' }) => {
-            const params = new URLSearchParams();
-            params.append('page', page.toString());
-            params.append('limit', limit.toString());
-            if (filters?.status) params.append('status', filters.status);
+        getRequests: async (page: number, limit: number, filters?: {
+            search?: string;
+            status?: string;
+            type?: string;
+            siteId?: string;
+            buildingId?: string;
+            sortBy?: string;
+            sortOrder?: 'asc' | 'desc';
+        }) => {
+            const params = new URLSearchParams({
+                page: page.toString(),
+                limit: limit.toString(),
+            });
+
             if (filters?.search) params.append('search', filters.search);
-            if (filters?.dateFrom) params.append('dateFrom', filters.dateFrom);
-            if (filters?.dateTo) params.append('dateTo', filters.dateTo);
+            if (filters?.status) params.append('status', filters.status);
+            if (filters?.type) params.append('type', filters.type);
+            if (filters?.siteId) params.append('siteId', filters.siteId);
+            if (filters?.buildingId) params.append('buildingId', filters.buildingId);
             if (filters?.sortBy) params.append('sortBy', filters.sortBy);
             if (filters?.sortOrder) params.append('sortOrder', filters.sortOrder);
             return apiClient(`/guest-visits?${params.toString()}`);
@@ -354,8 +365,11 @@ export const api = {
             filters?: {
                 search?: string;
                 status?: string;
+                type?: string;
                 siteId?: string;
-                buildingId?: string
+                buildingId?: string;
+                sortBy?: string;
+                sortOrder?: 'asc' | 'desc';
             }
         ) => {
             const params = new URLSearchParams();
@@ -363,6 +377,9 @@ export const api = {
             params.append('limit', limit.toString());
             if (filters?.search) params.append('search', filters.search);
             if (filters?.status) params.append('status', filters.status);
+            if (filters?.type) params.append('type', filters.type);
+            if (filters?.sortBy) params.append('sortBy', filters.sortBy);
+            if (filters?.sortOrder) params.append('sortOrder', filters.sortOrder);
             if (filters?.buildingId) {
                 params.append('buildingId', filters.buildingId);
             } else if (filters?.siteId) {
@@ -383,10 +400,10 @@ export const api = {
         createRequest: (data: any) =>
             apiClient('/janitor-requests', { method: 'POST', data }),
 
-        updateRequestStatus: (id: string, status: string, completedAt?: string) =>
+        updateRequestStatus: (id: string, status: string, completedAt?: string, completionNote?: string) =>
             apiClient(`/janitor-requests/${id}/status`, {
                 method: 'PATCH',
-                data: { status, completedAt }
+                data: { status, completedAt, completionNote }
             }),
 
         deleteRequest: (id: string) =>

@@ -1441,7 +1441,8 @@ export function createRoutes(storage: IStorage): Router {
 
     router.post('/janitor-requests', requireAuth, async (req, res) => {
         try {
-            const validatedData = insertJanitorRequestSchema.parse(req.body);
+            const { priority, ...restOfBody } = req.body; // Extract priority
+            const validatedData = insertJanitorRequestSchema.parse({ ...restOfBody, priority }); // Include priority in validation
             const request = await storage.createJanitorRequest(validatedData);
             res.status(201).json({ request });
         } catch (error: any) {
@@ -1460,13 +1461,20 @@ export function createRoutes(storage: IStorage): Router {
             const siteId = req.query.siteId as string | undefined;
             const buildingId = req.query.buildingId as string | undefined;
 
-            // TODO: Validate filters properly?
+            const sortBy = req.query.sortBy as string | undefined;
+            const sortOrder = req.query.sortOrder as 'asc' | 'desc' | undefined;
+            const type = req.query.type as string | undefined;
+            const priority = req.query.priority as string | undefined; // Add priority parameter
 
             const result = await storage.getJanitorRequestsPaginated(page, limit, {
                 search,
                 status,
                 siteId,
-                buildingId
+                buildingId,
+                sortBy,
+                sortOrder,
+                type,
+                priority // Pass priority to storage function
             });
 
             res.json(result);
@@ -1563,8 +1571,9 @@ export function createRoutes(storage: IStorage): Router {
 
     router.patch('/janitor-requests/:id/status', requireAuth, async (req, res) => {
         try {
-            const { status, completedAt } = req.body;
-            const request = await storage.updateJanitorRequestStatus(req.params.id, status, completedAt ? new Date(completedAt) : undefined);
+            const { status, completionNote } = req.body;
+            const completedAt = status === 'completed' ? new Date() : undefined;
+            const request = await storage.updateJanitorRequestStatus(req.params.id, status, completedAt, completionNote);
             res.json({ request });
         } catch (error) {
             res.status(500).json({ error: 'Talep durumu güncellenemedi' });
@@ -1634,7 +1643,7 @@ export function createRoutes(storage: IStorage): Router {
     // GET /api/community/requests?page=1&limit=10
     router.get('/community/requests', requireAuth, async (req, res) => {
         try {
-            // Import validation utilities
+            // Import validation utilities on demand if needed, or implement inline validation
             const { sanitizeSearchQuery, validateEnum, validatePagination } = await import('./utils/validation.js');
 
             // Validate pagination

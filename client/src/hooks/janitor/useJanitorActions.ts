@@ -29,7 +29,7 @@ export interface UseJanitorActionsReturn {
   handleBlockToggle: (block: string) => void;
   handleSaveClick: (formData: StaffFormData) => void;
   handleDeleteClick: (id: string, name: string) => void;
-  handleCompleteRequest: (id: string, request?: JanitorRequest | null) => void;
+  handleCompleteRequest: (id: string, completionNote?: string, request?: JanitorRequest | null) => void;
   handleSaveRequest: (data: RequestFormData) => void;
 }
 
@@ -110,10 +110,10 @@ export function useJanitorActions({
     });
   };
 
-  const handleCompleteRequest = (id: string, request?: JanitorRequest | null) => {
+  const handleCompleteRequest = (id: string, completionNote?: string, request?: JanitorRequest | null) => {
     // We assume backend sets tasksCompleted increment
     mutations.updateRequestStatus.mutate(
-      { id, status: "completed" },
+      { id, status: "completed", completionNote },
       {
         onSuccess: () => {
           if (request && selectedRequest && selectedRequest.id === id) {

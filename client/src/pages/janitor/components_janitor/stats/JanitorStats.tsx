@@ -1,6 +1,6 @@
 import type { FC } from "react";
 import { useTranslation } from "react-i18next";
-import { UserCog, Briefcase, AlertCircle } from "lucide-react";
+import { UserCog, Briefcase, AlertCircle, Clock } from "lucide-react";
 
 import { StatCard } from "@/components/stat-card";
 import { StatCardSkeleton } from "../skeletons";
@@ -10,6 +10,7 @@ interface JanitorStatsProps {
   totalStaff: number;
   onDuty: number;
   activeRequests: number;
+  averageCompletionTime: number;
 }
 
 export const JanitorStats: FC<JanitorStatsProps> = ({
@@ -17,12 +18,14 @@ export const JanitorStats: FC<JanitorStatsProps> = ({
   totalStaff,
   onDuty,
   activeRequests,
+  averageCompletionTime,
 }) => {
   const { t } = useTranslation();
 
   if (isLoading) {
     return (
       <>
+        <StatCardSkeleton />
         <StatCardSkeleton />
         <StatCardSkeleton />
         <StatCardSkeleton />
@@ -58,6 +61,15 @@ export const JanitorStats: FC<JanitorStatsProps> = ({
         trendText={t("janitor.stats.trends.residentCall")}
         variant="red"
         icon={AlertCircle}
+      />
+      <StatCard
+        title={t("janitor.stats.averageCompletionTime")}
+        value={`${averageCompletionTime} ${t("common.unit.minutes") || "dk"}`}
+        trend={t("janitor.stats.trends.average")}
+        trendUp={true} // Lower is better usually, but context depends. Let's make it neutral or positive if low. Assuming hardcoded for now.
+        trendText={""}
+        variant="purple"
+        icon={Clock}
       />
     </>
   );

@@ -195,6 +195,7 @@ export interface IStorage {
         totalStaff: number;
         onDuty: number;
         activeRequests: number;
+        averageCompletionTime: number;
     }>;
     getJanitorRequestsByUnitId(unitId: string): Promise<JanitorRequest[]>;
     getJanitorRequestsPaginated(
@@ -204,7 +205,11 @@ export interface IStorage {
             search?: string;
             status?: string;
             siteId?: string;
-            buildingId?: string
+            buildingId?: string;
+            type?: string;
+            priority?: string;
+            sortBy?: string;
+            sortOrder?: 'asc' | 'desc';
         }
     ): Promise<{
         requests: (JanitorRequest & {
@@ -220,7 +225,7 @@ export interface IStorage {
     createJanitor(janitor: InsertJanitor): Promise<Janitor>;
     updateJanitor(id: string, janitor: Partial<InsertJanitor>): Promise<Janitor>;
     createJanitorRequest(req: InsertJanitorRequest): Promise<JanitorRequest>;
-    updateJanitorRequestStatus(id: string, status: string, completedAt?: Date): Promise<JanitorRequest>;
+    updateJanitorRequestStatus(id: string, status: string, completedAt?: Date, completionNote?: string): Promise<JanitorRequest>;
     deleteJanitorRequest(id: string): Promise<void>;
     assignJanitorToBuilding(janitorId: string, buildingId: string): Promise<void>;
     unassignJanitorFromBuilding(janitorId: string, buildingId: string): Promise<void>;

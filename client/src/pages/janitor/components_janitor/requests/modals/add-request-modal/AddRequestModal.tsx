@@ -40,6 +40,12 @@ export const AddRequestModal: FC<AddRequestModalProps> = ({
         { value: "other", label: t("janitor.requests.types.other") },
     ];
 
+    const priorityOptions = [
+        { value: "High", label: t("janitor.requests.priorities.High") },
+        { value: "Medium", label: t("janitor.requests.priorities.Medium") },
+        { value: "Low", label: t("janitor.requests.priorities.Low") },
+    ];
+
     const handleBuildingChange = (id: string) => {
         onChange({ ...formData, buildingId: id, unitId: "", residentId: "" });
     };
@@ -61,6 +67,7 @@ export const AddRequestModal: FC<AddRequestModalProps> = ({
         formData.unitId &&
         formData.residentId &&
         formData.type &&
+        formData.priority &&
         formData.note.trim().length > 0;
 
     return (
@@ -126,6 +133,20 @@ export const AddRequestModal: FC<AddRequestModalProps> = ({
                             options={requestTypes}
                             value={formData.type}
                             onChange={(val) => onChange({ ...formData, type: val as any })}
+                        />
+                    </div>
+
+                    {/* Priority Selection */}
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-ds-muted-light dark:text-ds-muted-dark uppercase flex items-center gap-1.5 ml-1">
+                            <ClipboardList className="w-3.5 h-3.5" />
+                            {t("janitor.requests.priority")}
+                        </label>
+                        <Dropdown
+                            options={priorityOptions}
+                            value={formData.priority}
+                            onChange={(val) => onChange({ ...formData, priority: val as any })}
+                            placeholder={t("janitor.requests.priority")}
                         />
                     </div>
                 </div>

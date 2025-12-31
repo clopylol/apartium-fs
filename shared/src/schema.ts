@@ -45,6 +45,7 @@ export const announcementStatusEnum = pgEnum('enum_announcement_status', ['Publi
 // Janitor Enums
 export const janitorStatusEnum = pgEnum('enum_janitor_status', ['on-duty', 'off-duty', 'passive']);
 export const janitorRequestTypeEnum = pgEnum('enum_janitor_request_type', ['trash', 'market', 'cleaning', 'bread', 'other']);
+export const janitorRequestPriorityEnum = pgEnum('enum_janitor_request_priority', ['Low', 'Medium', 'High']);
 export const janitorRequestStatusEnum = pgEnum('enum_janitor_request_status', ['pending', 'completed']);
 
 // Community Enums
@@ -422,10 +423,12 @@ export const janitorRequests = pgTable('janitor_requests', {
     buildingId: uuid('building_id').notNull().references(() => buildings.id, { onDelete: 'cascade' }),
     assignedJanitorId: uuid('assigned_janitor_id').references(() => janitors.id, { onDelete: 'set null' }),
     type: janitorRequestTypeEnum('type').notNull(),
+    priority: janitorRequestPriorityEnum('priority').notNull().default('Medium'),
     status: janitorRequestStatusEnum('status').notNull().default('pending'),
     openedAt: timestamp('opened_at', { withTimezone: true }).notNull().defaultNow(),
     completedAt: timestamp('completed_at', { withTimezone: true }),
     note: text('note'),
+    completionNote: text('completion_note'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
     deletedAt: timestamp('deleted_at', { withTimezone: true }),

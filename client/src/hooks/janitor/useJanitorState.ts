@@ -24,8 +24,11 @@ export interface UseJanitorStateReturn {
   setRequestViewMode: (mode: "list" | "grid") => void;
   requestTypeFilter: "all" | "trash" | "market" | "cleaning" | "bread";
   setRequestTypeFilter: (filter: "all" | "trash" | "market" | "cleaning" | "bread") => void;
-  requestStatusSort: "pending_first" | "completed_first";
-  setRequestStatusSort: (sort: "pending_first" | "completed_first") => void;
+  requestStatusFilter: "pending" | "completed" | "all";
+  setRequestStatusFilter: (filter: "pending" | "completed" | "all") => void;
+  requestSortField: string | null;
+  requestSortDirection: "asc" | "desc";
+  handleRequestSort: (field: string) => void;
   filteredJanitors: Janitor[];
   paginatedJanitors: Janitor[];
   filteredRequests: JanitorRequest[];
@@ -33,6 +36,7 @@ export interface UseJanitorStateReturn {
   stats: {
     onDuty: number;
     activeRequests: number;
+    averageCompletionTime: number;
     totalStaff: number;
   };
   // New props for dynamic location data
@@ -54,9 +58,11 @@ export function useJanitorState(): UseJanitorStateReturn {
   const [requestTypeFilter, setRequestTypeFilter] = useState<
     "all" | "trash" | "market" | "cleaning" | "bread"
   >("all");
-  const [requestStatusSort, setRequestStatusSort] = useState<
-    "pending_first" | "completed_first"
-  >("pending_first");
+  const [requestStatusFilter, setRequestStatusFilter] = useState<
+    "pending" | "completed" | "all"
+  >("pending");
+  const [requestSortField, setRequestSortField] = useState<string | null>("openedAt");
+  const [requestSortDirection, setRequestSortDirection] = useState<"asc" | "desc">("desc");
 
   // Location State
   const [activeSiteId, setActiveSiteId] = useState<string | null>(null);
@@ -68,7 +74,7 @@ export function useJanitorState(): UseJanitorStateReturn {
 
   useEffect(() => {
     setRequestPage(1);
-  }, [searchTerm, requestTypeFilter, requestStatusSort]);
+  }, [searchTerm, requestTypeFilter, requestStatusFilter, requestSortField, requestSortDirection]);
 
   // Data Fetching
   const { sites, isLoading: isLoadingSites } = useSites();
@@ -103,12 +109,25 @@ export function useJanitorState(): UseJanitorStateReturn {
     page: requestPage,
     limit: ITEMS_PER_PAGE,
     search: searchTerm,
-    status: requestStatusSort === 'pending_first' ? 'pending' : undefined,
+    status: requestStatusFilter,
+    type: requestTypeFilter,
+    sortBy: requestSortField || undefined,
+    sortOrder: requestSortDirection,
   });
 
   const { data: statsData, isLoading: isLoadingStats } = useJanitorStats();
 
   const requests = (requestsData?.requests || []) as JanitorRequest[];
+
+  const handleRequestSort = (field: string) => {
+    if (requestSortField === field) {
+      setRequestSortDirection(requestSortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setRequestSortField(field);
+      setRequestSortDirection("desc");
+    }
+    setRequestPage(1);
+  };
 
   // Derived State for Janitors (Client-side filtering for Block & Search)
   const filteredJanitors = useMemo(() => {
@@ -170,8 +189,11 @@ export function useJanitorState(): UseJanitorStateReturn {
     setRequestViewMode,
     requestTypeFilter,
     setRequestTypeFilter,
-    requestStatusSort,
-    setRequestStatusSort,
+    requestStatusFilter,
+    setRequestStatusFilter,
+    requestSortField,
+    requestSortDirection,
+    handleRequestSort,
     filteredJanitors,
     paginatedJanitors,
     filteredRequests,

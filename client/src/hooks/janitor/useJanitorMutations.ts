@@ -54,8 +54,8 @@ export const useJanitorMutations = () => {
     });
 
     const updateRequestStatus = useMutation({
-        mutationFn: ({ id, status, completedAt }: { id: string; status: string; completedAt?: string }) =>
-            api.janitor.updateRequestStatus(id, status, completedAt),
+        mutationFn: ({ id, status, completedAt, completionNote }: { id: string; status: string; completedAt?: string; completionNote?: string }) =>
+            api.janitor.updateRequestStatus(id, status, completedAt, completionNote),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["janitor-requests"] });
             queryClient.invalidateQueries({ queryKey: ["janitor-stats"] });

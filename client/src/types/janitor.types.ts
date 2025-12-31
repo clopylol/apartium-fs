@@ -39,10 +39,17 @@ export type JanitorRequest = {
   assignedJanitorId?: string;
   assignedJanitorName?: string;
   note?: string;
+  completionNote?: string;
+  priority: 'High' | 'Medium' | 'Low';
 };
 
 export type JanitorRequestType = JanitorRequest["type"];
 export type JanitorRequestStatus = JanitorRequest["status"];
 export type JanitorStatus = Janitor["status"];
 
-
+export interface JanitorStats {
+  totalStaff: number;
+  onDuty: number;
+  activeRequests: number;
+  averageCompletionTime: number;
+}

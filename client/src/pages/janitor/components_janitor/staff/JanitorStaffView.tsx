@@ -1,6 +1,7 @@
 import type { FC } from "react";
 import { useTranslation } from "react-i18next";
-import { UserPlus, LayoutGrid, List } from "lucide-react";
+import { UserPlus, LayoutGrid, List, Users } from "lucide-react";
+import { EmptyState } from "@/components/shared/empty-state/EmptyState";
 import type { Janitor } from "@/types/janitor.types";
 import type { Building } from "@/types/residents.types";
 import { JanitorCard } from "./grid";
@@ -85,7 +86,15 @@ export const JanitorStaffView: FC<JanitorStaffViewProps> = ({
         </div>
       </div>
 
-      {viewMode === "grid" ? (
+      {!isLoading && janitors.length === 0 ? (
+        <EmptyState
+          icon={Users}
+          title={t("janitor.emptyState.staff.title")}
+          description={t("janitor.emptyState.staff.description")}
+          actionLabel={t("janitor.staff.addButton")}
+          onAction={onAdd}
+        />
+      ) : viewMode === "grid" ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {isLoading ? (
             <>
@@ -113,7 +122,7 @@ export const JanitorStaffView: FC<JanitorStaffViewProps> = ({
         />
       )}
 
-      {!isLoading && (
+      {!isLoading && janitors.length > 0 && (
         <Pagination
           totalItems={totalItems}
           itemsPerPage={ITEMS_PER_PAGE}

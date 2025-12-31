@@ -18,6 +18,7 @@ export interface RequestFormData {
   type: "trash" | "market" | "cleaning" | "bread" | "other";
   note: string;
   assignedJanitorId?: string;
+  priority: 'High' | 'Medium' | 'Low';
 }
 
 export interface UseJanitorModalsReturn {
@@ -49,12 +50,14 @@ export interface UseJanitorModalsReturn {
     isOpen: boolean;
     requestId: string | null;
     requestName: string;
+    completionNote: string;
   };
   setCompleteRequestConfirm: React.Dispatch<
     React.SetStateAction<{
       isOpen: boolean;
       requestId: string | null;
       requestName: string;
+      completionNote: string;
     }>
   >;
   openCompleteRequestConfirm: (requestId: string, requestName: string) => void;
@@ -100,10 +103,12 @@ export function useJanitorModals(): UseJanitorModalsReturn {
     isOpen: boolean;
     requestId: string | null;
     requestName: string;
+    completionNote: string;
   }>({
     isOpen: false,
     requestId: null,
     requestName: "",
+    completionNote: "",
   });
 
   // Request State
@@ -114,6 +119,7 @@ export function useJanitorModals(): UseJanitorModalsReturn {
     buildingId: "",
     type: "trash",
     note: "",
+    priority: "Medium",
   });
 
   const openAddModal = () => {
@@ -156,6 +162,7 @@ export function useJanitorModals(): UseJanitorModalsReturn {
       isOpen: true,
       requestId,
       requestName,
+      completionNote: "",
     });
   };
 
@@ -164,6 +171,7 @@ export function useJanitorModals(): UseJanitorModalsReturn {
       isOpen: false,
       requestId: null,
       requestName: "",
+      completionNote: "",
     });
   };
 
@@ -174,6 +182,7 @@ export function useJanitorModals(): UseJanitorModalsReturn {
       buildingId: "",
       type: "trash",
       note: "",
+      priority: "Medium",
     });
     setShowRequestModal(true);
   };

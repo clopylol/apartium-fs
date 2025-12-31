@@ -127,23 +127,34 @@ export const RequestDetailModal: FC<RequestDetailModalProps> = ({
           )}
 
           {request.status === "completed" && request.completedAt && (
-            <div className="bg-ds-in-success-900/10 border border-ds-in-success-900/20 p-4 rounded-xl flex justify-between items-center">
-              <div>
-                <p className="text-xs font-bold text-ds-in-success-500 uppercase mb-1">
-                  {t("janitor.requests.labels.completedAt")}
-                </p>
-                <div className="flex flex-col items-start gap-0.5">
-                  <p className="text-sm text-ds-in-success-100 font-bold">{formatRelativeTime(request.completedAt)}</p>
-                  <p className="text-[10px] text-ds-in-success-400/50 font-mono">{formatDateTime(request.completedAt)}</p>
-                </div>
-              </div>
-              {assignedJanitor && (
-                <div className="text-right">
+            <div className="space-y-4">
+              <div className="bg-ds-in-success-900/10 border border-ds-in-success-900/20 p-4 rounded-xl flex justify-between items-center">
+                <div>
                   <p className="text-xs font-bold text-ds-in-success-500 uppercase mb-1">
-                    {t("janitor.requests.labels.completedBy")}
+                    {t("janitor.requests.labels.completedAt")}
                   </p>
-                  <p className="text-sm text-ds-in-success-100">{assignedJanitor.name}</p>
+                  <div className="flex flex-col items-start gap-0.5">
+                    <p className="text-sm text-ds-in-success-100 font-bold">{formatRelativeTime(request.completedAt)}</p>
+                    <p className="text-[10px] text-ds-in-success-400/50 font-mono">{formatDateTime(request.completedAt)}</p>
+                  </div>
                 </div>
+                {assignedJanitor && (
+                  <div className="text-right">
+                    <p className="text-xs font-bold text-ds-in-success-500 uppercase mb-1">
+                      {t("janitor.requests.labels.completedBy")}
+                    </p>
+                    <p className="text-sm text-ds-in-success-100">{assignedJanitor.name}</p>
+                  </div>
+                )}
+              </div>
+
+              {request.completionNote && (
+                <InfoBanner
+                  icon={<CheckCircle className="w-5 h-5" />}
+                  title={t("janitor.requests.labels.completionNote")}
+                  description={`"${request.completionNote}"`}
+                  variant="success"
+                />
               )}
             </div>
           )}

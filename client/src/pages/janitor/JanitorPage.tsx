@@ -46,8 +46,13 @@ export const JanitorPage: FC = () => {
 
   const handleConfirmCompleteRequest = () => {
     if (modals.completeRequestConfirm.requestId) {
-      actions.handleCompleteRequest(modals.completeRequestConfirm.requestId);
+      actions.handleCompleteRequest(
+        modals.completeRequestConfirm.requestId,
+        modals.completeRequestConfirm.completionNote,
+        modals.selectedRequest
+      );
       modals.closeCompleteRequestConfirm();
+      modals.setSelectedRequest(null);
     }
   };
 
@@ -66,12 +71,13 @@ export const JanitorPage: FC = () => {
 
       <div className="flex-1 overflow-y-auto custom-scrollbar p-8">
         <div className="max-w-7xl mx-auto space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <JanitorStats
               isLoading={state.isLoading}
               totalStaff={state.stats.totalStaff}
               onDuty={state.stats.onDuty}
               activeRequests={state.stats.activeRequests}
+              averageCompletionTime={state.stats.averageCompletionTime}
             />
           </div>
 
@@ -101,8 +107,11 @@ export const JanitorPage: FC = () => {
               onViewModeChange={state.setRequestViewMode}
               typeFilter={state.requestTypeFilter}
               onTypeFilterChange={state.setRequestTypeFilter}
-              statusSort={state.requestStatusSort}
-              onStatusSortChange={state.setRequestStatusSort}
+              statusFilter={state.requestStatusFilter}
+              onStatusFilterChange={state.setRequestStatusFilter}
+              sortField={state.requestSortField}
+              sortDirection={state.requestSortDirection}
+              onSort={state.handleRequestSort}
               getJanitor={actions.getJanitor}
               onSelect={modals.setSelectedRequest}
               onCompleteRequest={handleCompleteRequest}
@@ -156,12 +165,35 @@ export const JanitorPage: FC = () => {
         onConfirm={handleConfirmCompleteRequest}
         title={t("janitor.requests.modals.completeConfirm.title")}
         message={
-          <p>
-            {t("janitor.requests.modals.completeConfirm.message", {
-              name: modals.completeRequestConfirm.requestName.split(" - ")[0],
-              type: modals.completeRequestConfirm.requestName.split(" - ")[1] || "",
-            })}
-          </p>
+          <div className="space-y-6">
+            <p className="text-ds-secondary-light dark:text-ds-secondary-dark font-medium">
+              {t("janitor.requests.modals.completeConfirm.message", {
+                name: modals.completeRequestConfirm.requestName.split(" - ")[0],
+                type: modals.completeRequestConfirm.requestName.split(" - ")[1] || "",
+              })}
+            </p>
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-ds-secondary-light dark:text-ds-secondary-dark block">
+                {t("janitor.requests.fields.completionNote")}
+              </label>
+              <textarea
+                className="w-full h-32 px-4 py-3 rounded-xl border border-ds-border-light dark:border-ds-border-dark 
+                         bg-ds-background-light dark:bg-ds-background-dark
+                         text-ds-secondary-light dark:text-ds-secondary-dark
+                         placeholder:text-ds-muted-light dark:placeholder:text-ds-muted-dark
+                         focus:outline-none focus:ring-2 focus:ring-ds-primary-light/30 transition-all 
+                         resize-none text-base"
+                placeholder={t("janitor.requests.placeholders.completionNote")}
+                value={modals.completeRequestConfirm.completionNote}
+                onChange={(e) =>
+                  modals.setCompleteRequestConfirm((prev) => ({
+                    ...prev,
+                    completionNote: e.target.value,
+                  }))
+                }
+              />
+            </div>
+          </div>
         }
         variant="success"
       />

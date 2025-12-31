@@ -981,8 +981,9 @@
     },
     "stats": {
       "totalStaff": "Toplam Personel",
-      "onDuty": "Mesai Durumu",
-      "activeRequests": "Bekleyen Talep",
+      "onDuty": "Görevde",
+      "activeRequests": "Aktif Talepler",
+      "averageCompletionTime": "Ort. Tamamlama Süresi",
       "trends": {
         "active": "Aktif",
         "working": "Çalışıyor",
@@ -1055,12 +1056,8 @@
         "trash": "Çöp",
         "market": "Market",
         "bread": "Ekmek",
-        "cleaning": "Temizlik"
-      },
-      "sorting": {
-        "label": "Sırala:",
-        "pendingFirst": "Önce Bekleyenler",
-        "completedFirst": "Önce Tamamlananlar"
+        "cleaning": "Temizlik",
+        "statusTitle": "DURUM FİLTRESİ"
       },
       "types": {
         "trash": "Çöp Alma",
@@ -1088,7 +1085,14 @@
         "completedBy": "Tamamlayan",
         "completedAt": "Tamamlanma Zamanı",
         "requestTime": "Talep Zamanı",
-        "note": "Not"
+        "note": "Not",
+        "completionNote": "Tamamlama Notu"
+      },
+      "fields": {
+        "completionNote": "Tamamlama Notu"
+      },
+      "placeholders": {
+        "completionNote": "Hizmet tamamlandığında buraya kısa bir not ekleyebilirsiniz..."
       },
       "modals": {
         "add": {
@@ -1118,6 +1122,16 @@
           "title": "Talep Tamamlama Onayı",
           "message": "{{name}} isimli sakine ait \"{{type}}\" talebini tamamlandı olarak işaretlemek istediğinize emin misiniz?"
         }
+      }
+    },
+    "emptyState": {
+      "staff": {
+        "title": "Personel Bulunamadı",
+        "description": "Şu anda sisteme kayıtlı bir personel bulunmuyor veya arama kriterlerinize uygun personel yok."
+      },
+      "requests": {
+        "title": "Talep Bulunamadı",
+        "description": "Şu anda bekleyen bir hizmet talebi bulunmuyor veya seçili filtrelere uygun kayıt yok."
       }
     },
     "pagination": {
