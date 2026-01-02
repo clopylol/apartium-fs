@@ -83,6 +83,8 @@ export const JanitorRequestsView: FC<JanitorRequestsViewProps> = ({
           icon={Bell}
           title={t("janitor.emptyState.requests.title")}
           description={t("janitor.emptyState.requests.description")}
+          actionLabel={t("janitor.requests.addButton")}
+          onAction={onAddRequest}
         />
       ) : viewMode === "list" ? (
         <RequestsTable

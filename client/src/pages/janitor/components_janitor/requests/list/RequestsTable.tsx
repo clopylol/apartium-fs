@@ -104,7 +104,6 @@ export const RequestsTable: FC<RequestsTableProps> = ({
           <thead>
             <tr className="border-b border-ds-border-light dark:border-ds-border-dark bg-ds-background-light/50 dark:bg-ds-background-dark/50 text-xs uppercase text-ds-muted-light dark:text-ds-muted-dark font-bold tracking-wider">
               <th className="px-6 py-4 w-16">{t("janitor.requests.table.columns.type")}</th>
-              <th className="px-6 py-4 w-24 text-center">{t("janitor.requests.priority")}</th>
               <th
                 className="px-6 py-4 cursor-pointer hover:text-ds-primary-light dark:hover:text-ds-primary-dark transition-colors select-none group"
                 onClick={() => onSort("residentName")}
@@ -114,6 +113,7 @@ export const RequestsTable: FC<RequestsTableProps> = ({
                   {renderSortIcon("residentName")}
                 </div>
               </th>
+              <th className="px-6 py-4 w-24 text-center">{t("janitor.requests.priority")}</th>
               <th
                 className="px-6 py-4 cursor-pointer hover:text-ds-primary-light dark:hover:text-ds-primary-dark transition-colors select-none group"
                 onClick={() => onSort("blockId")}
@@ -269,7 +269,7 @@ export const RequestsTable: FC<RequestsTableProps> = ({
               })
             ) : (
               <tr>
-                <td colSpan={6} className="px-6 py-12 text-center text-ds-muted-light dark:text-ds-muted-dark">
+                <td colSpan={7} className="px-6 py-12 text-center text-ds-muted-light dark:text-ds-muted-dark italic">
                   {t("janitor.requests.table.noResults")}
                 </td>
               </tr>

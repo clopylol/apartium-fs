@@ -140,13 +140,13 @@ export const AddRequestModal: FC<AddRequestModalProps> = ({
                     <div className="space-y-2">
                         <label className="text-xs font-bold text-ds-muted-light dark:text-ds-muted-dark uppercase flex items-center gap-1.5 ml-1">
                             <ClipboardList className="w-3.5 h-3.5" />
-                            {t("janitor.requests.priority")}
+                            {t("janitor.requests.modals.labels.priority")}
                         </label>
                         <Dropdown
                             options={priorityOptions}
                             value={formData.priority}
                             onChange={(val) => onChange({ ...formData, priority: val as any })}
-                            placeholder={t("janitor.requests.priority")}
+                            placeholder={t("janitor.requests.modals.placeholders.priority")}
                         />
                     </div>
                 </div>
@@ -168,14 +168,14 @@ export const AddRequestModal: FC<AddRequestModalProps> = ({
 
                 <div className="flex justify-end gap-3 pt-4">
                     <Button variant="ghost" onClick={onClose}>
-                        {t("common.cancel")}
+                        {t("common.buttons.cancel")}
                     </Button>
                     <Button
                         onClick={() => onSave(formData)}
                         disabled={!isFormValid}
                         className="bg-ds-in-sky-600 hover:bg-ds-in-sky-500 shadow-lg shadow-ds-in-sky-900/20 px-8"
                     >
-                        {t("common.save")}
+                        {t("common.buttons.save")}
                     </Button>
                 </div>
             </div>

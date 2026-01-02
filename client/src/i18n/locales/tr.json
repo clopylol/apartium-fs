@@ -21,7 +21,8 @@
       "inProgress": "İşleniyor",
       "completed": "Bitti",
       "paid": "Ödendi",
-      "unpaid": "Ödenmedi"
+      "unpaid": "Ödenmedi",
+      "unknown": "Bilinmiyor"
     },
     "actions": {
       "quickAction": "Hızlı İşlem",
@@ -33,6 +34,14 @@
       "records": "arası gösteriliyor",
       "previous": "Önceki sayfa",
       "next": "Sonraki sayfa"
+    },
+    "unit": {
+      "minutes": "dk",
+      "hours": "sa",
+      "days": "gün"
+    },
+    "labels": {
+      "status": "Durum"
     }
   },
   "dashboard": {
@@ -980,17 +989,18 @@
       }
     },
     "stats": {
+      "averageCompletionTime": "Ort. Tamamlama Süresi",
       "totalStaff": "Toplam Personel",
       "onDuty": "Görevde",
       "activeRequests": "Aktif Talepler",
-      "averageCompletionTime": "Ort. Tamamlama Süresi",
       "trends": {
         "active": "Aktif",
         "working": "Çalışıyor",
         "request": "İstek",
         "staffCount": "görevli sayısı",
         "onDutyNow": "şu an görevde",
-        "residentCall": "sakin çağrısı"
+        "residentCall": "sakin çağrısı",
+        "average": "ortalama"
       }
     },
     "staff": {
@@ -1059,6 +1069,11 @@
         "cleaning": "Temizlik",
         "statusTitle": "DURUM FİLTRESİ"
       },
+      "sorting": {
+        "label": "Sıralama:",
+        "pendingFirst": "Önce Bekleyenler",
+        "completedFirst": "Önce Tamamlananlar"
+      },
       "types": {
         "trash": "Çöp Alma",
         "market": "Market",
@@ -1069,6 +1084,12 @@
       "status": {
         "pending": "Bekliyor",
         "completed": "Tamamlandı"
+      },
+      "priority": "Öncelik",
+      "priorities": {
+        "High": "Yüksek",
+        "Medium": "Orta",
+        "Low": "Düşük"
       },
       "table": {
         "columns": {
@@ -1106,12 +1127,14 @@
           "unit": "Daire",
           "resident": "Sakin",
           "type": "Talep Tipi",
+          "priority": "Öncelik",
           "note": "Açıklama / Not"
         },
         "placeholders": {
           "selectBuilding": "Bina Seçiniz",
           "selectUnit": "Daire Seçiniz",
           "selectResident": "Sakin Seçiniz",
+          "priority": "Öncelik Seçiniz",
           "note": "Talep detaylarını buraya yazabilirsiniz..."
         },
         "actions": {

@@ -94,7 +94,7 @@ export const RequestCard: FC<RequestCardProps> = ({
         </h3>
         <div className="flex items-center gap-2 text-sm text-ds-secondary-light dark:text-ds-secondary-dark">
           <span className="font-medium text-ds-primary-light dark:text-ds-primary-dark">
-            {request.resident?.name || request.residentName || "Bilinmeyen Sakin"}
+            {request.resident?.name || request.residentName || t("common.status.unknown")}
           </span>
           <span className="w-1 h-1 rounded-full bg-ds-muted-light dark:bg-ds-muted-dark"></span>
           <span className="bg-ds-background-light dark:bg-ds-background-dark px-1.5 rounded border border-ds-border-light dark:border-ds-border-dark text-xs font-mono">

@@ -73,7 +73,7 @@ export const RequestDetailModal: FC<RequestDetailModalProps> = ({
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-ds-muted-light dark:text-ds-muted-dark font-medium uppercase mb-1">
-                {t("janitor.requests.labels.requestTime")}
+                {t("common.labels.status")}
               </p>
               {request.status === "pending" ? (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-bold bg-ds-in-warning-500/10 text-ds-in-warning-400 border border-ds-in-warning-500/20">
@@ -126,7 +126,7 @@ export const RequestDetailModal: FC<RequestDetailModalProps> = ({
             />
           )}
 
-          {request.status === "completed" && request.completedAt && (
+          {request.status === "completed" && (
             <div className="space-y-4">
               <div className="bg-ds-in-success-900/10 border border-ds-in-success-900/20 p-4 rounded-xl flex justify-between items-center">
                 <div>
@@ -134,8 +134,12 @@ export const RequestDetailModal: FC<RequestDetailModalProps> = ({
                     {t("janitor.requests.labels.completedAt")}
                   </p>
                   <div className="flex flex-col items-start gap-0.5">
-                    <p className="text-sm text-ds-in-success-100 font-bold">{formatRelativeTime(request.completedAt)}</p>
-                    <p className="text-[10px] text-ds-in-success-400/50 font-mono">{formatDateTime(request.completedAt)}</p>
+                    <p className="text-sm text-ds-in-success-100 font-bold">
+                      {request.completedAt ? formatRelativeTime(request.completedAt) : t("common.status.unknown")}
+                    </p>
+                    <p className="text-[10px] text-ds-in-success-400/50 font-mono">
+                      {request.completedAt ? formatDateTime(request.completedAt) : ""}
+                    </p>
                   </div>
                 </div>
                 {assignedJanitor && (
@@ -148,7 +152,7 @@ export const RequestDetailModal: FC<RequestDetailModalProps> = ({
                 )}
               </div>
 
-              {request.completionNote && (
+              {request.completionNote && request.completionNote !== "null" && (
                 <InfoBanner
                   icon={<CheckCircle className="w-5 h-5" />}
                   title={t("janitor.requests.labels.completionNote")}

@@ -53,7 +53,7 @@ export const StaffFormModal: FC<StaffFormModalProps> = ({
         onClick={onClose}
         variant="secondary"
         fullWidth
-        className="bg-[#1A1D26] hover:bg-[#20242F] text-slate-400 border border-white/5"
+        className="bg-ds-background-light dark:bg-ds-background-dark hover:bg-ds-muted-light dark:hover:bg-ds-muted-dark text-ds-muted-light dark:text-ds-muted-dark border border-ds-border-light dark:border-ds-border-dark"
       >
         {t("common.buttons.cancel")}
       </Button>
@@ -90,7 +90,7 @@ export const StaffFormModal: FC<StaffFormModalProps> = ({
             type="text"
             value={formData.name}
             onChange={(e) => onChange({ ...formData, name: e.target.value })}
-            className={`w-full bg-[#151821] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none transition-colors ${!isEditing ? "focus:border-ds-success" : "focus:border-ds-action"}`}
+            className={`w-full bg-ds-background-light dark:bg-ds-background-dark border border-ds-border-light dark:border-ds-border-dark rounded-xl px-4 py-3 text-sm text-ds-primary-light dark:text-ds-primary-dark placeholder-ds-muted-light focus:outline-none transition-colors ${!isEditing ? "focus:border-ds-success" : "focus:border-ds-action"}`}
             placeholder={t("janitor.staff.modals.labels.fullName")}
           />
         </div>
@@ -103,7 +103,7 @@ export const StaffFormModal: FC<StaffFormModalProps> = ({
             type="text"
             value={displayPhone}
             onChange={(e) => handlePhoneChange(e.target.value)}
-            className={`w-full bg-[#151821] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none transition-colors ${!isEditing ? "focus:border-ds-success" : "focus:border-ds-action"}`}
+            className={`w-full bg-ds-background-light dark:bg-ds-background-dark border border-ds-border-light dark:border-ds-border-dark rounded-xl px-4 py-3 text-sm text-ds-primary-light dark:text-ds-primary-dark placeholder-ds-muted-light focus:outline-none transition-colors ${!isEditing ? "focus:border-ds-success" : "focus:border-ds-action"}`}
             placeholder={t("janitor.staff.modals.labels.phonePlaceholder")}
           />
         </div>
