@@ -1653,6 +1653,156 @@ export class DatabaseStorage implements IStorage {
             );
     }
 
+    async getMaintenanceRequestsPaginated(
+        page: number,
+        limit: number,
+        filters?: {
+            search?: string;
+            status?: string;
+            priority?: string;
+            category?: string;
+            siteId?: string;
+            buildingId?: string;
+            sortBy?: string;
+            sortOrder?: 'asc' | 'desc';
+        }
+    ): Promise<{
+        requests: (MaintenanceRequest & {
+            residentName: string;
+            residentPhone: string;
+            unitNumber: string;
+            buildingName: string;
+        })[];
+        total: number;
+    }> {
+        const offset = (page - 1) * limit;
+
+        // Base where conditions
+        const whereConditions = [isNull(schema.maintenanceRequests.deletedAt)];
+
+        // Status Filter
+        if (filters?.status && filters.status !== 'all' && filters.status !== 'All') {
+            whereConditions.push(eq(schema.maintenanceRequests.status, filters.status as any));
+        }
+
+        // Priority Filter
+        if (filters?.priority && filters.priority !== 'all' && filters.priority !== 'All') {
+            whereConditions.push(eq(schema.maintenanceRequests.priority, filters.priority as any));
+        }
+
+        // Category Filter
+        if (filters?.category && filters.category !== 'all' && filters.category !== 'All') {
+            whereConditions.push(eq(schema.maintenanceRequests.category, filters.category as any));
+        }
+
+        // Main Query with JOINs
+        let query = db
+            .select({
+                request: schema.maintenanceRequests,
+                residentName: schema.residents.name,
+                residentPhone: schema.residents.phone,
+                unitNumber: schema.units.number,
+                buildingName: schema.buildings.name,
+                buildingSiteId: schema.buildings.siteId,
+            })
+            .from(schema.maintenanceRequests)
+            .leftJoin(schema.residents, eq(schema.maintenanceRequests.residentId, schema.residents.id))
+            .leftJoin(schema.units, eq(schema.maintenanceRequests.unitId, schema.units.id))
+            .leftJoin(schema.buildings, eq(schema.units.buildingId, schema.buildings.id));
+
+        const finalConditions = [...whereConditions];
+
+        // Building Filter
+        if (filters?.buildingId) {
+            finalConditions.push(eq(schema.units.buildingId, filters.buildingId));
+        }
+
+        // Site Filter
+        if (filters?.siteId) {
+            finalConditions.push(eq(schema.buildings.siteId, filters.siteId));
+        }
+
+        // Search Filter
+        if (filters?.search) {
+            finalConditions.push(or(
+                ilike(schema.maintenanceRequests.title, `%${filters.search}%`),
+                ilike(schema.residents.name, `%${filters.search}%`),
+                ilike(schema.units.number, `%${filters.search}%`),
+            ) as any);
+        }
+
+        // Handle Sorting
+        let orderClause;
+        const sortOrder = filters?.sortOrder === 'asc' ? asc : desc;
+
+        switch (filters?.sortBy) {
+            case 'residentName':
+                orderClause = sortOrder(schema.residents.name);
+                break;
+            case 'priority':
+                orderClause = sortOrder(schema.maintenanceRequests.priority);
+                break;
+            case 'category':
+                orderClause = sortOrder(schema.maintenanceRequests.category);
+                break;
+            case 'requestDate':
+                orderClause = sortOrder(schema.maintenanceRequests.requestDate);
+                break;
+            default:
+                orderClause = desc(schema.maintenanceRequests.requestDate);
+        }
+
+        const results = await query
+            .where(and(...finalConditions))
+            .orderBy(orderClause)
+            .limit(limit)
+            .offset(offset);
+
+        // Count Query
+        const [countResult] = await db
+            .select({ count: count() })
+            .from(schema.maintenanceRequests)
+            .leftJoin(schema.residents, eq(schema.maintenanceRequests.residentId, schema.residents.id))
+            .leftJoin(schema.units, eq(schema.maintenanceRequests.unitId, schema.units.id))
+            .leftJoin(schema.buildings, eq(schema.units.buildingId, schema.buildings.id))
+            .where(and(...finalConditions));
+
+        return {
+            requests: results.map(row => ({
+                ...row.request,
+                residentName: row.residentName || 'Bilinmeyen',
+                residentPhone: row.residentPhone || '',
+                unitNumber: row.unitNumber || '',
+                buildingName: row.buildingName || '',
+            })),
+            total: countResult.count
+        };
+    }
+
+    async getMaintenanceStats(userId?: string): Promise<{
+        totalCount: number;
+        newCount: number;
+        inProgressCount: number;
+        completedCount: number;
+        urgentCount: number;
+    }> {
+        // Build where conditions (can add user filtering if needed)
+        const whereConditions = [isNull(schema.maintenanceRequests.deletedAt)];
+
+        const [stats] = await db
+            .select({
+                totalCount: sql<number>`COUNT(*)::int`,
+                newCount: sql<number>`COUNT(CASE WHEN ${schema.maintenanceRequests.status} = 'New' THEN 1 END)::int`,
+                inProgressCount: sql<number>`COUNT(CASE WHEN ${schema.maintenanceRequests.status} = 'In Progress' THEN 1 END)::int`,
+                completedCount: sql<number>`COUNT(CASE WHEN ${schema.maintenanceRequests.status} = 'Completed' THEN 1 END)::int`,
+                urgentCount: sql<number>`COUNT(CASE WHEN ${schema.maintenanceRequests.priority} = 'Urgent' AND ${schema.maintenanceRequests.status} != 'Completed' THEN 1 END)::int`,
+            })
+            .from(schema.maintenanceRequests)
+            .where(and(...whereConditions));
+
+        return stats;
+    }
+
     async createMaintenanceRequest(req: InsertMaintenanceRequest): Promise<MaintenanceRequest> {
         const [newRequest] = await db
             .insert(schema.maintenanceRequests)

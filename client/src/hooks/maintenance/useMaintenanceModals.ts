@@ -3,6 +3,7 @@ import type { MaintenanceRequest } from "@/types/maintenance.types";
 
 export interface NewRequestFormData {
   title: string;
+  description: string;
   priority: MaintenanceRequest["priority"];
   category: MaintenanceRequest["category"];
   photo?: string;
@@ -28,6 +29,7 @@ export function useMaintenanceModals(): UseMaintenanceModalsReturn {
   const [newRequestFormData, setNewRequestFormData] =
     useState<NewRequestFormData>({
       title: "",
+      description: "",
       priority: "Low",
       category: "Genel",
     });
@@ -35,6 +37,7 @@ export function useMaintenanceModals(): UseMaintenanceModalsReturn {
   const openNewRequestModal = () => {
     setNewRequestFormData({
       title: "",
+      description: "",
       priority: "Low",
       category: "Genel",
     });

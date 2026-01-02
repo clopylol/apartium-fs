@@ -166,6 +166,35 @@ export interface IStorage {
 
     // Maintenance
     getMaintenanceRequestsByUnitId(unitId: string): Promise<MaintenanceRequest[]>;
+    getMaintenanceRequestsPaginated(
+        page: number,
+        limit: number,
+        filters?: {
+            search?: string;
+            status?: string;
+            priority?: string;
+            category?: string;
+            siteId?: string;
+            buildingId?: string;
+            sortBy?: string;
+            sortOrder?: 'asc' | 'desc';
+        }
+    ): Promise<{
+        requests: (MaintenanceRequest & {
+            residentName: string;
+            residentPhone: string;
+            unitNumber: string;
+            buildingName: string;
+        })[];
+        total: number;
+    }>;
+    getMaintenanceStats(userId?: string): Promise<{
+        totalCount: number;
+        newCount: number;
+        inProgressCount: number;
+        completedCount: number;
+        urgentCount: number;
+    }>;
     createMaintenanceRequest(req: InsertMaintenanceRequest): Promise<MaintenanceRequest>;
     updateMaintenanceStatus(id: string, status: string, completedDate?: Date): Promise<MaintenanceRequest>;
     deleteMaintenanceRequest(id: string): Promise<void>;

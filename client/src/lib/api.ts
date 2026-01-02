@@ -415,4 +415,53 @@ export const api = {
         unassignFromBuilding: (janitorId: string, buildingId: string) =>
             apiClient('/janitors/assignments', { method: 'DELETE', data: { janitorId, buildingId } }),
     },
+
+    // Maintenance
+    maintenance: {
+        getStats: () =>
+            apiClient('/maintenance/stats'),
+
+        getRequests: (
+            page: number,
+            limit: number,
+            filters?: {
+                search?: string;
+                status?: string;
+                priority?: string;
+                category?: string;
+                siteId?: string;
+                buildingId?: string;
+                sortBy?: string;
+                sortOrder?: 'asc' | 'desc';
+            }
+        ) => {
+            const params = new URLSearchParams();
+            params.append('page', page.toString());
+            params.append('limit', limit.toString());
+            if (filters?.search) params.append('search', filters.search);
+            if (filters?.status) params.append('status', filters.status);
+            if (filters?.priority) params.append('priority', filters.priority);
+            if (filters?.category) params.append('category', filters.category);
+            if (filters?.sortBy) params.append('sortBy', filters.sortBy);
+            if (filters?.sortOrder) params.append('sortOrder', filters.sortOrder);
+            if (filters?.buildingId) {
+                params.append('buildingId', filters.buildingId);
+            } else if (filters?.siteId) {
+                params.append('siteId', filters.siteId);
+            }
+            return apiClient(`/maintenance?${params.toString()}`);
+        },
+
+        create: (data: any) =>
+            apiClient('/maintenance', { method: 'POST', data }),
+
+        updateStatus: (id: string, status: string, completedDate?: string) =>
+            apiClient(`/maintenance/${id}/status`, {
+                method: 'PATCH',
+                data: { status, completedDate }
+            }),
+
+        delete: (id: string) =>
+            apiClient(`/maintenance/${id}`, { method: 'DELETE' }),
+    },
 };

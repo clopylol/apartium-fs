@@ -1,7 +1,8 @@
 import type { FC } from "react";
+import { useTranslation } from "react-i18next";
 import { Tag, MapPin, Clock, Eye } from "lucide-react";
 import type { MaintenanceRequest } from "@/types/maintenance.types";
-import { MaintenanceStatusBadge, MaintenancePriorityBadge } from "@/components/shared/status-badge";
+import { MaintenancePriorityBadge } from "@/components/shared/status-badge";
 
 interface MaintenanceCardProps {
   request: MaintenanceRequest;
@@ -12,6 +13,7 @@ export const MaintenanceCard: FC<MaintenanceCardProps> = ({
   request,
   onSelect,
 }) => {
+  const { t } = useTranslation();
   const getStatusLabel = (status: MaintenanceRequest["status"]): string => {
     switch (status) {
       case "New":
@@ -76,7 +78,7 @@ export const MaintenanceCard: FC<MaintenanceCardProps> = ({
               {request.user}
             </div>
             <div className="text-xs text-ds-muted-light dark:text-ds-muted-dark flex items-center gap-1">
-              <MapPin className="w-3 h-3" /> Daire {request.unit}
+              <MapPin className="w-3 h-3" /> {request.buildingName} - {t("common.labels.unit")} {request.unit}
             </div>
           </div>
         </div>
@@ -88,7 +90,7 @@ export const MaintenanceCard: FC<MaintenanceCardProps> = ({
           {request.date}
         </div>
         <div className="flex gap-2">
-          <span className="font-mono opacity-50">{request.id}</span>
+          {/* <span className="font-mono opacity-50">{request.id}</span> */}
           <button
             onClick={() => onSelect(request)}
             className="hover:text-ds-primary-light dark:hover:text-ds-primary-dark transition-colors"

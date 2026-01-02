@@ -1,6 +1,6 @@
 import type { FC } from "react";
-import { Wrench, Tag, MapPin, Clock, PlayCircle, CheckCircle } from "lucide-react";
-import type { MaintenanceRequest } from "@/types/maintenance.types";
+import { Wrench, Tag, Clock, PlayCircle, CheckCircle } from "lucide-react";
+import type { MaintenanceRequest, MaintenanceStatus } from "@/types/maintenance.types";
 import { FormModal } from "@/components/shared/modals/form-modal";
 import { Button } from "@/components/shared/button";
 import { MaintenancePriorityBadge, MaintenanceStatusBadge } from "@/components/shared/status-badge";
@@ -9,7 +9,7 @@ interface RequestDetailModalProps {
   isOpen: boolean;
   request: MaintenanceRequest | null;
   onClose: () => void;
-  onStatusUpdate: (id: string, status: MaintenanceRequest["status"]) => void;
+  onStatusUpdate: (id: string, status: MaintenanceStatus) => void;
 }
 
 export const RequestDetailModal: FC<RequestDetailModalProps> = ({
@@ -84,12 +84,21 @@ export const RequestDetailModal: FC<RequestDetailModalProps> = ({
             <p className="text-ds-primary-light dark:text-ds-primary-dark font-medium text-base">
               {request.user}
             </p>
-            <div className="flex items-center gap-3 text-sm text-ds-muted-light dark:text-ds-muted-dark mt-1">
-              <span className="flex items-center gap-1.5 px-2 py-0.5 bg-ds-card-light dark:bg-ds-card-dark rounded text-ds-secondary-light dark:text-ds-secondary-dark">
-                <MapPin className="w-3.5 h-3.5" /> Daire {request.unit}
+            <div className="flex flex-wrap items-center gap-2 mt-1">
+              <span className="flex items-center gap-1 px-2 py-0.5 bg-ds-background-light dark:bg-ds-background-dark border border-ds-border-light dark:border-ds-border-dark rounded text-xs text-ds-secondary-light dark:text-ds-secondary-dark font-mono">
+                {request.buildingName} - Daire {request.unit}
               </span>
             </div>
           </div>
+        </div>
+
+        <div className="bg-ds-in-sky-500/5 border border-ds-in-sky-500/10 rounded-xl p-4">
+          <p className="text-xs text-ds-muted-light dark:text-ds-muted-dark font-medium uppercase mb-2 tracking-wide">
+            Açıklama
+          </p>
+          <p className={`text-sm leading-relaxed ${request.description ? 'text-ds-primary-light dark:text-ds-primary-dark' : 'text-ds-muted-light dark:text-ds-muted-dark italic opacity-50'}`}>
+            {request.description || "Talep açıklaması belirtilmemiş."}
+          </p>
         </div>
 
         <div className="grid grid-cols-2 gap-4">

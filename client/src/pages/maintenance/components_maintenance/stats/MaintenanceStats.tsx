@@ -9,14 +9,24 @@ import { StatCard } from "@/components/stat-card";
 import type { MaintenanceRequest } from "@/types/maintenance.types";
 import { StatCardSkeleton } from "../skeletons";
 
+interface MaintenanceStatsData {
+  totalCount: number;
+  newCount: number;
+  inProgressCount: number;
+  completedCount: number;
+  urgentCount: number;
+}
+
 interface MaintenanceStatsProps {
   isLoading: boolean;
   requests: MaintenanceRequest[];
+  stats?: MaintenanceStatsData;
 }
 
 export const MaintenanceStats: FC<MaintenanceStatsProps> = ({
   isLoading,
   requests,
+  stats,
 }) => {
   if (isLoading) {
     return (
@@ -29,13 +39,20 @@ export const MaintenanceStats: FC<MaintenanceStatsProps> = ({
     );
   }
 
-  const openRequests = requests.filter((r) => r.status !== "Completed").length;
-  const urgentRequests = requests.filter(
-    (r) => r.priority === "Urgent" && r.status !== "Completed"
-  ).length;
-  const completedRequests = requests.filter(
-    (r) => r.status === "Completed"
-  ).length;
+  // Use API stats if available, otherwise calculate from requests
+  const openRequests = stats
+    ? stats.newCount + stats.inProgressCount
+    : requests.filter((r) => r.status !== "Completed").length;
+
+  const urgentRequests = stats
+    ? stats.urgentCount
+    : requests.filter(
+      (r) => r.priority === "Urgent" && r.status !== "Completed"
+    ).length;
+
+  const completedRequests = stats
+    ? stats.completedCount
+    : requests.filter((r) => r.status === "Completed").length;
 
   return (
     <>
@@ -78,4 +95,3 @@ export const MaintenanceStats: FC<MaintenanceStatsProps> = ({
     </>
   );
 };
-

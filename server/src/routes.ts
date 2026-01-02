@@ -1093,6 +1093,50 @@ export function createRoutes(storage: IStorage): Router {
 
     // ==================== MAINTENANCE ====================
 
+    // GET /api/maintenance/stats
+    router.get('/maintenance/stats', requireAuth, async (req, res) => {
+        try {
+            const userId = (req.user as any)?.id;
+            const stats = await storage.getMaintenanceStats(userId);
+            res.json(stats);
+        } catch (error) {
+            console.error('Maintenance stats error:', error);
+            res.status(500).json({ error: 'İstatistikler yüklenirken hata oluştu' });
+        }
+    });
+
+    // GET /api/maintenance?page=1&limit=10
+    router.get('/maintenance', requireAuth, async (req, res) => {
+        try {
+            const page = parseInt(req.query.page as string) || 1;
+            const limit = parseInt(req.query.limit as string) || 10;
+            const search = req.query.search as string | undefined;
+            const status = req.query.status as string | undefined;
+            const priority = req.query.priority as string | undefined;
+            const category = req.query.category as string | undefined;
+            const siteId = req.query.siteId as string | undefined;
+            const buildingId = req.query.buildingId as string | undefined;
+            const sortBy = req.query.sortBy as string | undefined;
+            const sortOrder = req.query.sortOrder as 'asc' | 'desc' | undefined;
+
+            const result = await storage.getMaintenanceRequestsPaginated(page, limit, {
+                search,
+                status,
+                priority,
+                category,
+                siteId,
+                buildingId,
+                sortBy,
+                sortOrder,
+            });
+
+            res.json(result);
+        } catch (error) {
+            console.error('Maintenance requests error:', error);
+            res.status(500).json({ error: 'Bakım talepleri yüklenirken hata oluştu' });
+        }
+    });
+
     router.get('/units/:id/maintenance', requireAuth, async (req, res) => {
         try {
             const requests = await storage.getMaintenanceRequestsByUnitId(req.params.id);

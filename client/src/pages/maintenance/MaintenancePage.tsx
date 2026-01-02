@@ -9,94 +9,178 @@ import {
   MaintenanceGridView,
   NewRequestModal,
   RequestDetailModal,
+  TestRequestModal,
 } from "./components_maintenance";
-import { TabToggle } from "@/components/shared/navigation/tab-toggle";
+// import { TabToggle } from "@/components/shared/navigation/tab-toggle";
 import { Pagination } from "@/components/shared/pagination";
 import { InfoBanner } from "@/components/shared/info-banner";
 import { Button } from "@/components/shared/button";
 import { Wrench, Search, LayoutList, LayoutGrid } from "lucide-react";
 import {
-  useMaintenanceState,
   useMaintenanceModals,
-  useMaintenanceActions,
+  useMaintenanceRequests,
+  useMaintenanceStats,
+  useUpdateMaintenanceStatus,
+  useCreateMaintenanceRequest,
 } from "@/hooks/maintenance";
 import type { MaintenanceRequest } from "@/types/maintenance.types";
-import { INITIAL_REQUESTS, ITEMS_PER_PAGE } from "@/constants/maintenance";
+import { ITEMS_PER_PAGE } from "@/constants/maintenance";
 
 export const MaintenancePage: FC = () => {
   const { t } = useTranslation();
-  const [requests, setRequests] =
-    useState<MaintenanceRequest[]>(INITIAL_REQUESTS);
 
-  const state = useMaintenanceState(requests);
+  // View & Filter State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState<string>("All");
+  const [filterPriority, setFilterPriority] = useState<string>("All");
+  const [filterCategory, setFilterCategory] = useState<string>("All");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+
+  // Modals
+  const [showTestModal, setShowTestModal] = useState(false);
+
   const modals = useMaintenanceModals();
-  const actions = useMaintenanceActions({
-    requests,
-    setRequests,
-    selectedRequest: modals.selectedRequest,
-    setSelectedRequest: modals.setSelectedRequest,
-    closeNewRequestModal: modals.closeNewRequestModal,
+
+  // API Queries
+  const {
+    data: requestsData,
+    isLoading,
+    isFetching,
+  } = useMaintenanceRequests({
+    page: currentPage,
+    limit: ITEMS_PER_PAGE,
+    search: searchTerm || undefined,
+    status: filterStatus === "All" ? undefined : filterStatus,
+    priority: filterPriority === "All" ? undefined : filterPriority,
+    category: filterCategory === "All" ? undefined : filterCategory,
+    sortBy: "requestDate",
+    sortOrder,
   });
 
+  const { data: statsData, isLoading: isStatsLoading } = useMaintenanceStats();
+
+  // Mutations
+  const updateStatusMutation = useUpdateMaintenanceStatus();
+  const createRequestMutation = useCreateMaintenanceRequest();
+
+  // Transform API data to match component requirements
+  const requests: MaintenanceRequest[] = (requestsData?.requests || []).map(
+    (req: any) => ({
+      id: req.id,
+      title: req.title,
+      user: req.residentName || "Bilinmeyen",
+      unit: req.unitNumber || "",
+      category: req.category,
+      date:
+        req.requestDate instanceof Date
+          ? req.requestDate.toISOString().split("T")[0]
+          : typeof req.requestDate === "string"
+            ? req.requestDate.split("T")[0]
+            : new Date().toISOString().split("T")[0],
+      priority: req.priority,
+      status: req.status,
+      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(req.residentName || "U")}&background=random&color=fff`,
+      description: req.description,
+      attachmentUrl: req.attachmentUrl,
+      buildingName: req.buildingName,
+    })
+  );
+
+  const totalItems = requestsData?.total || 0;
+
   const handleCreateRequest = () => {
-    actions.handleCreateRequest(modals.newRequestFormData);
+    // TODO: Get current user's residentId and unitId from context
+    // For now, this won't work without proper auth context integration
+    createRequestMutation.mutate(
+      {
+        residentId: "", // Will be populated from auth context
+        unitId: "", // Will be populated from auth context
+        title: modals.newRequestFormData.title,
+        description: modals.newRequestFormData.description,
+        category: modals.newRequestFormData.category,
+        priority: modals.newRequestFormData.priority,
+      },
+      {
+        onSuccess: () => {
+          modals.closeNewRequestModal();
+        },
+      }
+    );
   };
 
   const handleStatusUpdate = (
     id: string,
     status: MaintenanceRequest["status"]
   ) => {
-    actions.handleStatusUpdate(id, status);
+    const completedDate =
+      status === "Completed" ? new Date().toISOString() : undefined;
+    updateStatusMutation.mutate(
+      { id, status, completedDate },
+      {
+        onSuccess: () => {
+          if (modals.selectedRequest && modals.selectedRequest.id === id) {
+            modals.setSelectedRequest(null);
+          }
+        },
+      }
+    );
   };
 
-  const isEmpty = requests.length === 0;
+  const isEmpty = !isLoading && requests.length === 0 && !searchTerm;
   const hasNoResults =
-    !isEmpty && state.filteredRequests.length === 0 && !state.isLoading;
+    !isLoading && requests.length === 0 && (searchTerm || filterStatus !== "All");
+
+  // Stats for display
+  const stats = {
+    totalCount: statsData?.totalCount || 0,
+    newCount: statsData?.newCount || 0,
+    inProgressCount: statsData?.inProgressCount || 0,
+    completedCount: statsData?.completedCount || 0,
+    urgentCount: statsData?.urgentCount || 0,
+  };
 
   return (
     <div className="flex flex-col h-full overflow-hidden relative bg-ds-background-light dark:bg-ds-background-dark">
       <MaintenanceHeader
-        searchTerm={state.searchTerm}
-        onSearchChange={state.setSearchTerm}
+        searchTerm={searchTerm}
+        onSearchChange={(value) => {
+          setSearchTerm(value);
+          setCurrentPage(1); // Reset page on search
+        }}
         onNewRequest={modals.openNewRequestModal}
       />
 
       <div className="flex-1 overflow-y-auto custom-scrollbar p-8">
         <div className="max-w-7xl mx-auto space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-            <MaintenanceStats isLoading={state.isLoading} requests={requests} />
+            <MaintenanceStats isLoading={isStatsLoading} requests={requests} stats={stats} />
           </div>
 
           <div className="flex flex-col gap-4">
             <MaintenanceFilters
-              filterStatus={state.filterStatus as MaintenanceRequest["status"] | "All"}
-              onStatusChange={state.setFilterStatus}
-              filterPriority={state.filterPriority as MaintenanceRequest["priority"] | "All"}
-              onPriorityChange={state.setFilterPriority}
-              filterCategory={state.filterCategory as MaintenanceRequest["category"] | "All"}
-              onCategoryChange={state.setFilterCategory}
-              rightContent={
-                <TabToggle
-                  items={[
-                    {
-                      id: "list",
-                      label: t("maintenance.viewMode.list"),
-                      icon: <LayoutList className="w-4 h-4" />,
-                    },
-                    {
-                      id: "grid",
-                      label: t("maintenance.viewMode.grid"),
-                      icon: <LayoutGrid className="w-4 h-4" />,
-                    },
-                  ]}
-                  activeTab={state.viewMode}
-                  onChange={state.setViewMode}
-                />
-              }
+              filterStatus={filterStatus as MaintenanceRequest["status"] | "All"}
+              onStatusChange={(value) => {
+                setFilterStatus(value);
+                setCurrentPage(1);
+              }}
+              filterPriority={filterPriority as MaintenanceRequest["priority"] | "All"}
+              onPriorityChange={(value) => {
+                setFilterPriority(value);
+                setCurrentPage(1);
+              }}
+              filterCategory={filterCategory as MaintenanceRequest["category"] | "All"}
+              onCategoryChange={(value) => {
+                setFilterCategory(value);
+                setCurrentPage(1);
+              }}
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
             />
           </div>
 
-          {isEmpty && !state.isLoading ? (
+          {isEmpty ? (
             <div className="flex flex-col items-center justify-center p-12 text-ds-muted-light dark:text-ds-muted-dark border-2 border-dashed border-ds-border-light dark:border-ds-border-dark rounded-2xl bg-ds-card-light dark:bg-ds-card-dark">
               <Wrench className="w-12 h-12 mb-4 opacity-20" />
               <h3 className="text-ds-primary-light dark:text-ds-primary-dark font-bold text-lg mb-1">
@@ -118,36 +202,46 @@ export const MaintenancePage: FC = () => {
             />
           ) : (
             <>
-              {state.viewMode === "list" ? (
+              {viewMode === "list" ? (
                 <MaintenanceTable
-                  requests={state.paginatedRequests}
-                  isLoading={state.isLoading}
-                  sortOrder={state.sortOrder}
+                  requests={requests}
+                  isLoading={isLoading || isFetching}
+                  sortOrder={sortOrder}
                   onSortToggle={() =>
-                    state.setSortOrder(
-                      state.sortOrder === "asc" ? "desc" : "asc"
-                    )
+                    setSortOrder(sortOrder === "asc" ? "desc" : "asc")
                   }
                   onSelect={modals.setSelectedRequest}
                 />
               ) : (
                 <MaintenanceGridView
-                  requests={state.paginatedRequests}
-                  isLoading={state.isLoading}
+                  requests={requests}
+                  isLoading={isLoading || isFetching}
                   onSelect={modals.setSelectedRequest}
                 />
               )}
 
-              {!state.isLoading && (
+              {!isLoading && (
                 <Pagination
-                  totalItems={state.filteredRequests.length}
+                  totalItems={totalItems}
                   itemsPerPage={ITEMS_PER_PAGE}
-                  currentPage={state.currentPage}
-                  onPageChange={state.setCurrentPage}
+                  currentPage={currentPage}
+                  onPageChange={setCurrentPage}
                 />
               )}
+
             </>
           )}
+
+          <div className="flex justify-center pt-8 border-t border-ds-border-light dark:border-ds-border-dark mt-8">
+            <Button
+              variant="ghost"
+              onClick={() => setShowTestModal(true)}
+              className="text-xs text-ds-muted-light dark:text-ds-muted-dark hover:text-ds-in-sky-500 transition-colors"
+            >
+              <Wrench className="w-3 h-3 mr-2" />
+              Test Talebi Oluştur (Yönetici)
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -165,7 +259,11 @@ export const MaintenancePage: FC = () => {
         onClose={() => modals.setSelectedRequest(null)}
         onStatusUpdate={handleStatusUpdate}
       />
+
+      <TestRequestModal
+        isOpen={showTestModal}
+        onClose={() => setShowTestModal(false)}
+      />
     </div>
   );
 };
-

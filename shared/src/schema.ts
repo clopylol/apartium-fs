@@ -359,9 +359,11 @@ export const maintenanceRequests = pgTable('maintenance_requests', {
     residentId: uuid('resident_id').notNull().references(() => residents.id, { onDelete: 'cascade' }),
     unitId: uuid('unit_id').notNull().references(() => units.id, { onDelete: 'cascade' }),
     title: varchar('title', { length: 255 }).notNull(),
+    description: text('description'), // Detaylı açıklama (mobil kullanıcılar için)
     category: maintenanceCategoryEnum('category').notNull(),
     priority: maintenancePriorityEnum('priority').notNull().default('Medium'),
     status: maintenanceStatusEnum('status').notNull().default('New'),
+    attachmentUrl: text('attachment_url'), // Fotoğraf URL'i
     requestDate: timestamp('request_date', { withTimezone: true }).notNull().defaultNow(),
     completedDate: timestamp('completed_date', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

@@ -16,3 +16,15 @@ export type {
   UseMaintenanceFiltersProps,
 } from "./useMaintenanceFilters";
 
+// API Integration Hooks
+export { useMaintenanceRequests } from "./useMaintenanceRequests";
+export type { UseMaintenanceRequestsParams } from "./useMaintenanceRequests";
+export { useMaintenanceStats } from "./useMaintenanceStats";
+export type { MaintenanceStats } from "./useMaintenanceStats";
+export {
+  useCreateMaintenanceRequest,
+  useUpdateMaintenanceStatus,
+  useDeleteMaintenanceRequest,
+} from "./useMaintenanceMutations";
+export type { CreateMaintenanceRequest } from "./useMaintenanceMutations";
+

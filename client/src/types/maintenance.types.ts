@@ -12,5 +12,7 @@ export interface MaintenanceRequest {
   priority: MaintenancePriority;
   status: MaintenanceStatus;
   avatar: string;
+  description?: string;
+  attachmentUrl?: string;
+  buildingName: string;
 }
-
