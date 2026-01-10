@@ -16,7 +16,7 @@ interface BookingConfirmationModalProps {
 }
 
 const getFacilityName = (facilities: Facility[], id: string): string => {
-  return facilities.find(f => f.id === id)?.name || 'Bilinmiyor';
+  return facilities?.find(f => f.id === id)?.name || 'Bilinmiyor';
 };
 
 export const BookingConfirmationModal: FC<BookingConfirmationModalProps> = ({
@@ -104,7 +104,7 @@ export const BookingConfirmationModal: FC<BookingConfirmationModalProps> = ({
             </div>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-2 p-3 bg-ds-in-sky-500/5 border border-ds-in-sky-500/10 rounded-lg">
           <Info className="w-5 h-5 text-ds-in-sky-400 shrink-0" />
           <p className="text-xs text-ds-in-sky-300">

@@ -142,13 +142,16 @@ export interface IStorage {
     deleteExpenseAllocationsByExpenseId(expenseId: string): Promise<void>;
 
     // Facilities & Bookings
-    getAllFacilities(): Promise<Facility[]>;
+    getAllFacilities(filters?: { siteId?: string }): Promise<Facility[]>;
+    getFacilitiesBySiteId(siteId: string): Promise<Facility[]>;
     getFacilityById(id: string): Promise<Facility | null>;
     createFacility(facility: InsertFacility): Promise<Facility>;
     updateFacility(id: string, facility: Partial<InsertFacility>): Promise<Facility>;
     deleteFacility(id: string): Promise<void>;
     getBookingsByFacilityId(facilityId: string): Promise<Booking[]>;
+    getAllBookings(filters?: { siteId?: string }): Promise<Booking[]>;
     getBookingsByResidentId(residentId: string): Promise<Booking[]>;
+    checkBookingOverlap(facilityId: string, date: string, startTime: string, endTime: string): Promise<boolean>;
     createBooking(booking: InsertBooking): Promise<Booking>;
     updateBookingStatus(id: string, status: string, rejectionReason?: string): Promise<Booking>;
     deleteBooking(id: string): Promise<void>;

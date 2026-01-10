@@ -1,8 +1,8 @@
-import type { FC } from 'react';
+import { type FC, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Clock, Info, Settings, ArrowRight, Users, DollarSign } from 'lucide-react';
 import type { Facility, FacilityStatus } from '@/types/bookings.types';
-import type { Booking } from '@/types/bookings.types';
+
 
 interface FacilityCardProps {
   facility: Facility;
@@ -13,20 +13,20 @@ interface FacilityCardProps {
 }
 
 const getStatusColor = (status: FacilityStatus): string => {
-  switch(status) {
-    case 'open': 
+  switch (status) {
+    case 'open':
       return 'bg-ds-in-success-500/20 text-ds-in-success-500 border-ds-in-success-500/20';
-    case 'closed': 
+    case 'closed':
       return 'bg-ds-in-destructive-500/20 text-ds-in-destructive-500 border-ds-in-destructive-500/20';
-    case 'maintenance': 
+    case 'maintenance':
       return 'bg-ds-in-warning-500/20 text-ds-in-warning-500 border-ds-in-warning-500/20';
-    default: 
+    default:
       return 'bg-ds-muted-light/20 dark:bg-ds-muted-dark/20 text-ds-muted-light dark:text-ds-muted-dark border-ds-muted-light/20 dark:border-ds-muted-dark/20';
   }
 };
 
 const getStatusText = (status: FacilityStatus, t: (key: string) => string): string => {
-  switch(status) {
+  switch (status) {
     case 'open': return t('bookings.facilities.status.open');
     case 'closed': return t('bookings.facilities.status.closed');
     case 'maintenance': return t('bookings.facilities.status.maintenance');
@@ -42,25 +42,29 @@ export const FacilityCard: FC<FacilityCardProps> = ({
   onEdit,
 }) => {
   const { t } = useTranslation();
+  const [imgSrc, setImgSrc] = useState(
+    facility.imageUrl ||
+    `https://loremflickr.com/640/480/${encodeURIComponent(facility.name.replace(/\s+/g, ','))}?lock=${facility.id}`
+  );
 
   return (
-    <div 
+    <div
       onClick={onClick}
-      className={`group relative overflow-hidden rounded-2xl border transition-all duration-300 cursor-pointer ${
-        isActive 
-          ? 'border-ds-action ring-1 ring-ds-action/50 shadow-2xl shadow-ds-action/10' 
-          : 'border-ds-border-light dark:border-ds-border-dark hover:border-ds-muted-light dark:hover:border-ds-muted-dark hover:shadow-xl'
-      } bg-ds-card-light dark:bg-ds-card-dark`}
+      className={`group relative overflow-hidden rounded-2xl border transition-all duration-300 cursor-pointer ${isActive
+        ? 'border-ds-action ring-1 ring-ds-action/50 shadow-2xl shadow-ds-action/10'
+        : 'border-ds-border-light dark:border-ds-border-dark hover:border-ds-muted-light dark:hover:border-ds-muted-dark hover:shadow-xl'
+        } bg-ds-card-light dark:bg-ds-card-dark`}
     >
       {/* Image Background */}
       <div className="h-40 w-full overflow-hidden relative">
         <div className="absolute inset-0 bg-gradient-to-t from-ds-background-dark via-ds-background-dark/60 to-transparent z-10" />
-        <img 
-          src={facility.image} 
-          alt={facility.name} 
+        <img
+          src={imgSrc}
+          onError={() => setImgSrc(`https://picsum.photos/seed/${facility.id}/640/480`)}
+          alt={facility.name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         />
-        
+
         {/* Status Badge */}
         <div className="absolute top-3 left-3 z-20">
           <span className={`px-2 py-1 rounded-md text-xs font-bold uppercase tracking-wider border backdrop-blur-md shadow-sm ${getStatusColor(facility.status)}`}>
@@ -70,7 +74,7 @@ export const FacilityCard: FC<FacilityCardProps> = ({
 
         {/* Settings Button */}
         <div className="absolute top-3 right-3 z-20">
-          <button 
+          <button
             onClick={(e) => onEdit(e, facility)}
             className="p-2 bg-ds-background-dark/40 hover:bg-ds-action backdrop-blur-md text-white rounded-lg transition-colors border border-white/10 shadow-lg"
           >
@@ -87,12 +91,12 @@ export const FacilityCard: FC<FacilityCardProps> = ({
             </div>
             <div className="flex items-center gap-1 text-[10px] font-bold bg-black/40 backdrop-blur-sm px-2 py-1 rounded-md text-white border border-white/10">
               <DollarSign className="w-3 h-3 text-ds-in-success-400" />
-              {facility.pricePerHour > 0 ? `${facility.pricePerHour}${t('bookings.facilities.perHour')}` : t('bookings.facilities.free')}
+              {facility.pricingType !== 'free' ? `${facility.price}${t('bookings.facilities.perHour')}` : t('bookings.facilities.free')}
             </div>
           </div>
         </div>
       </div>
-      
+
       {/* Content */}
       <div className="p-4 relative">
         <h3 className="text-ds-primary-light dark:text-ds-primary-dark font-bold text-lg mb-1 truncate">

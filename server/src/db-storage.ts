@@ -1448,8 +1448,16 @@ export class DatabaseStorage implements IStorage {
     }
 
     // ==================== FACILITIES & BOOKINGS ====================
-    async getAllFacilities(): Promise<Facility[]> {
-        return await db.select().from(schema.facilities).where(isNull(schema.facilities.deletedAt));
+    async getAllFacilities(filters?: { siteId?: string }): Promise<Facility[]> {
+        const conditions = [isNull(schema.facilities.deletedAt)];
+        if (filters?.siteId) {
+            conditions.push(eq(schema.facilities.siteId, filters.siteId));
+        }
+        return await db.select().from(schema.facilities).where(and(...conditions));
+    }
+
+    async getFacilitiesBySiteId(siteId: string): Promise<Facility[]> {
+        return this.getAllFacilities({ siteId });
     }
 
     async getFacilityById(id: string): Promise<Facility | null> {
@@ -1511,7 +1519,33 @@ export class DatabaseStorage implements IStorage {
                     eq(schema.bookings.residentId, residentId),
                     isNull(schema.bookings.deletedAt)
                 )
-            );
+            )
+            .orderBy(desc(schema.bookings.createdAt));
+    }
+
+    async checkBookingOverlap(facilityId: string, date: string, startTime: string, endTime: string): Promise<boolean> {
+        // Date format: YYYY-MM-DD
+        // Time format: HH:MM:SS
+        const [existing] = await db
+            .select({ id: schema.bookings.id })
+            .from(schema.bookings)
+            .where(
+                and(
+                    eq(schema.bookings.facilityId, facilityId),
+                    eq(schema.bookings.bookingDate, date),
+                    or(
+                        eq(schema.bookings.status, 'confirmed'),
+                        eq(schema.bookings.status, 'pending')
+                    ),
+                    isNull(schema.bookings.deletedAt),
+                    // Overlap logic: (StartA < EndB) and (EndA > StartB)
+                    // existing.startTime < newEndTime AND existing.endTime > newStartTime
+                    sql`${schema.bookings.startTime} < ${endTime}::time AND ${schema.bookings.endTime} > ${startTime}::time`
+                )
+            )
+            .limit(1);
+
+        return !!existing;
     }
 
     async createBooking(booking: InsertBooking): Promise<Booking> {

@@ -2,6 +2,7 @@ import type { FC } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FacilityCard } from '../facility-card';
 import type { Facility, Booking } from '@/types/bookings.types';
+import { AddFacilityCard } from './AddFacilityCard';
 
 interface FacilityListProps {
   facilities: Facility[];
@@ -10,6 +11,8 @@ interface FacilityListProps {
   isLoading: boolean;
   onFacilityClick: (facilityId: string) => void;
   onFacilityEdit: (e: React.MouseEvent, facility: Facility) => void;
+  onAddFacility?: () => void;
+  showAddCard?: boolean;
 }
 
 export const FacilityList: FC<FacilityListProps> = ({
@@ -19,6 +22,8 @@ export const FacilityList: FC<FacilityListProps> = ({
   isLoading,
   onFacilityClick,
   onFacilityEdit,
+  onAddFacility,
+  showAddCard = false,
 }) => {
   if (isLoading) {
     return (
@@ -64,6 +69,9 @@ export const FacilityList: FC<FacilityListProps> = ({
           />
         );
       })}
+      {showAddCard && onAddFacility && (
+        <AddFacilityCard onClick={onAddFacility} />
+      )}
     </div>
   );
 };

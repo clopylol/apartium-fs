@@ -92,6 +92,13 @@
       "when": 1768054342004,
       "tag": "0018_neat_prowler",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1768061180960,
+      "tag": "0019_warm_grey_gargoyle",
+      "breakpoints": true
     }
   ]
 }

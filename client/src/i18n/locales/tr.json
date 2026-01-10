@@ -1292,7 +1292,12 @@
       "title": "Tesisler & Rezervasyonlar",
       "searchPlaceholder": "Rezervasyon ara...",
       "facilityManagement": "Tesis Yönetimi",
-      "createBooking": "Rezervasyon Yap"
+      "createBooking": "Rezervasyon Yap",
+      "addFacility": "Tesis Ekle",
+      "tabs": {
+        "bookings": "Rezervasyonlar",
+        "facilities": "Tesisler"
+      }
     },
     "facilities": {
       "title": "Sosyal Tesisler",
@@ -1307,7 +1312,31 @@
       "active": "Aktif",
       "schedule": "Program",
       "free": "Ücretsiz",
-      "perHour": "₺/sa"
+      "perHour": "₺/sa",
+      "types": {
+        "gym": "Spor Salonu",
+        "pool": "Yüzme Havuzu",
+        "meetingRoom": "Toplantı Salonu",
+        "bbq": "Mangal/Barbekü Alanı",
+        "playground": "Çocuk Oyun Alanı",
+        "tennis": "Tenis Kortu",
+        "basketball": "Basketbol Sahası",
+        "sauna": "Sauna",
+        "turkishBath": "Hamam",
+        "parking": "Otopark",
+        "garden": "Bahçe/Park Alanı",
+        "laundry": "Çamaşırhane",
+        "cinema": "Sinema Odası",
+        "library": "Kütüphane",
+        "other": "Diğer"
+      },
+      "pricing": {
+        "free": "Ücretsiz",
+        "perEntry": "Giriş Başına",
+        "hourly": "Saatlik",
+        "monthly": "Aylık",
+        "yearly": "Yıllık"
+      }
     },
     "bookings": {
       "allBookings": "Tüm Rezervasyonlar",
@@ -1376,19 +1405,41 @@
         },
         "labels": {
           "name": "Tesis Adı",
+          "facilityType": "Tesis Tipi",
+          "customName": "Özel Tesis Adı",
           "image": "Görsel URL",
           "status": "Durum",
           "capacity": "Kapasite",
+          "workingHours": "Çalışma Saatleri",
+          "open24Hours": "7/24 Açık",
+          "openTime": "Açılış",
+          "closeTime": "Kapanış",
+          "pricing": "Fiyatlandırma",
+          "pricingType": "Fiyatlandırma Tipi",
+          "price": "Fiyat",
           "hours": "Çalışma Saatleri",
           "pricePerHour": "Ücret (₺/Sa)",
-          "requiresBooking": "Bu tesis için rezervasyon zorunludur"
+          "requiresBooking": "Bu tesis için rezervasyon zorunludur",
+          "siteAndBuilding": "Site ve Apartman",
+          "site": "Site",
+          "accessScope": "Erişim Kapsamı",
+          "buildings": "Apartmanlar",
+          "buildingsHint": "* Bu tesise erişebilecek apartmanları seçin"
         },
         "placeholders": {
           "name": "Örn: Yüzme Havuzu",
+          "facilityType": "Tesis tipi seçin",
+          "customName": "Tesis adını yazın",
           "image": "https://...",
           "hours": "08:00 - 22:00",
           "capacity": "20",
-          "pricePerHour": "0"
+          "pricePerHour": "0",
+          "pricingType": "Fiyatlandırma tipi seçin",
+          "site": "Site seçin"
+        },
+        "accessOptions": {
+          "all": "Tümü",
+          "specific": "Belirli"
         },
         "statusOptions": {
           "open": "Açık",

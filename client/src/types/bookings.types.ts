@@ -1,12 +1,23 @@
+export type FacilityPricingType = 'free' | 'per_entry' | 'hourly' | 'monthly' | 'yearly';
+
 export interface Facility {
   id: string;
+  siteId?: string;
+  buildingIds?: string[]; // null/empty = all buildings in site
   name: string;
-  image: string;
+  imageUrl?: string;
   status: 'open' | 'closed' | 'maintenance';
-  hours: string;
+  // Working hours
+  openTime?: string;  // HH:MM format
+  closeTime?: string; // HH:MM format
+  isOpen24Hours?: boolean;
+  hours?: string; // backward compat (computed: "09:00 - 22:00")
+  // Capacity & Booking
   capacity: number;
   requiresBooking: boolean;
-  pricePerHour: number;
+  // Pricing
+  pricingType: FacilityPricingType;
+  price: number;
 }
 
 export interface Booking {
@@ -24,4 +35,3 @@ export interface Booking {
 
 export type BookingStatus = Booking['status'];
 export type FacilityStatus = Facility['status'];
-

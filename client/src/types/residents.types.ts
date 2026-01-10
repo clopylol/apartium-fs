@@ -98,6 +98,7 @@ export interface ParkingSpotWithVehicle extends ParkingSpotDefinition {
 
 export interface GuestVisit {
     id: string;
+    unitId?: string;
     plate: string;
     guestName?: string;
     model?: string;

@@ -113,13 +113,13 @@ export function ResidentsView({
 
     // Check if any filter is active
     const isFiltered = useMemo(() => {
-        return typeFilter !== "all" || 
-            unitStatusFilter !== "all" || 
-            vehicleFilter !== "all" || 
+        return typeFilter !== "all" ||
+            unitStatusFilter !== "all" ||
+            vehicleFilter !== "all" ||
             floorFilter !== "all" ||
             (debouncedSearchTerm && debouncedSearchTerm.length > 0);
     }, [typeFilter, unitStatusFilter, vehicleFilter, floorFilter, debouncedSearchTerm]);
-    
+
     return (
         <>
             {/* Top Controls (Building Tabs) */}
@@ -142,8 +142,8 @@ export function ResidentsView({
                                 <button
                                     onClick={() => onViewModeChange("grid")}
                                     className={`p-2 rounded-md ${residentViewMode === "grid"
-                                            ? "bg-ds-muted-light dark:bg-ds-muted-dark text-ds-primary-light dark:text-ds-primary-dark"
-                                            : "text-ds-muted-light dark:text-ds-muted-dark hover:text-ds-primary-light dark:hover:text-ds-primary-dark"
+                                        ? "bg-ds-muted-light dark:bg-ds-muted-dark text-ds-primary-light dark:text-ds-primary-dark"
+                                        : "text-ds-muted-light dark:text-ds-muted-dark hover:text-ds-primary-light dark:hover:text-ds-primary-dark"
                                         }`}
                                 >
                                     <LayoutGrid className="w-4 h-4" />
@@ -151,8 +151,8 @@ export function ResidentsView({
                                 <button
                                     onClick={() => onViewModeChange("list")}
                                     className={`p-2 rounded-md ${residentViewMode === "list"
-                                            ? "bg-ds-muted-light dark:bg-ds-muted-dark text-ds-primary-light dark:text-ds-primary-dark"
-                                            : "text-ds-muted-light dark:text-ds-muted-dark hover:text-ds-primary-light dark:hover:text-ds-primary-dark"
+                                        ? "bg-ds-muted-light dark:bg-ds-muted-dark text-ds-primary-light dark:text-ds-primary-dark"
+                                        : "text-ds-muted-light dark:text-ds-muted-dark hover:text-ds-primary-light dark:hover:text-ds-primary-dark"
                                         }`}
                                 >
                                     <List className="w-4 h-4" />
@@ -275,41 +275,41 @@ export function ResidentsView({
                             {residentViewMode === "grid" ? (
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-in fade-in duration-300">
                                     {paginatedUnits.map((unit) => (
-                                <ResidentCard
-                                    key={unit.id}
-                                    unit={unit}
-                                    blockId={activeBlockId}
-                                    activeBlock={activeBlock}
-                                    onEditResident={onEditResident}
-                                    onDeleteResident={(residentId, blockId, unitId) => {
-                                        const resident = unit.residents.find((r) => r.id === residentId);
-                                        onDeleteResident(residentId, resident?.name || "", blockId, unitId);
-                                    }}
-                                    onManageVehicles={onManageVehicles}
-                                    onAddResident={onAddResident}
-                                />
-                            ))}
-                            {activeBlock && (
-                                <button
-                                    onClick={handleOpenAddUnit}
-                                    className="rounded-2xl border-2 border-dashed border-slate-800 flex flex-col items-center justify-center gap-4 min-h-[300px] hover:bg-slate-900/40 hover:border-slate-700 transition-all group"
-                                >
-                                    <div className="w-16 h-16 rounded-full bg-slate-900 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                        <Plus className="w-8 h-8 text-slate-500 group-hover:text-blue-500 transition-colors" />
-                                    </div>
-                                    <div className="text-center">
-                                        <h3 className="text-lg font-bold text-slate-400 group-hover:text-white transition-colors">
-                                            {t("residents.actions.addUnit")}
-                                        </h3>
-                                        <p className="text-sm text-slate-600">{t("residents.messages.addUnitDescription")}</p>
-                                    </div>
-                                </button>
-                            )}
-                        </div>
+                                        <ResidentCard
+                                            key={unit.id}
+                                            unit={unit}
+                                            blockId={activeBlockId || ""}
+                                            activeBlock={activeBlock}
+                                            onEditResident={onEditResident}
+                                            onDeleteResident={(residentId, blockId, unitId) => {
+                                                const resident = unit.residents.find((r) => r.id === residentId);
+                                                onDeleteResident(residentId, resident?.name || "", blockId, unitId);
+                                            }}
+                                            onManageVehicles={onManageVehicles}
+                                            onAddResident={onAddResident}
+                                        />
+                                    ))}
+                                    {activeBlock && (
+                                        <button
+                                            onClick={handleOpenAddUnit}
+                                            className="rounded-2xl border-2 border-dashed border-slate-800 flex flex-col items-center justify-center gap-4 min-h-[300px] hover:bg-slate-900/40 hover:border-slate-700 transition-all group"
+                                        >
+                                            <div className="w-16 h-16 rounded-full bg-slate-900 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                                <Plus className="w-8 h-8 text-slate-500 group-hover:text-blue-500 transition-colors" />
+                                            </div>
+                                            <div className="text-center">
+                                                <h3 className="text-lg font-bold text-slate-400 group-hover:text-white transition-colors">
+                                                    {t("residents.actions.addUnit")}
+                                                </h3>
+                                                <p className="text-sm text-slate-600">{t("residents.messages.addUnitDescription")}</p>
+                                            </div>
+                                        </button>
+                                    )}
+                                </div>
                             ) : (
                                 <ResidentsListView
                                     paginatedUnits={paginatedUnits}
-                                    activeBlockId={activeBlockId}
+                                    activeBlockId={activeBlockId || ""}
                                     activeBlock={activeBlock}
                                     onAddResident={onAddResident}
                                     onEditResident={onEditResident}

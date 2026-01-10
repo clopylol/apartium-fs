@@ -21,6 +21,7 @@ export const expenseDistributionTypeEnum = pgEnum('enum_expense_distribution_typ
 
 // Facilities & Bookings Enums
 export const facilityStatusEnum = pgEnum('enum_facility_status', ['open', 'closed', 'maintenance']);
+export const facilityPricingTypeEnum = pgEnum('enum_facility_pricing_type', ['free', 'per_entry', 'hourly', 'monthly', 'yearly']);
 export const bookingStatusEnum = pgEnum('enum_booking_status', ['confirmed', 'pending', 'cancelled']);
 
 // Cargo Enums
@@ -268,13 +269,21 @@ export const expenseAllocations = pgTable('expense_allocations', {
 // Facilities (Ortak Alanlar)
 export const facilities = pgTable('facilities', {
     id: uuid('id').defaultRandom().primaryKey(),
+    siteId: uuid('site_id').references(() => sites.id, { onDelete: 'cascade' }),
     name: varchar('name', { length: 255 }).notNull(),
     imageUrl: text('image_url'),
     status: facilityStatusEnum('status').notNull().default('open'),
-    hours: varchar('hours', { length: 100 }),
+    // Working hours
+    openTime: time('open_time'),
+    closeTime: time('close_time'),
+    isOpen24Hours: boolean('is_open_24_hours').notNull().default(false),
+    hours: varchar('hours', { length: 100 }), // backward compat (computed)
+    // Capacity & Booking
     capacity: integer('capacity').notNull().default(10),
     requiresBooking: boolean('requires_booking').notNull().default(true),
-    pricePerHour: decimal('price_per_hour', { precision: 8, scale: 2 }).notNull().default('0'),
+    // Pricing
+    pricingType: facilityPricingTypeEnum('pricing_type').notNull().default('free'),
+    price: decimal('price', { precision: 8, scale: 2 }).notNull().default('0'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
     deletedAt: timestamp('deleted_at', { withTimezone: true }),

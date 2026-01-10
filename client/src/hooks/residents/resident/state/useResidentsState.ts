@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import type { Building, UnitWithResidents, Site } from "@/types/residents.types";
+import type { Building, UnitWithResidents, Site, BuildingDataResponse } from "@/types/residents.types";
 import { ITEMS_PER_PAGE } from "@/constants/residents.constants";
 import { useBuildings, useBuildingData } from "@/hooks/residents/api";
 import { useSites } from "@/hooks/residents/site";
@@ -49,6 +49,7 @@ export interface ResidentsStateReturn {
 
     // Computed Values
     activeBlock: Building | undefined;
+    buildingData: BuildingDataResponse | undefined;
     units: UnitWithResidents[];
     filteredUnits: UnitWithResidents[];
     paginatedUnits: UnitWithResidents[];
@@ -105,7 +106,7 @@ export function useResidentsState(): ResidentsStateReturn {
     useEffect(() => {
         if (buildings.length > 0) {
             // Eğer hiç aktif blok yoksa veya aktif blok bu sitenin bloklarından değilse, ilk blok'u seç
-            const isCurrentBlockValid = activeBlockId && buildings.some(b => b.id === activeBlockId);
+            const isCurrentBlockValid = activeBlockId && buildings.some((b: Building) => b.id === activeBlockId);
             if (!isCurrentBlockValid) {
                 setActiveBlockId(buildings[0].id);
             }
@@ -124,7 +125,7 @@ export function useResidentsState(): ResidentsStateReturn {
     const activeBlock = useMemo(() => {
         const baseBuilding = buildings.find((b: Building) => b.id === activeBlockId);
         if (!baseBuilding) return undefined;
-        
+
         // Merge with buildingData to include parkingSpots and units
         if (buildingData) {
             return {
@@ -133,7 +134,7 @@ export function useResidentsState(): ResidentsStateReturn {
                 units: buildingData.units || [],
             };
         }
-        
+
         return baseBuilding;
     }, [buildings, activeBlockId, buildingData]);
 
@@ -289,6 +290,7 @@ export function useResidentsState(): ResidentsStateReturn {
 
         // Computed Values
         activeBlock,
+        buildingData,
         units,
         filteredUnits,
         paginatedUnits,

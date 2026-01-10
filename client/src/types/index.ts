@@ -21,12 +21,7 @@ export interface MaintenanceRequest {
   status: 'new' | 'in-progress' | 'resolved';
 }
 
-export interface Booking {
-  id: string;
-  tenant: Tenant;
-  facility: string;
-  time: string;
-}
+
 
 export interface Alert {
   id: string;

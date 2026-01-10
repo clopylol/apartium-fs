@@ -474,4 +474,48 @@ export const api = {
         createComment: (id: string, data: { message: string }) =>
             apiClient(`/maintenance/${id}/comments`, { method: 'POST', data }),
     },
+    // Bookings
+    bookings: {
+        getFacilities: (siteId?: string) => {
+            const params = new URLSearchParams();
+            if (siteId) params.append('siteId', siteId);
+            return apiClient(`/facilities?${params.toString()}`);
+        },
+        createFacility: (data: any) =>
+            apiClient('/facilities', { method: 'POST', data }),
+        updateFacility: (id: string, data: any) =>
+            apiClient(`/facilities/${id}`, { method: 'PATCH', data }),
+        deleteFacility: (id: string) =>
+            apiClient(`/facilities/${id}`, { method: 'DELETE' }),
+
+        getBookings: (filters?: { facilityId?: string; siteId?: string }) => {
+            const params = new URLSearchParams();
+            if (filters?.facilityId) {
+                // Use facility specific route if only facilityId? Or just use general route with filters?
+                // General route is more flexible.
+                // But previously I implemented facility specific route client.
+                // Let's switch to general /bookings route if siteId is present, or just use /bookings for all?
+                // Backend: GET /bookings has siteId support. GET /facilities/:id/bookings exists too.
+                // Let's use /bookings for flexibility.
+                params.append('facilityId', filters.facilityId);
+            }
+            if (filters?.siteId) {
+                params.append('siteId', filters.siteId);
+            }
+            // If facilityId provided, maybe use the specific route?
+            if (filters?.facilityId && !filters?.siteId) {
+                return apiClient(`/facilities/${filters.facilityId}/bookings`);
+            }
+            return apiClient(`/bookings?${params.toString()}`);
+        },
+        createBooking: (data: any) =>
+            apiClient('/bookings', { method: 'POST', data }),
+        updateBookingStatus: (id: string, status: string, rejectionReason?: string) =>
+            apiClient(`/bookings/${id}/status`, {
+                method: 'PATCH',
+                data: { status, rejectionReason }
+            }),
+        deleteBooking: (id: string) =>
+            apiClient(`/bookings/${id}`, { method: 'DELETE' }),
+    },
 };

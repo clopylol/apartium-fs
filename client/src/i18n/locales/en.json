@@ -1284,7 +1284,12 @@
       "title": "Facilities & Bookings",
       "searchPlaceholder": "Search booking...",
       "facilityManagement": "Facility Management",
-      "createBooking": "Make Booking"
+      "createBooking": "Make Booking",
+      "addFacility": "Add Facility",
+      "tabs": {
+        "bookings": "Bookings",
+        "facilities": "Facilities"
+      }
     },
     "facilities": {
       "title": "Social Facilities",
@@ -1299,7 +1304,31 @@
       "active": "Active",
       "schedule": "Schedule",
       "free": "Free",
-      "perHour": "₺/hr"
+      "perHour": "₺/hr",
+      "types": {
+        "gym": "Gym",
+        "pool": "Swimming Pool",
+        "meetingRoom": "Meeting Room",
+        "bbq": "BBQ Area",
+        "playground": "Playground",
+        "tennis": "Tennis Court",
+        "basketball": "Basketball Court",
+        "sauna": "Sauna",
+        "turkishBath": "Turkish Bath",
+        "parking": "Parking",
+        "garden": "Garden",
+        "laundry": "Laundry Room",
+        "cinema": "Cinema Room",
+        "library": "Library",
+        "other": "Other"
+      },
+      "pricing": {
+        "free": "Free",
+        "perEntry": "Per Entry",
+        "hourly": "Hourly",
+        "monthly": "Monthly",
+        "yearly": "Yearly"
+      }
     },
     "bookings": {
       "allBookings": "All Bookings",
@@ -1368,19 +1397,41 @@
         },
         "labels": {
           "name": "Facility Name",
+          "facilityType": "Facility Type",
+          "customName": "Custom Facility Name",
           "image": "Image URL",
           "status": "Status",
           "capacity": "Capacity",
+          "workingHours": "Working Hours",
+          "open24Hours": "Open 24/7",
+          "openTime": "Opening Time",
+          "closeTime": "Closing Time",
+          "pricing": "Pricing",
+          "pricingType": "Pricing Type",
+          "price": "Price",
           "hours": "Working Hours",
           "pricePerHour": "Price (₺/Hr)",
-          "requiresBooking": "Booking is required for this facility"
+          "requiresBooking": "Booking is required for this facility",
+          "siteAndBuilding": "Site & Building",
+          "site": "Site",
+          "accessScope": "Access Scope",
+          "buildings": "Buildings",
+          "buildingsHint": "* Select buildings that can access this facility"
         },
         "placeholders": {
           "name": "e.g.: Swimming Pool",
+          "facilityType": "Select facility type",
+          "customName": "Enter facility name",
           "image": "https://...",
           "hours": "08:00 - 22:00",
           "capacity": "20",
-          "pricePerHour": "0"
+          "pricePerHour": "0",
+          "pricingType": "Select pricing type",
+          "site": "Select site"
+        },
+        "accessOptions": {
+          "all": "All",
+          "specific": "Specific"
         },
         "statusOptions": {
           "open": "Open",

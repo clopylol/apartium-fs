@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react';
+import { useFacilities, useBookings } from './useBookingsQueries';
+import { useAuth } from '@/contexts/auth/useAuth';
+import { useSites } from '@/hooks/residents/site/useSites';
 import type { Facility, Booking } from '@/types/bookings.types';
-import { INITIAL_FACILITIES, INITIAL_BOOKINGS } from '@/constants/bookings';
+import type { Site } from '@/types/residents.types';
 
 export interface UseBookingsStateReturn {
   facilities: Facility[];
-  setFacilities: React.Dispatch<React.SetStateAction<Facility[]>>;
   bookings: Booking[];
-  setBookings: React.Dispatch<React.SetStateAction<Booking[]>>;
+  sites: Site[];
+  activeSiteId: string | null;
+  setActiveSiteId: React.Dispatch<React.SetStateAction<string | null>>;
   isLoading: boolean;
   viewMode: 'list' | 'calendar';
   setViewMode: React.Dispatch<React.SetStateAction<'list' | 'calendar'>>;
@@ -15,29 +19,43 @@ export interface UseBookingsStateReturn {
 }
 
 export const useBookingsState = (): UseBookingsStateReturn => {
-  const [facilities, setFacilities] = useState<Facility[]>(INITIAL_FACILITIES);
-  const [bookings, setBookings] = useState<Booking[]>(INITIAL_BOOKINGS);
-  const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuth();
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [calendarWeekStart, setCalendarWeekStart] = useState(new Date());
 
+  // Site selection state - default to user's site
+  const [activeSiteId, setActiveSiteId] = useState<string | null>(user?.siteId || null);
+
+  // Sync activeSiteId with user.siteId when user loads
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, []);
+    if (user?.siteId && !activeSiteId) {
+      setActiveSiteId(user.siteId);
+    }
+  }, [user?.siteId, activeSiteId]);
+
+  const { sites = [] } = useSites();
+
+  // Auto-select site if only one exists or none selected
+  useEffect(() => {
+    if (!activeSiteId && sites.length > 0) {
+      if (sites.length === 1 || !user?.siteId) {
+        setActiveSiteId(sites[0].id);
+      }
+    }
+  }, [sites, activeSiteId, user?.siteId]);
+  const { data: facilities = [], isLoading: isLoadingFacilities } = useFacilities(activeSiteId || undefined);
+  const { data: bookings = [], isLoading: isLoadingBookings } = useBookings({ siteId: activeSiteId || undefined });
 
   return {
     facilities,
-    setFacilities,
     bookings,
-    setBookings,
-    isLoading,
+    sites,
+    activeSiteId,
+    setActiveSiteId,
+    isLoading: isLoadingFacilities || isLoadingBookings,
     viewMode,
     setViewMode,
     calendarWeekStart,
     setCalendarWeekStart,
   };
 };
-

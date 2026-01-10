@@ -14,6 +14,7 @@ import {
 } from "@/hooks/residents";
 import { useGuestMutations } from "@/hooks/residents/api";
 import { useKeyboardShortcuts } from "@/hooks/residents/resident/useKeyboardShortcuts";
+import { showError } from "@/utils/toast";
 
 // Components
 import { ResidentsHeader } from "./components_residents/shared/header";
@@ -37,7 +38,7 @@ import { AssignVehicleModal } from "./components_residents/parking/modals/assign
 
 export function ResidentsPage() {
     const { t } = useTranslation();
-    
+
     // Active Tab State
     const [activeTab, setActiveTab] = useState<"residents" | "parking" | "guests">("residents");
 
@@ -106,12 +107,14 @@ export function ResidentsPage() {
         residentsState.debouncedSearchTerm,
     ]);
 
+    const hasActiveFiltersBool = !!hasActiveFilters;
+
     useKeyboardShortcuts({
         enabled: activeTab === "residents",
         onSearchFocus: handleSearchFocus,
         onClearFilters: residentsState.clearAllFilters,
         onToggleView: handleToggleView,
-        hasActiveFilters,
+        hasActiveFilters: hasActiveFiltersBool,
     });
 
     const parkingActions = useParkingActions({
@@ -170,37 +173,37 @@ export function ResidentsPage() {
                             }}
                         >
                             <ResidentsView
-                            buildings={residentsState.buildings}
-                            activeBlockId={residentsState.activeBlockId}
-                            activeBlock={residentsState.activeBlock}
-                            paginatedUnits={residentsState.paginatedUnits}
-                            filteredUnits={residentsState.filteredUnits}
-                            currentPage={residentsState.currentPage}
-                            stats={residentsState.stats}
-                            residentViewMode={residentsState.residentViewMode}
-                            isLoading={residentsState.loadingStates.residents}
-                            typeFilter={residentsState.typeFilter}
-                            onTypeChange={residentsState.setTypeFilter}
-                            unitStatusFilter={residentsState.unitStatusFilter}
-                            onUnitStatusChange={residentsState.setUnitStatusFilter}
-                            vehicleFilter={residentsState.vehicleFilter}
-                            onVehicleChange={residentsState.setVehicleFilter}
-                            floorFilter={residentsState.floorFilter}
-                            onFloorChange={residentsState.setFloorFilter}
-                            availableFloors={residentsState.availableFloors}
-                            debouncedSearchTerm={residentsState.debouncedSearchTerm}
-                            onClearFilters={residentsState.clearAllFilters}
-                            onBlockChange={residentsState.setActiveBlockId}
-                            onAddBuilding={buildingActions.handleOpenAddBuilding}
-                            onEditBuilding={buildingActions.handleOpenEditBuilding}
-                            onDeleteBuilding={buildingActions.handleOpenDeleteBuilding}
-                            onViewModeChange={residentsState.setResidentViewMode}
-                            onPageChange={residentsState.setCurrentPage}
-                            onAddResident={residentActions.handleOpenAddResident}
-                            onEditResident={residentActions.handleOpenEditResident}
-                            onDeleteResident={residentActions.handleOpenDeleteResident}
-                            onManageVehicles={residentActions.handleOpenVehicleManager}
-                        />
+                                buildings={residentsState.buildings}
+                                activeBlockId={residentsState.activeBlockId}
+                                activeBlock={residentsState.activeBlock}
+                                paginatedUnits={residentsState.paginatedUnits}
+                                filteredUnits={residentsState.filteredUnits}
+                                currentPage={residentsState.currentPage}
+                                stats={residentsState.stats}
+                                residentViewMode={residentsState.residentViewMode}
+                                isLoading={residentsState.loadingStates.residents}
+                                typeFilter={residentsState.typeFilter}
+                                onTypeChange={residentsState.setTypeFilter}
+                                unitStatusFilter={residentsState.unitStatusFilter}
+                                onUnitStatusChange={residentsState.setUnitStatusFilter}
+                                vehicleFilter={residentsState.vehicleFilter}
+                                onVehicleChange={residentsState.setVehicleFilter}
+                                floorFilter={residentsState.floorFilter}
+                                onFloorChange={residentsState.setFloorFilter}
+                                availableFloors={residentsState.availableFloors}
+                                debouncedSearchTerm={residentsState.debouncedSearchTerm}
+                                onClearFilters={residentsState.clearAllFilters}
+                                onBlockChange={residentsState.setActiveBlockId}
+                                onAddBuilding={buildingActions.handleOpenAddBuilding}
+                                onEditBuilding={buildingActions.handleOpenEditBuilding}
+                                onDeleteBuilding={buildingActions.handleOpenDeleteBuilding}
+                                onViewModeChange={residentsState.setResidentViewMode}
+                                onPageChange={residentsState.setCurrentPage}
+                                onAddResident={residentActions.handleOpenAddResident}
+                                onEditResident={residentActions.handleOpenEditResident}
+                                onDeleteResident={residentActions.handleOpenDeleteResident}
+                                onManageVehicles={residentActions.handleOpenVehicleManager}
+                            />
                         </ErrorBoundary>
                     )}
 
@@ -209,7 +212,7 @@ export function ResidentsPage() {
                         <ParkingView
                             buildings={residentsState.buildings}
                             activeBlockId={residentsState.activeBlockId}
-                            activeBlock={residentsState.activeBlock}
+                            activeBlock={residentsState.activeBlock ?? null}
                             parkingGridData={parkingActions.parkingGridData}
                             activeParkingFloor={parkingState.activeParkingFloor}
                             availableFloors={parkingState.availableFloors}
@@ -237,7 +240,7 @@ export function ResidentsPage() {
                         <GuestsView
                             buildings={residentsState.buildings}
                             activeBlockId={residentsState.activeBlockId}
-                            activeBlock={residentsState.activeBlock}
+                            activeBlock={residentsState.activeBlock ?? null}
                             guestStats={guestState.guestStats}
                             guestFilter={guestState.guestFilter}
                             onFilterChange={guestState.setGuestFilter}

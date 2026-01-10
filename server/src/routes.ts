@@ -917,9 +917,14 @@ export function createRoutes(storage: IStorage): Router {
 
     router.get('/facilities', requireAuth, async (req, res) => {
         try {
-            const facilities = await storage.getAllFacilities();
+            const filters: { siteId?: string } = {};
+            if (req.query.siteId) {
+                filters.siteId = req.query.siteId as string;
+            }
+            const facilities = await storage.getAllFacilities(filters);
             res.json({ facilities });
         } catch (error) {
+            console.error('Error fetching facilities:', error);
             res.status(500).json({ error: 'Sosyal tesisler yüklenirken hata oluştu' });
         }
     });
@@ -930,8 +935,9 @@ export function createRoutes(storage: IStorage): Router {
             const facility = await storage.createFacility(validatedData);
             res.status(201).json({ facility });
         } catch (error: any) {
+            console.error('Facility creation error:', error);
             if (error.name === 'ZodError') return res.status(400).json({ error: 'Geçersiz veri', details: error.errors });
-            res.status(500).json({ error: 'Tesis oluşturulamadı' });
+            res.status(500).json({ error: 'Tesis oluşturulamadı', details: error.message });
         }
     });
 
@@ -962,9 +968,39 @@ export function createRoutes(storage: IStorage): Router {
         }
     });
 
+    router.get('/bookings', requireAuth, async (req, res) => {
+        try {
+            const { siteId } = req.query;
+            const filters: { siteId?: string } = {};
+            if (siteId && typeof siteId === 'string') {
+                filters.siteId = siteId;
+            }
+            // We need a method in storage for this
+            const bookings = await storage.getAllBookings(filters);
+            res.json({ bookings });
+        } catch (error) {
+            res.status(500).json({ error: 'Rezervasyonlar yüklenirken hata oluştu' });
+        }
+    });
+
     router.post('/bookings', requireAuth, async (req, res) => {
         try {
             const validatedData = insertBookingSchema.parse(req.body);
+
+            // Check for overlaps
+            // Convert Time values to HH:MM:SS string format if needed, or assume they are passed correctly
+            // Drizzle time type usually expects string "HH:MM:SS"
+            const hasOverlap = await storage.checkBookingOverlap(
+                validatedData.facilityId,
+                validatedData.bookingDate as unknown as string, // Zod parses date string to Date object usually, we might need to handle this
+                validatedData.startTime,
+                validatedData.endTime
+            );
+
+            if (hasOverlap) {
+                return res.status(409).json({ error: 'Bu saat aralığı için seçilen tesis doludur.' });
+            }
+
             const booking = await storage.createBooking(validatedData);
             res.status(201).json({ booking });
         } catch (error: any) {
