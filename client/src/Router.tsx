@@ -14,6 +14,7 @@ import { DesignSystemPage } from "@/pages/design-system";
 import { CargoPage } from "@/pages/cargo";
 import { MaintenancePage } from "@/pages/maintenance";
 import { BookingsPage } from "@/pages/bookings";
+import { NotFoundPage } from "@/pages/not-found";
 
 export function Router() {
   return (
@@ -47,6 +48,9 @@ export function Router() {
           <Route path="/design-system" element={<DesignSystemPage />} />
           <Route path="/settings" element={<PlaceholderPage />} />
         </Route>
+
+        {/* 404 Not Found - Catch All */}
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>
   );

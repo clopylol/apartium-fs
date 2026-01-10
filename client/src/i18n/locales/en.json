@@ -1,5 +1,12 @@
 {
   "welcome": "Welcome to Apartment Management",
+  "notFound": {
+    "title": "404",
+    "heading": "You seem lost",
+    "description": "We can't find the page you're looking for. It might have been moved, deleted, or never existed.",
+    "goBack": "Go Back",
+    "goHome": "Home"
+  },
   "errorBoundary": {
     "title": "An Error Occurred",
     "message": "Something went wrong. Please refresh the page or try again.",

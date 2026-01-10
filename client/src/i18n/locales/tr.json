@@ -1,5 +1,12 @@
 {
   "welcome": "Apartman Yönetimine Hoşgeldiniz",
+  "notFound": {
+    "title": "404",
+    "heading": "Kaybolmuş görünüyorsunuz",
+    "description": "Aradığınız sayfayı bulamıyoruz. Sayfa taşınmış, silinmiş veya hiç var olmamış olabilir.",
+    "goBack": "Geri Dön",
+    "goHome": "Ana Sayfa"
+  },
   "errorBoundary": {
     "title": "Bir Hata Oluştu",
     "message": "Bir şeyler yanlış gitti. Lütfen sayfayı yenileyin veya tekrar deneyin.",
