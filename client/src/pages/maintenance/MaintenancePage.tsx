@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import type { FC } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -7,7 +7,7 @@ import {
   MaintenanceFilters,
   MaintenanceTable,
   MaintenanceGridView,
-  NewRequestModal,
+
   RequestDetailModal,
   TestRequestModal,
 } from "./components_maintenance";
@@ -15,14 +15,16 @@ import {
 import { Pagination } from "@/components/shared/pagination";
 import { InfoBanner } from "@/components/shared/info-banner";
 import { Button } from "@/components/shared/button";
-import { Wrench, Search, LayoutList, LayoutGrid } from "lucide-react";
+import { Wrench, Search } from "lucide-react";
 import {
   useMaintenanceModals,
   useMaintenanceRequests,
   useMaintenanceStats,
   useUpdateMaintenanceStatus,
-  useCreateMaintenanceRequest,
+
 } from "@/hooks/maintenance";
+import { useBuildings } from "@/hooks/residents/api/useResidentsData";
+import { useSites } from "@/hooks/residents/site/useSites";
 import type { MaintenanceRequest } from "@/types/maintenance.types";
 import { ITEMS_PER_PAGE } from "@/constants/maintenance";
 
@@ -37,6 +39,64 @@ export const MaintenancePage: FC = () => {
   const [filterCategory, setFilterCategory] = useState<string>("All");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+
+  // New Filters
+  const [dateFrom, setDateFrom] = useState<string>(() => {
+    const now = new Date();
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+    // Use local time to avoid timezone issues with ISOString
+    const offset = now.getTimezoneOffset();
+    const localFirstDay = new Date(firstDay.getTime() - (offset * 60 * 1000));
+    return localFirstDay.toISOString().split('T')[0];
+  });
+
+  const [dateTo, setDateTo] = useState<string>(() => {
+    const now = new Date();
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    const offset = now.getTimezoneOffset();
+    const localLastDay = new Date(lastDay.getTime() - (offset * 60 * 1000));
+    return localLastDay.toISOString().split('T')[0];
+  });
+
+  // Site & Building State
+  const [activeSiteId, setActiveSiteId] = useState<string | null>(null);
+  const [activeBuildingId, setActiveBuildingId] = useState<string | null>(null);
+
+  // Fetch Sites
+  const { sites } = useSites();
+
+  // Fetch Buildings
+  const { data: buildingsData } = useBuildings();
+  const allBuildings = buildingsData?.buildings || [];
+
+
+
+  // Filter buildings by active site
+  const buildings = useMemo(() => {
+    if (!activeSiteId) return [];
+    return allBuildings.filter((b: any) => b.siteId === activeSiteId);
+  }, [allBuildings, activeSiteId]);
+
+  // Auto-select first site
+  useEffect(() => {
+    if (sites.length > 0 && !activeSiteId) {
+      setActiveSiteId(sites[0].id);
+    }
+  }, [sites, activeSiteId]);
+
+  // Auto-select first building when site changes
+  useEffect(() => {
+    // When site changes, buildings list updates
+    // If current building is not in the new list, reset it
+    const isCurrentBuildingValid = activeBuildingId && buildings.some((b: any) => b.id === activeBuildingId);
+
+    if (!isCurrentBuildingValid) {
+      // Can default to "All" (null) or first building. 
+      // Payments page defaults to first building sometimes, but "All" is cleaner for filters.
+      // Let's default to null (All Buildings) when site changes.
+      setActiveBuildingId(null);
+    }
+  }, [buildings, activeBuildingId]);
 
   // Modals
   const [showTestModal, setShowTestModal] = useState(false);
@@ -55,6 +115,10 @@ export const MaintenancePage: FC = () => {
     status: filterStatus === "All" ? undefined : filterStatus,
     priority: filterPriority === "All" ? undefined : filterPriority,
     category: filterCategory === "All" ? undefined : filterCategory,
+    siteId: activeSiteId || undefined,
+    buildingId: activeBuildingId || undefined,
+    dateFrom: dateFrom || undefined,
+    dateTo: dateTo || undefined,
     sortBy: "requestDate",
     sortOrder,
   });
@@ -63,7 +127,7 @@ export const MaintenancePage: FC = () => {
 
   // Mutations
   const updateStatusMutation = useUpdateMaintenanceStatus();
-  const createRequestMutation = useCreateMaintenanceRequest();
+
 
   // Transform API data to match component requirements
   const requests: MaintenanceRequest[] = (requestsData?.requests || []).map(
@@ -85,30 +149,13 @@ export const MaintenancePage: FC = () => {
       description: req.description,
       attachmentUrl: req.attachmentUrl,
       buildingName: req.buildingName,
+      createdAt: req.requestDate, // Keep full timestamp for SLA
     })
   );
 
   const totalItems = requestsData?.total || 0;
 
-  const handleCreateRequest = () => {
-    // TODO: Get current user's residentId and unitId from context
-    // For now, this won't work without proper auth context integration
-    createRequestMutation.mutate(
-      {
-        residentId: "", // Will be populated from auth context
-        unitId: "", // Will be populated from auth context
-        title: modals.newRequestFormData.title,
-        description: modals.newRequestFormData.description,
-        category: modals.newRequestFormData.category,
-        priority: modals.newRequestFormData.priority,
-      },
-      {
-        onSuccess: () => {
-          modals.closeNewRequestModal();
-        },
-      }
-    );
-  };
+
 
   const handleStatusUpdate = (
     id: string,
@@ -149,7 +196,7 @@ export const MaintenancePage: FC = () => {
           setSearchTerm(value);
           setCurrentPage(1); // Reset page on search
         }}
-        onNewRequest={modals.openNewRequestModal}
+        onNewRequest={() => setShowTestModal(true)}
       />
 
       <div className="flex-1 overflow-y-auto custom-scrollbar p-8">
@@ -165,18 +212,36 @@ export const MaintenancePage: FC = () => {
                 setFilterStatus(value);
                 setCurrentPage(1);
               }}
-              filterPriority={filterPriority as MaintenanceRequest["priority"] | "All"}
+              filterPriority={filterPriority as any}
               onPriorityChange={(value) => {
                 setFilterPriority(value);
                 setCurrentPage(1);
               }}
-              filterCategory={filterCategory as MaintenanceRequest["category"] | "All"}
+              filterCategory={filterCategory as any}
               onCategoryChange={(value) => {
                 setFilterCategory(value);
                 setCurrentPage(1);
               }}
               viewMode={viewMode}
               onViewModeChange={setViewMode}
+              // New Props
+              dateFrom={dateFrom}
+              onDateFromChange={(value) => {
+                setDateFrom(value);
+                setCurrentPage(1);
+              }}
+              dateTo={dateTo}
+              onDateToChange={(value) => {
+                setDateTo(value);
+                setCurrentPage(1);
+              }}
+              // Site & Building Props
+              sites={sites}
+              activeSiteId={activeSiteId}
+              onSiteChange={setActiveSiteId}
+              buildings={buildings}
+              activeBuildingId={activeBuildingId}
+              onBuildingChange={setActiveBuildingId}
             />
           </div>
 
@@ -189,7 +254,7 @@ export const MaintenancePage: FC = () => {
               <p className="text-ds-secondary-light dark:text-ds-secondary-dark mb-6 max-w-sm text-center">
                 {t("maintenance.emptyState.description")}
               </p>
-              <Button onClick={modals.openNewRequestModal}>
+              <Button onClick={() => setShowTestModal(true)}>
                 {t("maintenance.emptyState.createButton")}
               </Button>
             </div>
@@ -245,13 +310,7 @@ export const MaintenancePage: FC = () => {
         </div>
       </div>
 
-      <NewRequestModal
-        isOpen={modals.showNewRequestModal}
-        onClose={modals.closeNewRequestModal}
-        formData={modals.newRequestFormData}
-        onChange={modals.setNewRequestFormData}
-        onSave={handleCreateRequest}
-      />
+
 
       <RequestDetailModal
         isOpen={!!modals.selectedRequest}

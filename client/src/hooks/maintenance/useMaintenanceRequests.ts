@@ -11,6 +11,8 @@ export interface UseMaintenanceRequestsParams {
     category?: string;
     siteId?: string;
     buildingId?: string;
+    dateFrom?: string;
+    dateTo?: string;
     sortBy?: string;
     sortOrder?: "asc" | "desc";
 }
@@ -24,6 +26,8 @@ export const useMaintenanceRequests = ({
     category,
     siteId,
     buildingId,
+    dateFrom,
+    dateTo,
     sortBy,
     sortOrder,
 }: UseMaintenanceRequestsParams) => {
@@ -38,6 +42,8 @@ export const useMaintenanceRequests = ({
             category,
             siteId,
             buildingId,
+            dateFrom,
+            dateTo,
             sortBy,
             sortOrder,
         ],
@@ -49,6 +55,8 @@ export const useMaintenanceRequests = ({
                 category,
                 siteId,
                 buildingId,
+                dateFrom,
+                dateTo,
                 sortBy,
                 sortOrder,
             });

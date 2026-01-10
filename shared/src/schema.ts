@@ -371,6 +371,18 @@ export const maintenanceRequests = pgTable('maintenance_requests', {
     deletedAt: timestamp('deleted_at', { withTimezone: true }),
 });
 
+// Maintenance Comments (Bakım Yorumları / Aktivite Günlüğü)
+export const maintenanceComments = pgTable('maintenance_comments', {
+    id: uuid('id').defaultRandom().primaryKey(),
+    requestId: uuid('request_id').notNull().references(() => maintenanceRequests.id, { onDelete: 'cascade' }),
+    authorId: uuid('author_id').references(() => users.id, { onDelete: 'set null' }), // Sistem yorumları için null olabilir
+    message: text('message').notNull(),
+    isSystem: boolean('is_system').notNull().default(false), // Sistem tarafından oluşturulan otomatik mesajlar
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
+});
+
 // ============================================================
 // ANNOUNCEMENTS
 // ============================================================
@@ -576,6 +588,9 @@ export const selectCourierVisitSchema = createSelectSchema(courierVisits);
 export const insertMaintenanceRequestSchema = createInsertSchema(maintenanceRequests);
 export const selectMaintenanceRequestSchema = createSelectSchema(maintenanceRequests);
 
+export const insertMaintenanceCommentSchema = createInsertSchema(maintenanceComments);
+export const selectMaintenanceCommentSchema = createSelectSchema(maintenanceComments);
+
 // Announcements
 export const insertAnnouncementSchema = createInsertSchema(announcements);
 export const selectAnnouncementSchema = createSelectSchema(announcements);
@@ -673,6 +688,9 @@ export type InsertCourierVisit = z.infer<typeof insertCourierVisitSchema>;
 // Maintenance Types
 export type MaintenanceRequest = z.infer<typeof selectMaintenanceRequestSchema>;
 export type InsertMaintenanceRequest = z.infer<typeof insertMaintenanceRequestSchema>;
+
+export type MaintenanceComment = z.infer<typeof selectMaintenanceCommentSchema>;
+export type InsertMaintenanceComment = z.infer<typeof insertMaintenanceCommentSchema>;
 
 // Announcements Types
 export type Announcement = z.infer<typeof selectAnnouncementSchema>;

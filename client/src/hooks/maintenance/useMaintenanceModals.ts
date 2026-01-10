@@ -7,6 +7,8 @@ export interface NewRequestFormData {
   priority: MaintenanceRequest["priority"];
   category: MaintenanceRequest["category"];
   photo?: string;
+  unitId?: string;
+  residentId?: string;
 }
 
 export interface UseMaintenanceModalsReturn {

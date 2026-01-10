@@ -85,6 +85,13 @@
       "when": 1735100000000,
       "tag": "0017_add_area_to_units",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1768054342004,
+      "tag": "0018_neat_prowler",
+      "breakpoints": true
     }
   ]
 }

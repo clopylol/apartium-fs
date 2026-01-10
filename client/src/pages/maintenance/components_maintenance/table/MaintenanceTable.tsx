@@ -89,8 +89,16 @@ export const MaintenanceTable: FC<MaintenanceTableProps> = ({
                     className="w-8 h-8 rounded-full object-cover"
                   />
                   <div>
-                    <div className="text-sm font-medium text-ds-primary-light dark:text-ds-primary-dark">
-                      {req.user}
+                    <div className="flex items-center gap-2">
+                      <div className="text-sm font-medium text-ds-primary-light dark:text-ds-primary-dark">
+                        {req.user}
+                      </div>
+                      {isOverdue(req) && (
+                        <span className="flex h-2 w-2 relative" title="SLA Aşımı!">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-ds-destructive-light opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-ds-destructive-light"></span>
+                        </span>
+                      )}
                     </div>
                     <div className="text-xs text-ds-muted-light dark:text-ds-muted-dark">
                       {req.buildingName} - {t("common.labels.unit")} {req.unit}
@@ -132,5 +140,19 @@ export const MaintenanceTable: FC<MaintenanceTableProps> = ({
       </table>
     </div>
   );
+};
+
+// Helper for SLA
+const isOverdue = (req: MaintenanceRequest): boolean => {
+  if (req.status === "Completed" || !req.createdAt) return false;
+
+  const created = new Date(req.createdAt);
+  const now = new Date();
+  const diffHours = (now.getTime() - created.getTime()) / (1000 * 60 * 60);
+
+  if (req.priority === "Urgent" && diffHours > 4) return true;
+  if (req.priority === "High" && diffHours > 24) return true;
+
+  return false;
 };
 

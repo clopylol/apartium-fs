@@ -18,6 +18,7 @@ import type {
     ExpectedCargo, InsertExpectedCargo,
     CourierVisit, InsertCourierVisit,
     MaintenanceRequest, InsertMaintenanceRequest,
+    MaintenanceComment, InsertMaintenanceComment,
     Announcement, InsertAnnouncement,
     Janitor, InsertJanitor,
     JanitorBlockAssignment, InsertJanitorBlockAssignment,
@@ -176,6 +177,8 @@ export interface IStorage {
             category?: string;
             siteId?: string;
             buildingId?: string;
+            dateFrom?: string;
+            dateTo?: string;
             sortBy?: string;
             sortOrder?: 'asc' | 'desc';
         }
@@ -196,8 +199,12 @@ export interface IStorage {
         urgentCount: number;
     }>;
     createMaintenanceRequest(req: InsertMaintenanceRequest): Promise<MaintenanceRequest>;
-    updateMaintenanceStatus(id: string, status: string, completedDate?: Date): Promise<MaintenanceRequest>;
+    updateMaintenanceStatus(id: string, status: string, completedDate?: Date, userId?: string): Promise<MaintenanceRequest>;
     deleteMaintenanceRequest(id: string): Promise<void>;
+
+    // Maintenance Comments
+    getMaintenanceComments(requestId: string): Promise<(MaintenanceComment & { authorName: string | null; authorAvatar: string | null })[]>;
+    createMaintenanceComment(comment: InsertMaintenanceComment): Promise<MaintenanceComment>;
 
     // Announcements
     getAnnouncements(): Promise<Announcement[]>;

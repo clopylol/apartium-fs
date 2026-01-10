@@ -1116,6 +1116,8 @@ export function createRoutes(storage: IStorage): Router {
             const category = req.query.category as string | undefined;
             const siteId = req.query.siteId as string | undefined;
             const buildingId = req.query.buildingId as string | undefined;
+            const dateFrom = req.query.dateFrom as string | undefined;
+            const dateTo = req.query.dateTo as string | undefined;
             const sortBy = req.query.sortBy as string | undefined;
             const sortOrder = req.query.sortOrder as 'asc' | 'desc' | undefined;
 
@@ -1126,6 +1128,8 @@ export function createRoutes(storage: IStorage): Router {
                 category,
                 siteId,
                 buildingId,
+                dateFrom,
+                dateTo,
                 sortBy,
                 sortOrder,
             });
@@ -1134,6 +1138,38 @@ export function createRoutes(storage: IStorage): Router {
         } catch (error) {
             console.error('Maintenance requests error:', error);
             res.status(500).json({ error: 'Bakım talepleri yüklenirken hata oluştu' });
+        }
+    });
+
+    // GET /api/maintenance/:id/comments
+    router.get('/maintenance/:id/comments', requireAuth, async (req, res) => {
+        try {
+            const comments = await storage.getMaintenanceComments(req.params.id);
+            res.json(comments);
+        } catch (error) {
+            console.error('Maintenance comments error:', error);
+            res.status(500).json({ error: 'Yorumlar yüklenirken hata oluştu' });
+        }
+    });
+
+    // POST /api/maintenance/:id/comments
+    router.post('/maintenance/:id/comments', requireAuth, async (req, res) => {
+        try {
+            const { message } = req.body;
+            if (!message) {
+                return res.status(400).json({ error: 'Mesaj boş olamaz' });
+            }
+
+            const comment = await storage.createMaintenanceComment({
+                requestId: req.params.id,
+                message,
+                authorId: (req.user as any).id,
+                isSystem: false
+            });
+            res.status(201).json(comment);
+        } catch (error) {
+            console.error('Create comment error:', error);
+            res.status(500).json({ error: 'Yorum eklenirken hata oluştu' });
         }
     });
 

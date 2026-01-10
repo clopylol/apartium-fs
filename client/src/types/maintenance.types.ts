@@ -15,4 +15,5 @@ export interface MaintenanceRequest {
   description?: string;
   attachmentUrl?: string;
   buildingName: string;
+  createdAt?: string;
 }

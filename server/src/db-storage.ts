@@ -22,6 +22,7 @@ import type {
     ExpectedCargo, InsertExpectedCargo,
     CourierVisit, InsertCourierVisit,
     MaintenanceRequest, InsertMaintenanceRequest,
+    MaintenanceComment, InsertMaintenanceComment,
     Announcement, InsertAnnouncement,
     Janitor, InsertJanitor,
     JanitorBlockAssignment, InsertJanitorBlockAssignment,
@@ -1663,6 +1664,8 @@ export class DatabaseStorage implements IStorage {
             category?: string;
             siteId?: string;
             buildingId?: string;
+            dateFrom?: string;
+            dateTo?: string;
             sortBy?: string;
             sortOrder?: 'asc' | 'desc';
         }
@@ -1693,6 +1696,18 @@ export class DatabaseStorage implements IStorage {
         // Category Filter
         if (filters?.category && filters.category !== 'all' && filters.category !== 'All') {
             whereConditions.push(eq(schema.maintenanceRequests.category, filters.category as any));
+        }
+
+        // Date Range Filter
+        if (filters?.dateFrom) {
+            whereConditions.push(gte(schema.maintenanceRequests.requestDate, new Date(filters.dateFrom)));
+        }
+
+        if (filters?.dateTo) {
+            // Set time to end of day for the end date to include the full day
+            const endDate = new Date(filters.dateTo);
+            endDate.setHours(23, 59, 59, 999);
+            whereConditions.push(lte(schema.maintenanceRequests.requestDate, endDate));
         }
 
         // Main Query with JOINs
@@ -1808,13 +1823,25 @@ export class DatabaseStorage implements IStorage {
             .insert(schema.maintenanceRequests)
             .values(req)
             .returning();
+
+        // Add system comment for creation
+        if (newRequest) {
+            await this.createMaintenanceComment({
+                requestId: newRequest.id,
+                message: "Talep oluşturuldu.",
+                isSystem: true,
+                authorId: null
+            });
+        }
+
         return newRequest;
     }
 
     async updateMaintenanceStatus(
         id: string,
         status: string,
-        completedDate?: Date
+        completedDate?: Date,
+        userId?: string
     ): Promise<MaintenanceRequest> {
         const [updated] = await db
             .update(schema.maintenanceRequests)
@@ -1825,6 +1852,17 @@ export class DatabaseStorage implements IStorage {
             })
             .where(eq(schema.maintenanceRequests.id, id))
             .returning();
+
+        // Add system comment for status change
+        if (updated) {
+            await this.createMaintenanceComment({
+                requestId: id,
+                message: `Durum "${status}" olarak güncellendi.`,
+                isSystem: true,
+                authorId: userId || null
+            });
+        }
+
         return updated;
     }
 
@@ -1833,6 +1871,40 @@ export class DatabaseStorage implements IStorage {
             .update(schema.maintenanceRequests)
             .set({ deletedAt: new Date() })
             .where(eq(schema.maintenanceRequests.id, id));
+    }
+
+    async getMaintenanceComments(requestId: string): Promise<(MaintenanceComment & { authorName: string | null; authorAvatar: string | null })[]> {
+        const comments = await db
+            .select({
+                comment: schema.maintenanceComments,
+                authorName: schema.users.name,
+                // users table doesn't have avatar, but maybe I can join differently or just use name for now.
+                // schema.users has: id, email, passwordHash, name, role, isActive...
+                // So no avatar in users table.
+            })
+            .from(schema.maintenanceComments)
+            .leftJoin(schema.users, eq(schema.maintenanceComments.authorId, schema.users.id))
+            .where(
+                and(
+                    eq(schema.maintenanceComments.requestId, requestId),
+                    isNull(schema.maintenanceComments.deletedAt)
+                )
+            )
+            .orderBy(asc(schema.maintenanceComments.createdAt));
+
+        return comments.map(c => ({
+            ...c.comment,
+            authorName: c.authorName || (c.comment.isSystem ? 'Sistem' : 'Bilinmeyen'),
+            authorAvatar: null // Placeholder as users don't have avatar
+        }));
+    }
+
+    async createMaintenanceComment(comment: InsertMaintenanceComment): Promise<MaintenanceComment> {
+        const [newComment] = await db
+            .insert(schema.maintenanceComments)
+            .values(comment)
+            .returning();
+        return newComment;
     }
 
     // ==================== ANNOUNCEMENTS ====================

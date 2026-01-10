@@ -45,9 +45,10 @@ export const useUpdateMaintenanceStatus = () => {
         }) => {
             return await api.maintenance.updateStatus(id, status, completedDate);
         },
-        onSuccess: () => {
+        onSuccess: (_, variables) => {
             queryClient.invalidateQueries({ queryKey: ["maintenance-requests"] });
             queryClient.invalidateQueries({ queryKey: ["maintenance-stats"] });
+            queryClient.invalidateQueries({ queryKey: ["maintenance-comments", variables.id] });
         },
     });
 };

@@ -1,14 +1,16 @@
 import type { FC, ChangeEvent } from "react";
-import { Wrench, Building2, Home, User, MessageSquare, ClipboardList, Flame } from "lucide-react";
+import { Wrench, Building2, Home, User, MessageSquare, ClipboardList, Flame, MapPin } from "lucide-react";
 import { FormModal } from "@/components/shared/modals";
 import { Dropdown } from "@/components/shared/inputs";
 import { Button } from "@/components/shared/button";
-import type { Building, UnitWithResidents, ResidentWithVehicles } from "@/types/residents.types";
+import type { Building, UnitWithResidents, ResidentWithVehicles, Site } from "@/types/residents.types";
 import { useBuildingData, useBuildings } from "@/hooks/residents/api/useResidentsData";
+import { useSites } from "@/hooks/residents/site/useSites";
 import { useCreateMaintenanceRequest } from "@/hooks/maintenance";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 
 interface TestFormData {
+    siteId: string;
     buildingId: string;
     unitId: string;
     residentId: string;
@@ -38,6 +40,7 @@ const priorityOptions = [
 ];
 
 const initialFormData: TestFormData = {
+    siteId: "",
     buildingId: "",
     unitId: "",
     residentId: "",
@@ -53,11 +56,20 @@ export const TestRequestModal: FC<TestRequestModalProps> = ({
 }) => {
     const [formData, setFormData] = useState<TestFormData>(initialFormData);
 
+    // Fetch Sites
+    const { sites, isLoading: isLoadingSites } = useSites();
+
     // Buildings data
     const { data: buildingsData, isLoading: isLoadingBuildings } = useBuildings();
-    const buildings = Array.isArray(buildingsData)
+    const allBuildings = Array.isArray(buildingsData)
         ? buildingsData
         : (buildingsData as any)?.buildings || [];
+
+    // Filter buildings by selected site
+    const filteredBuildings = useMemo(() => {
+        if (!formData.siteId) return [];
+        return allBuildings.filter((b: Building) => b.siteId === formData.siteId);
+    }, [allBuildings, formData.siteId]);
 
     // Selected building data (units & residents)
     const { data: buildingData, isLoading: isLoadingBuilding } = useBuildingData(
@@ -66,6 +78,10 @@ export const TestRequestModal: FC<TestRequestModalProps> = ({
 
     // Create mutation
     const createMutation = useCreateMaintenanceRequest();
+
+    const handleSiteChange = (id: string) => {
+        setFormData({ ...formData, siteId: id, buildingId: "", unitId: "", residentId: "" });
+    };
 
     const handleBuildingChange = (id: string) => {
         setFormData({ ...formData, buildingId: id, unitId: "", residentId: "" });
@@ -84,6 +100,7 @@ export const TestRequestModal: FC<TestRequestModalProps> = ({
     const residents: ResidentWithVehicles[] = selectedUnit?.residents || [];
 
     const isFormValid =
+        formData.siteId &&
         formData.buildingId &&
         formData.unitId &&
         formData.residentId &&
@@ -129,6 +146,21 @@ export const TestRequestModal: FC<TestRequestModalProps> = ({
         >
             <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Site Selection */}
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-ds-muted-light dark:text-ds-muted-dark uppercase flex items-center gap-1.5 ml-1">
+                            <MapPin className="w-3.5 h-3.5" />
+                            Site
+                        </label>
+                        <Dropdown
+                            options={sites.map((s: Site) => ({ value: s.id, label: s.name }))}
+                            value={formData.siteId}
+                            onChange={handleSiteChange}
+                            placeholder="Site Seçin"
+                            disabled={isLoadingSites}
+                        />
+                    </div>
+
                     {/* Building Selection */}
                     <div className="space-y-2">
                         <label className="text-xs font-bold text-ds-muted-light dark:text-ds-muted-dark uppercase flex items-center gap-1.5 ml-1">
@@ -136,11 +168,11 @@ export const TestRequestModal: FC<TestRequestModalProps> = ({
                             Bina
                         </label>
                         <Dropdown
-                            options={buildings.map((b: Building) => ({ value: b.id, label: b.name }))}
+                            options={filteredBuildings.map((b: Building) => ({ value: b.id, label: b.name }))}
                             value={formData.buildingId}
                             onChange={handleBuildingChange}
-                            placeholder="Bina Seçin"
-                            disabled={isLoadingBuildings}
+                            placeholder={formData.siteId ? "Bina Seçin" : "Önce Site Seçin"}
+                            disabled={!formData.siteId || isLoadingBuildings}
                         />
                     </div>
 
@@ -188,7 +220,7 @@ export const TestRequestModal: FC<TestRequestModalProps> = ({
                     </div>
 
                     {/* Priority Selection */}
-                    <div className="space-y-2 md:col-span-2">
+                    <div className="space-y-2">
                         <label className="text-xs font-bold text-ds-muted-light dark:text-ds-muted-dark uppercase flex items-center gap-1.5 ml-1">
                             <Flame className="w-3.5 h-3.5" />
                             Öncelik

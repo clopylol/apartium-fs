@@ -431,6 +431,8 @@ export const api = {
                 category?: string;
                 siteId?: string;
                 buildingId?: string;
+                dateFrom?: string;
+                dateTo?: string;
                 sortBy?: string;
                 sortOrder?: 'asc' | 'desc';
             }
@@ -444,6 +446,8 @@ export const api = {
             if (filters?.category) params.append('category', filters.category);
             if (filters?.sortBy) params.append('sortBy', filters.sortBy);
             if (filters?.sortOrder) params.append('sortOrder', filters.sortOrder);
+            if (filters?.dateFrom) params.append('dateFrom', filters.dateFrom);
+            if (filters?.dateTo) params.append('dateTo', filters.dateTo);
             if (filters?.buildingId) {
                 params.append('buildingId', filters.buildingId);
             } else if (filters?.siteId) {
@@ -463,5 +467,11 @@ export const api = {
 
         delete: (id: string) =>
             apiClient(`/maintenance/${id}`, { method: 'DELETE' }),
+
+        getComments: (id: string) =>
+            apiClient(`/maintenance/${id}/comments`),
+
+        createComment: (id: string, data: { message: string }) =>
+            apiClient(`/maintenance/${id}/comments`, { method: 'POST', data }),
     },
 };
