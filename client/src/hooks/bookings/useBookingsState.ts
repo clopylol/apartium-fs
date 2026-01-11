@@ -37,12 +37,12 @@ export const useBookingsState = (): UseBookingsStateReturn => {
 
   // Auto-select site if only one exists or none selected
   useEffect(() => {
+    console.log("useBookingsState - Sites:", sites.length, "ActiveSiteId:", activeSiteId);
     if (!activeSiteId && sites.length > 0) {
-      if (sites.length === 1 || !user?.siteId) {
-        setActiveSiteId(sites[0].id);
-      }
+      console.log("Setting default site:", sites[0].id);
+      setActiveSiteId(sites[0].id);
     }
-  }, [sites, activeSiteId, user?.siteId]);
+  }, [sites, activeSiteId]);
   const { data: facilities = [], isLoading: isLoadingFacilities } = useFacilities(activeSiteId || undefined);
   const { data: bookings = [], isLoading: isLoadingBookings } = useBookings({ siteId: activeSiteId || undefined });
 

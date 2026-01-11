@@ -9,6 +9,7 @@ import { BookingModal } from './components_bookings/modals/booking-modal/Booking
 import { BookingConfirmationModal } from './components_bookings/modals/booking-confirmation-modal/BookingConfirmationModal';
 import { FacilityModal } from './components_bookings/modals/facility-modal/FacilityModal';
 import { RejectionModal } from './components_bookings/modals/rejection-modal/RejectionModal';
+import { BookingsFilters } from './components_bookings/filters/BookingsFilters';
 import { useBookingsState } from '@/hooks/bookings/useBookingsState';
 import { useBookingsActions } from '@/hooks/bookings/useBookingsActions';
 import { useBookingsFilters } from '@/hooks/bookings/useBookingsFilters';
@@ -68,6 +69,14 @@ export const BookingsPage = () => {
     currentPage,
     setCurrentPage,
     paginatedBookings,
+    status,
+    setStatus,
+    dateFrom,
+    setDateFrom,
+    dateTo,
+    setDateTo,
+    hasActiveFilters,
+    clearFilters
   } = useBookingsFilters(bookings, viewMode);
 
   // Initial form matching schema
@@ -136,13 +145,7 @@ export const BookingsPage = () => {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-      </div>
-    );
-  }
+
 
   return (
     <div className="flex flex-col h-full bg-ds-background-dark overflow-hidden">
@@ -156,6 +159,8 @@ export const BookingsPage = () => {
         activeSiteId={activeSiteId}
         onSiteChange={setActiveSiteId}
       />
+
+
 
       <div className="flex-1 overflow-y-auto p-6">
         <div className="flex flex-col gap-6">
@@ -197,6 +202,17 @@ export const BookingsPage = () => {
                   />
                 </div>
               )}
+
+              <BookingsFilters
+                status={status}
+                onStatusChange={setStatus}
+                dateFrom={dateFrom}
+                onDateFromChange={setDateFrom}
+                dateTo={dateTo}
+                onDateToChange={setDateTo}
+                onClearFilters={clearFilters}
+                hasActiveFilters={hasActiveFilters}
+              />
 
               <div className="flex flex-col gap-4">
                 <div className="flex items-center justify-between">

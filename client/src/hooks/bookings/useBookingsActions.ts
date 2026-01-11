@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import type { Facility, Booking } from '@/types/bookings.types';
+import type { Facility } from '@/types/bookings.types';
 import { useBookingsMutations } from './useBookingsMutations';
 import { useAuth } from '@/contexts/auth/useAuth';
 
@@ -69,21 +69,31 @@ export const useBookingsActions = (): UseBookingsActionsReturn => {
       startTime: string;
       endTime: string;
       note: string;
+      // Optional fields from new modal
+      siteId?: string;
+      buildingId?: string;
+      unitId?: string;
+      residentId?: string;
     },
     setNewBooking: React.Dispatch<React.SetStateAction<any>>
   ) => {
-    // Logic from before
-    createBooking.mutate({
-      ...newBookingData,
-      // We might need to transform date/time format if needed
-      bookingDate: newBookingData.date,
-      // Assuming unit is unitId because frontend dropdowns usually provide IDs.
-      // If it's a string name, we have an issue.
-      unitId: newBookingData.unit,
-      // We lack residentId. If user is resident, use user.id. 
-      // If admin, we need residentId from form.
-      residentId: user?.id, // Fallback for now, likely incorrect for Admin mode
-    }, {
+    // Construct payload
+    const payload = {
+      facilityId: newBookingData.facilityId,
+      residentName: newBookingData.residentName,
+      unit: newBookingData.unit,
+      startTime: newBookingData.startTime,
+      endTime: newBookingData.endTime,
+      note: newBookingData.note,
+      bookingDate: newBookingData.date, // Backend expects bookingDate
+      unitId: newBookingData.unitId || '', // Use the ID if available
+      residentId: newBookingData.residentId || user?.id, // Use form residentId if available (admin mode), else fallback
+      // Helper fields (might be ignored by backend but good for context if allowed)
+      siteId: newBookingData.siteId,
+      buildingId: newBookingData.buildingId,
+    };
+
+    createBooking.mutate(payload, {
       onSuccess: () => {
         setNewBooking({
           facilityId: '',
@@ -92,7 +102,11 @@ export const useBookingsActions = (): UseBookingsActionsReturn => {
           date: '',
           startTime: '',
           endTime: '',
-          note: ''
+          note: '',
+          siteId: '',
+          buildingId: '',
+          unitId: '',
+          residentId: '',
         });
       }
     });

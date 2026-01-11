@@ -1,6 +1,7 @@
 import type { FC } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Calendar } from 'lucide-react';
+import { EmptyState } from '@/components/shared/empty-state/EmptyState';
 import { BookingRow } from '../booking-row';
 import { BookingRowSkeleton } from '../../skeletons';
 import { PaginationControls } from '@/pages/payments/components_payments/pagination';
@@ -23,7 +24,7 @@ const getFacilityName = (facilities: Facility[], id: string): string => {
 };
 
 const getFacilityImage = (facilities: Facility[], id: string): string => {
-  return facilities.find(f => f.id === id)?.image || '';
+  return facilities.find(f => f.id === id)?.imageUrl || '';
 };
 
 export const BookingTable: FC<BookingTableProps> = ({
@@ -54,13 +55,9 @@ export const BookingTable: FC<BookingTableProps> = ({
           </thead>
           <tbody className="divide-y divide-ds-border-light/50 dark:divide-ds-border-dark/50">
             {isLoading ? (
-              <>
-                <BookingRowSkeleton />
-                <BookingRowSkeleton />
-                <BookingRowSkeleton />
-                <BookingRowSkeleton />
-                <BookingRowSkeleton />
-              </>
+              Array.from({ length: 5 }).map((_, i) => (
+                <BookingRowSkeleton key={i} />
+              ))
             ) : (
               <>
                 {bookings.length > 0 ? (
@@ -76,9 +73,12 @@ export const BookingTable: FC<BookingTableProps> = ({
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center text-ds-muted-light dark:text-ds-muted-dark">
-                      <Calendar className="w-10 h-10 mx-auto mb-3 opacity-20" />
-                      <p>{t('bookings.bookings.noRecords')}</p>
+                    <td colSpan={6} className="py-12">
+                      <EmptyState
+                        icon={Calendar}
+                        title={t('bookings.bookings.emptyState.title', 'Rezervasyon Bulunamadı')}
+                        description={t('bookings.bookings.emptyState.description', 'Henüz oluşturulmuş bir rezervasyon yok veya aramanızla eşleşen bir sonuç bulunamadı.')}
+                      />
                     </td>
                   </tr>
                 )}
@@ -87,9 +87,9 @@ export const BookingTable: FC<BookingTableProps> = ({
           </tbody>
         </table>
       </div>
-      
+
       {!isLoading && (
-        <PaginationControls 
+        <PaginationControls
           totalItems={totalItems}
           itemsPerPage={ITEMS_PER_PAGE}
           currentPage={currentPage}

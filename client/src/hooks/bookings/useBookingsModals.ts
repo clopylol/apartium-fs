@@ -8,6 +8,11 @@ export interface NewBookingForm {
   startTime: string;
   endTime: string;
   note: string;
+  // Selection helpers
+  siteId?: string;
+  buildingId?: string;
+  unitId?: string;
+  residentId?: string;
 }
 
 export interface UseBookingsModalsReturn {
@@ -42,7 +47,11 @@ export const useBookingsModals = (): UseBookingsModalsReturn => {
     date: '',
     startTime: '',
     endTime: '',
-    note: ''
+    note: '',
+    siteId: '',
+    buildingId: '',
+    unitId: '',
+    residentId: ''
   });
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');

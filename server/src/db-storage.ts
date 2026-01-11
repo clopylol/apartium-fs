@@ -1510,6 +1510,50 @@ export class DatabaseStorage implements IStorage {
             );
     }
 
+    async getAllBookings(filters?: { siteId?: string }): Promise<Booking[]> {
+        const conditions = [isNull(schema.bookings.deletedAt)];
+
+        // Extended booking query
+        const query = db
+            .select({
+                booking: schema.bookings,
+                resident: schema.residents,
+                unit: schema.units,
+                building: schema.buildings
+            })
+            .from(schema.bookings)
+            .leftJoin(schema.facilities, eq(schema.bookings.facilityId, schema.facilities.id))
+            .leftJoin(schema.residents, eq(schema.bookings.residentId, schema.residents.id))
+            .leftJoin(schema.units, eq(schema.residents.unitId, schema.units.id))
+            .leftJoin(schema.buildings, eq(schema.units.buildingId, schema.buildings.id));
+
+        let result;
+
+        if (filters?.siteId) {
+            result = await query
+                .where(
+                    and(
+                        ...conditions,
+                        eq(schema.facilities.siteId, filters.siteId)
+                    )
+                )
+                .orderBy(desc(schema.bookings.bookingDate));
+        } else {
+            result = await query
+                .where(and(...conditions))
+                .orderBy(desc(schema.bookings.bookingDate));
+        }
+
+        // Map to standard object with extra fields for frontend
+        return result.map(row => ({
+            ...row.booking,
+            residentName: row.resident?.name || 'Unknown',
+            unit: row.unit && row.building
+                ? `${row.building.name} ${row.unit.number}`
+                : (row.unit?.number || row.booking.unit || ''),
+        })) as unknown as Booking[];
+    }
+
     async getBookingsByResidentId(residentId: string): Promise<Booking[]> {
         return await db
             .select()

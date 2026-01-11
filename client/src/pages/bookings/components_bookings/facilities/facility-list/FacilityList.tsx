@@ -3,6 +3,9 @@ import { useTranslation } from 'react-i18next';
 import { FacilityCard } from '../facility-card';
 import type { Facility, Booking } from '@/types/bookings.types';
 import { AddFacilityCard } from './AddFacilityCard';
+import { FacilityCardSkeleton } from './FacilityCardSkeleton';
+import { EmptyState } from '@/components/shared/empty-state/EmptyState';
+import { Building2 } from 'lucide-react';
 
 interface FacilityListProps {
   facilities: Facility[];
@@ -25,28 +28,34 @@ export const FacilityList: FC<FacilityListProps> = ({
   onAddFacility,
   showAddCard = false,
 }) => {
+  const { t } = useTranslation();
+
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {[1, 2, 3, 4].map(i => (
-          <div
-            key={i}
-            className="relative overflow-hidden rounded-2xl border border-ds-border-light dark:border-ds-border-dark bg-ds-card-light dark:bg-ds-card-dark h-[320px] animate-pulse shadow-lg"
-          >
-            <div className="h-40 bg-ds-border-light dark:bg-ds-border-dark" />
-            <div className="p-4 flex flex-col justify-between h-[160px]">
-              <div className="space-y-3">
-                <div className="h-6 w-3/4 bg-ds-border-light dark:bg-ds-border-dark rounded" />
-                <div className="h-4 w-1/2 bg-ds-border-light dark:bg-ds-border-dark rounded" />
-                <div className="h-4 w-1/3 bg-ds-border-light dark:bg-ds-border-dark rounded" />
-              </div>
-              <div className="pt-3 border-t border-ds-border-light dark:border-ds-border-dark flex justify-between items-center">
-                <div className="h-4 w-16 bg-ds-border-light dark:bg-ds-border-dark rounded" />
-                <div className="h-4 w-20 bg-ds-border-light dark:bg-ds-border-dark rounded" />
-              </div>
-            </div>
-          </div>
+        {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+          <FacilityCardSkeleton key={i} />
         ))}
+      </div>
+    );
+  }
+
+  if (facilities.length === 0) {
+    // Check if this is a search result empty state or initial empty state
+    // For now, we'll assume if showAddCard is true, it's likely the main list
+    // But better to check if it's filtered. 
+    // Since we don't pass 'isFiltered' prop, we'll use a generic "No Facilities" state
+    // If showAddCard is explicitly passed and true, we can show the add button in empty state too?
+
+    return (
+      <div className="py-12">
+        <EmptyState
+          icon={Building2}
+          title={t('bookings.facilities.emptyState.title', 'Tesis Bulunamadı')}
+          description={t('bookings.facilities.emptyState.description', 'Henüz eklenmiş bir sosyal tesis yok veya aramanızla eşleşen bir sonuç bulunamadı.')}
+          actionLabel={showAddCard ? t('bookings.facilities.addFacility', 'Tesis Ekle') : undefined}
+          onAction={showAddCard ? onAddFacility : undefined}
+        />
       </div>
     );
   }

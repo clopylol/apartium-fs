@@ -21,7 +21,21 @@ export const useBookings = (filters?: { facilityId?: string; siteId?: string }) 
         queryKey: ['bookings', filters],
         queryFn: async () => {
             const response = await api.bookings.getBookings(filters);
-            return response.bookings as Booking[];
+            console.log("Raw Bookings Response:", response); // DEBUG LOG
+
+            // Handle different potential response structures
+            // Some endpoints might return { bookings: [...] }, others { data: [...] } or just [...]
+            const rawBookings = response?.bookings || response?.data || (Array.isArray(response) ? response : []);
+
+            console.log("Raw Bookings Array:", rawBookings); // DEBUG LOG
+
+            return (rawBookings as any[]).map(b => {
+                const date = b.bookingDate || b.date;
+                return {
+                    ...b,
+                    date: date ? new Date(date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+                };
+            }) as Booking[];
         },
         enabled: !!(filters?.facilityId || filters?.siteId),
     });
